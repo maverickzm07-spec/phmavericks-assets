@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+model Client {
+  id             String       @id @default(cuid())
+  name           String
+  business       String
+  contact        String?
+  whatsapp       String?
+  email          String?
+  status         ClientStatus @default(ACTIVE)
+  notes          String?
+  servicePlanId  String?
+  servicePlan    ServicePlan? @relation(fields: [servicePlanId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  monthlyPlans   MonthlyPlan[]
+  contents       Content[]
+}
+
+enum ServicePlanType {
+  CONTENIDO
+  IA
+  FOTOGRAFIA
+  PERSONALIZADO
+}
+
+model ServicePlan {
+  id                String          @id @default(cuid())
+  nombre            String
+  tipo              ServicePlanType
+  precio            Float
+  cantidadReels     Int             @default(0)
+  cantidadFotos     Int             @default(0)
+  jornadasGrabacion Int             @default(0)
+  duracion          String?
+  vestuarios        Int             @default(0)
+  descripcion       String?
+  caracteristicas   String[]
+  esDefault         Boolean         @default(false)
+  activo            Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  clients           Client[]
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+  FINISHED
+}
+
+model MonthlyPlan {
+  id             String        @id @default(cuid())
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  month          Int
+  year           Int
+  reelsCount     Int           @default(0)
+  carouselsCount Int           @default(0)
+  flyersCount    Int           @default(0)
+  monthlyPrice   Float         @default(0)
+  paymentStatus  PaymentStatus @default(PENDING)
+  planStatus     PlanStatus    @default(IN_PROGRESS)
+  observations   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  contents       Content[]
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+enum PlanStatus {
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+}
+
+model Content {
+  id            String        @id @default(cuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          MonthlyPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  type          ContentType
+  title         String
+  status        ContentStatus @default(PENDING)
+  driveLink     String?
+  publishedLink String?
+  publishedAt   DateTime?
+  views         Int           @default(0)
+  likes         Int           @default(0)
+  comments      Int           @default(0)
+  shares        Int           @default(0)
+  saves         Int           @default(0)
+  observations  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum ContentType {
+  REEL
+  CAROUSEL
+  FLYER
+}
+
+enum ContentStatus {
+  PENDING
+  EDITING
+  APPROVED
+  PUBLISHED
+  COMPLETED
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
