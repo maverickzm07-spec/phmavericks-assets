@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { NAV_ROLES, ROLE_LABELS } from '@/lib/permissions'
 
 const navItems = [
   {
@@ -60,7 +62,7 @@ const navItems = [
   },
   {
     href: '/usuarios',
-    label: 'Usuarios',
+    label: 'Equipo',
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -72,12 +74,30 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setCurrentUser(data) })
+      .catch(() => {})
+  }, [])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
     router.refresh()
   }
+
+  const role = currentUser?.role || ''
+  const visibleNav = navItems.filter((item) => {
+    const allowed = NAV_ROLES[item.href]
+    return !allowed || allowed.includes(role)
+  })
+
+  const initials = currentUser?.name
+    ? currentUser.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    : '?'
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-50">
@@ -96,7 +116,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleNav.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
           return (
             <Link
@@ -119,12 +139,14 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="p-4 border-t border-zinc-800">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
-            <span className="text-xs font-bold text-zinc-300">A</span>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#8B0000' }}>
+            <span className="text-xs font-bold text-white">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-zinc-200 truncate">Admin</p>
-            <p className="text-xs text-zinc-500 truncate">admin@phmavericks.com</p>
+            <p className="text-sm font-medium text-zinc-200 truncate">{currentUser?.name || '...'}</p>
+            <p className="text-xs truncate" style={{ color: '#a16207' }}>
+              {currentUser ? (ROLE_LABELS[currentUser.role] || currentUser.role) : ''}
+            </p>
           </div>
         </div>
         <button

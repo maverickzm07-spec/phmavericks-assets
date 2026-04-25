@@ -6,5 +6,11 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }
-  return NextResponse.json({ user })
+  // Retorna el payload directamente (sin anidado) para que Sidebar lo use fácil
+  return NextResponse.json({
+    id: user.userId,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  })
 }

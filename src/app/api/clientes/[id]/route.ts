@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canWriteClients, canDeleteData } from '@/lib/permissions'
 import { z } from 'zod'
 
 const clientSchema = z.object({
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canWriteClients(user.role)) return NextResponse.json({ error: 'Sin permisos para editar clientes' }, { status: 403 })
 
   try {
     const body = await request.json()
@@ -70,6 +72,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canDeleteData(user.role)) return NextResponse.json({ error: 'Solo el Super Admin puede eliminar clientes' }, { status: 403 })
 
   await prisma.client.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })

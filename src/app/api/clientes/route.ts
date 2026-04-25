@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canWriteClients } from '@/lib/permissions'
 import { z } from 'zod'
 
 const clientSchema = z.object({
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canWriteClients(user.role)) return NextResponse.json({ error: 'Sin permisos para crear clientes' }, { status: 403 })
 
   try {
     const body = await request.json()

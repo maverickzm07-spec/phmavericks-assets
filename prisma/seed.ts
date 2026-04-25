@@ -6,23 +6,38 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Iniciando seed...')
 
-  // Limpiar datos existentes
+  // Crear Super Admin solo si no existe ninguno
+  const superAdminExists = await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } })
+  if (!superAdminExists) {
+    const hashedPassword = await bcrypt.hash('PHMavericks2026!', 12)
+    await prisma.user.create({
+      data: {
+        email: 'superadmin@phmavericks.com',
+        password: hashedPassword,
+        name: 'Super Admin PHMavericks',
+        role: 'SUPER_ADMIN',
+        activo: true,
+      },
+    })
+    console.log('✅ Super Admin creado')
+    console.log('   Email:    superadmin@phmavericks.com')
+    console.log('   Password: PHMavericks2026!')
+    console.log('   ⚠️  Cambia la contraseña después del primer login')
+  } else {
+    console.log('ℹ️  Super Admin ya existe, omitiendo creación')
+  }
+
+  // Limpiar datos de demo (clientes, planes, contenidos) solo si no hay clientes reales
+  const clientCount = await prisma.client.count()
+  if (clientCount > 0) {
+    console.log('ℹ️  Ya existen clientes en el sistema, omitiendo seed de datos demo')
+    return
+  }
+
+  // Limpiar datos demo vacíos
   await prisma.content.deleteMany()
   await prisma.monthlyPlan.deleteMany()
   await prisma.client.deleteMany()
-  await prisma.user.deleteMany()
-
-  // Admin user
-  const hashedPassword = await bcrypt.hash('cambiar123', 12)
-  await prisma.user.create({
-    data: {
-      email: 'admin@phmavericks.com',
-      password: hashedPassword,
-      name: 'Admin PHMavericks',
-      role: 'ADMIN',
-    },
-  })
-  console.log('✅ Usuario admin creado')
 
   // Cliente 1: Cafetería La Luna
   const client1 = await prisma.client.create({
@@ -606,9 +621,9 @@ async function main() {
   console.log('✅ Contenidos de PowerFit Gym creados')
   console.log('🎉 Seed completado exitosamente!')
   console.log('')
-  console.log('📋 Datos de acceso:')
-  console.log('   Email: admin@phmavericks.com')
-  console.log('   Password: cambiar123')
+  console.log('📋 Datos de acceso Super Admin:')
+  console.log('   Email:    superadmin@phmavericks.com')
+  console.log('   Password: PHMavericks2026!')
 }
 
 main()
