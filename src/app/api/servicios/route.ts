@@ -108,6 +108,10 @@ async function seedDefaults() {
   }
 }
 
+async function migrateVestuarios() {
+  await prisma.$executeRaw`UPDATE "ServicePlan" SET "cantidadImagenesFlyers" = vestuarios WHERE vestuarios > 0 AND "cantidadImagenesFlyers" = 0`
+}
+
 const createSchema = z.object({
   nombre: z.string().min(1),
   tipo: z.enum(['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO']),
@@ -115,9 +119,9 @@ const createSchema = z.object({
   cantidadReels: z.number().int().min(0).default(0),
   cantidadVideosHorizontales: z.number().int().min(0).default(0),
   cantidadFotos: z.number().int().min(0).default(0),
+  cantidadImagenesFlyers: z.number().int().min(0).default(0),
   jornadasGrabacion: z.number().int().min(0).default(0),
   duracion: z.string().optional(),
-  vestuarios: z.number().int().min(0).default(0),
   descripcion: z.string().optional(),
   caracteristicas: z.array(z.string()).default([]),
 })
@@ -127,6 +131,7 @@ export async function GET(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   await seedDefaults()
+  await migrateVestuarios()
 
   const { searchParams } = new URL(request.url)
   const tipo = searchParams.get('tipo')

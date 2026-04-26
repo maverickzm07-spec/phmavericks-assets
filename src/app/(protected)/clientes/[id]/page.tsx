@@ -16,6 +16,7 @@ interface ServicePlan {
   cantidadReels: number
   cantidadVideosHorizontales: number
   cantidadFotos: number
+  cantidadImagenesFlyers: number
 }
 
 const TIPO_LABEL: Record<string, string> = {
@@ -215,6 +216,9 @@ export default function ClienteDetailPage() {
                   )}
                   {client.servicePlan.cantidadFotos > 0 && (
                     <span><span className="text-amber-400">◆</span> {client.servicePlan.cantidadFotos} fotos</span>
+                  )}
+                  {client.servicePlan.cantidadImagenesFlyers > 0 && (
+                    <span><span className="text-pink-400">◈</span> {client.servicePlan.cantidadImagenesFlyers} imágenes/flyers</span>
                   )}
                 </div>
               </div>

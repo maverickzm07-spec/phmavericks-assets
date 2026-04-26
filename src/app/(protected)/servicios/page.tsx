@@ -14,7 +14,7 @@ interface ServicePlan {
   cantidadFotos: number
   jornadasGrabacion: number
   duracion: string | null
-  vestuarios: number
+  cantidadImagenesFlyers: number
   descripcion: string | null
   caracteristicas: string[]
   esDefault: boolean
@@ -59,7 +59,7 @@ const EMPTY_FORM = {
   cantidadFotos: '',
   jornadasGrabacion: '',
   duracion: '',
-  vestuarios: '',
+  cantidadImagenesFlyers: '',
   descripcion: '',
   caracteristicas: '',
 }
@@ -125,7 +125,7 @@ export default function ServiciosPage() {
       cantidadFotos: plan.cantidadFotos.toString(),
       jornadasGrabacion: plan.jornadasGrabacion.toString(),
       duracion: plan.duracion || '',
-      vestuarios: plan.vestuarios.toString(),
+      cantidadImagenesFlyers: plan.cantidadImagenesFlyers.toString(),
       descripcion: plan.descripcion || '',
       caracteristicas: plan.caracteristicas.join('\n'),
     })
@@ -158,7 +158,7 @@ export default function ServiciosPage() {
       cantidadFotos: parseInt(form.cantidadFotos) || 0,
       jornadasGrabacion: parseInt(form.jornadasGrabacion) || 0,
       duracion: form.duracion.trim() || undefined,
-      vestuarios: parseInt(form.vestuarios) || 0,
+      cantidadImagenesFlyers: parseInt(form.cantidadImagenesFlyers) || 0,
       descripcion: form.descripcion.trim() || undefined,
       caracteristicas: form.caracteristicas.split('\n').map((s) => s.trim()).filter(Boolean),
     }
@@ -332,9 +332,9 @@ export default function ServiciosPage() {
                     <span className="text-zinc-500">◷</span> {plan.duracion}
                   </span>
                 )}
-                {plan.vestuarios > 0 && (
+                {plan.cantidadImagenesFlyers > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="text-zinc-500">◈</span> {plan.vestuarios} vestuario{plan.vestuarios !== 1 ? 's' : ''}
+                    <span className="text-pink-400">◈</span> {plan.cantidadImagenesFlyers} imágenes/flyers
                   </span>
                 )}
               </div>
@@ -522,14 +522,14 @@ export default function ServiciosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Vestuarios</label>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Imágenes o flyers</label>
                   <input
-                    name="vestuarios"
+                    name="cantidadImagenesFlyers"
                     type="number"
                     min="0"
-                    value={form.vestuarios}
+                    value={form.cantidadImagenesFlyers}
                     onChange={handleFormChange}
-                    placeholder="0"
+                    placeholder="Ej: 5"
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500"
                   />
                 </div>

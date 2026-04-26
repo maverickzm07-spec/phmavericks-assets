@@ -59,9 +59,10 @@ model ServicePlan {
   cantidadReels              Int             @default(0)
   cantidadVideosHorizontales Int             @default(0)
   cantidadFotos              Int             @default(0)
+  cantidadImagenesFlyers     Int             @default(0)
   jornadasGrabacion          Int             @default(0)
-  duracion          String?
-  vestuarios        Int             @default(0)
+  duracion                   String?
+  vestuarios                 Int             @default(0)
   descripcion       String?
   caracteristicas   String[]
   esDefault         Boolean         @default(false)
