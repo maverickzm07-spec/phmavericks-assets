@@ -79,6 +79,12 @@ export default function ClienteDetailPage() {
   const [ingresosTotales, setIngresosTotales] = useState<any>(null)
   const [loadingIngresos, setLoadingIngresos] = useState(false)
   const [canVerIngresos, setCanVerIngresos] = useState(false)
+  const [entregables, setEntregables] = useState<any[]>([])
+  const [loadingEntregables, setLoadingEntregables] = useState(false)
+  const [canGestionarEntregables, setCanGestionarEntregables] = useState(false)
+  const [generando, setGenerando] = useState(false)
+  const [generarMsg, setGenerarMsg] = useState('')
+  const [userRole, setUserRole] = useState('')
   const [form, setForm] = useState({
     name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '', servicePlanId: '',
   })
@@ -94,12 +100,46 @@ export default function ClienteDetailPage() {
     fetch('/api/auth/me')
       .then((r) => r.json())
       .then((u) => {
-        if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) {
-          setCanVerIngresos(true)
+        if (u?.role) {
+          setUserRole(u.role)
+          if (['SUPER_ADMIN', 'ADMIN'].includes(u.role)) setCanVerIngresos(true)
+          if (['SUPER_ADMIN', 'ADMIN'].includes(u.role)) setCanGestionarEntregables(true)
         }
       })
       .catch(() => {})
   }, [])
+
+  const fetchEntregables = () => {
+    if (!id) return
+    setLoadingEntregables(true)
+    fetch(`/api/contenidos?clientId=${id}`)
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setEntregables(Array.isArray(d) ? d : []))
+      .catch(() => setEntregables([]))
+      .finally(() => setLoadingEntregables(false))
+  }
+
+  useEffect(() => { if (id) fetchEntregables() }, [id])
+
+  const handleGenerar = async (faltantes = false) => {
+    setGenerando(true)
+    setGenerarMsg('')
+    const endpoint = faltantes
+      ? `/api/clientes/${id}/generar-entregables-faltantes`
+      : `/api/clientes/${id}/generar-entregables`
+    try {
+      const res = await fetch(endpoint, { method: 'POST' })
+      const d = await res.json()
+      if (res.ok) {
+        setGenerarMsg(d.created === 0 ? 'No hay entregables faltantes' : `${d.created} entregable${d.created !== 1 ? 's' : ''} creados`)
+        fetchEntregables()
+      } else {
+        setGenerarMsg(d.error || 'Error al generar')
+      }
+    } finally {
+      setGenerando(false)
+    }
+  }
 
   useEffect(() => {
     if (!id || !canVerIngresos) return
@@ -416,6 +456,155 @@ export default function ClienteDetailPage() {
           )}
         </div>
       )}
+
+      {/* Entregables del cliente */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
+        <div className="flex items-center justify-between p-5 border-b border-zinc-800 flex-wrap gap-3">
+          <h2 className="font-semibold text-zinc-100">Entregables</h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            {generarMsg && (
+              <span className={`text-xs px-2 py-1 rounded ${generarMsg.includes('Error') ? 'text-red-400 bg-red-950' : 'text-green-400 bg-green-950'}`}>
+                {generarMsg}
+              </span>
+            )}
+            {canGestionarEntregables && client?.servicePlan && (
+              <>
+                <button onClick={() => handleGenerar(true)} disabled={generando}
+                  className="px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg disabled:opacity-50 transition-all">
+                  {generando ? 'Generando...' : 'Generar faltantes'}
+                </button>
+                <button onClick={() => handleGenerar(false)} disabled={generando}
+                  className="px-3 py-1.5 text-xs font-medium text-white rounded-lg disabled:opacity-50 transition-all"
+                  style={{ backgroundColor: '#8B0000' }}>
+                  {generando ? 'Generando...' : 'Generar todos'}
+                </button>
+              </>
+            )}
+            <a href={`/contenidos?clienteId=${client.id}`}
+              className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Ver en contenidos →</a>
+          </div>
+        </div>
+
+        {loadingEntregables ? (
+          <div className="p-6 text-center text-zinc-500 text-sm">Cargando entregables...</div>
+        ) : entregables.length === 0 ? (
+          <div className="p-6 text-center">
+            <p className="text-zinc-500 text-sm">
+              {client?.servicePlan
+                ? 'No hay entregables aún. Usa "Generar todos" para crearlos automáticamente.'
+                : 'Este cliente no tiene plan de servicio asignado.'}
+            </p>
+          </div>
+        ) : (() => {
+          type CT = 'REEL' | 'VIDEO_HORIZONTAL' | 'FOTO' | 'IMAGEN_FLYER'
+          const tiposMeta: { key: CT; label: string; contratados: number }[] = [
+            { key: 'REEL', label: 'Reels', contratados: client?.servicePlan?.cantidadReels || 0 },
+            { key: 'VIDEO_HORIZONTAL', label: 'Videos horizontales', contratados: client?.servicePlan?.cantidadVideosHorizontales || 0 },
+            { key: 'FOTO', label: 'Fotos', contratados: client?.servicePlan?.cantidadFotos || 0 },
+            { key: 'IMAGEN_FLYER', label: 'Imágenes / Flyers', contratados: client?.servicePlan?.cantidadImagenesFlyers || 0 },
+          ].filter(t => t.contratados > 0 || entregables.some(e => e.type === t.key))
+
+          const countBy = (type: string, status: string) => entregables.filter(e => e.type === type && e.status === status).length
+          const countType = (type: string) => entregables.filter(e => e.type === type).length
+
+          const STATUS_CLR: Record<string, string> = {
+            PENDIENTE: 'text-zinc-400',
+            EN_PROCESO: 'text-amber-400',
+            ENTREGADO: 'text-blue-400',
+            PUBLICADO: 'text-purple-400',
+          }
+
+          return (
+            <div>
+              {/* Resumen por tipo */}
+              {tiposMeta.length > 0 && (
+                <div className="grid gap-px bg-zinc-800">
+                  {tiposMeta.map(t => (
+                    <div key={t.key} className="bg-zinc-900 px-5 py-3 grid grid-cols-6 gap-2 items-center text-sm">
+                      <div className="col-span-2">
+                        <p className="text-zinc-300 font-medium">{t.label}</p>
+                        <p className="text-xs text-zinc-600">{t.contratados} contratados · {countType(t.key)} registrados</p>
+                      </div>
+                      {[
+                        { s: 'PENDIENTE', l: 'Pendiente' },
+                        { s: 'EN_PROCESO', l: 'En proceso' },
+                        { s: 'ENTREGADO', l: 'Entregado' },
+                        { s: 'PUBLICADO', l: 'Publicado' },
+                      ].map(({ s, l }) => (
+                        <div key={s} className="text-center">
+                          <p className={`text-lg font-bold ${STATUS_CLR[s]}`}>{countBy(t.key, s)}</p>
+                          <p className="text-xs text-zinc-600">{l}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Lista de entregables */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800">
+                      <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Tipo</th>
+                      <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Título</th>
+                      <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Estado</th>
+                      <th className="text-center text-xs font-medium text-zinc-500 px-5 py-3">Drive</th>
+                      <th className="text-center text-xs font-medium text-zinc-500 px-5 py-3">Publicado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/50">
+                    {entregables.map((e: any) => {
+                      const TIPO_C: Record<string, string> = {
+                        REEL: 'bg-purple-950 text-purple-300 border-purple-800',
+                        VIDEO_HORIZONTAL: 'bg-blue-950 text-blue-300 border-blue-800',
+                        FOTO: 'bg-amber-950 text-amber-300 border-amber-800',
+                        IMAGEN_FLYER: 'bg-green-950 text-green-300 border-green-800',
+                        EXTRA: 'bg-zinc-800 text-zinc-300 border-zinc-700',
+                      }
+                      const TIPO_L: Record<string, string> = { REEL: 'Reel', VIDEO_HORIZONTAL: 'Video H.', FOTO: 'Foto', IMAGEN_FLYER: 'Img/Flyer', EXTRA: 'Extra' }
+                      const STAT_C: Record<string, string> = {
+                        PENDIENTE: 'bg-zinc-800 text-zinc-400 border-zinc-700',
+                        EN_PROCESO: 'bg-amber-950 text-amber-400 border-amber-800',
+                        ENTREGADO: 'bg-blue-950 text-blue-400 border-blue-800',
+                        PUBLICADO: 'bg-purple-950 text-purple-400 border-purple-800',
+                      }
+                      const STAT_L: Record<string, string> = { PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', ENTREGADO: 'Entregado', PUBLICADO: 'Publicado' }
+                      return (
+                        <tr key={e.id} className="hover:bg-zinc-800/20 transition-colors">
+                          <td className="px-5 py-3">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${TIPO_C[e.type] || 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                              {TIPO_L[e.type] || e.type}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-zinc-200">{e.title}</td>
+                          <td className="px-5 py-3">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${STAT_C[e.status]}`}>
+                              {STAT_L[e.status] || e.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            {e.driveLink
+                              ? <a href={e.driveLink} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300 text-xs">Ver</a>
+                              : <span className="text-zinc-600 text-xs">—</span>}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            {!e.requierePublicacion
+                              ? <span className="text-zinc-600 text-xs">No aplica</span>
+                              : e.publishedLink
+                                ? <a href={e.publishedLink} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300 text-xs">Ver</a>
+                                : <span className="text-zinc-600 text-xs">—</span>}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        })()}
+      </div>
 
       {/* Plans List */}
       {client.monthlyPlans?.length > 0 && (

@@ -112,39 +112,56 @@ enum PlanStatus {
 }
 
 model Content {
-  id            String        @id @default(cuid())
-  clientId      String
-  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  planId        String
-  plan          MonthlyPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
-  type          ContentType
-  title         String
-  status        ContentStatus @default(PENDING)
-  driveLink     String?
-  publishedLink String?
-  publishedAt   DateTime?
-  views         Int           @default(0)
-  likes         Int           @default(0)
-  comments      Int           @default(0)
-  shares        Int           @default(0)
-  saves         Int           @default(0)
-  observations  String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                          String        @id @default(cuid())
+  clientId                    String
+  client                      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId                      String?
+  plan                        MonthlyPlan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
+  type                        ContentType
+  title                       String
+  status                      ContentStatus @default(PENDIENTE)
+  requierePublicacion         Boolean       @default(false)
+  driveLink                   String?
+  publishedLink               String?
+  publishedAt                 DateTime?
+  fechaEntrega                DateTime?
+  fechaPublicacion            DateTime?
+  views                       Int           @default(0)
+  likes                       Int           @default(0)
+  comments                    Int           @default(0)
+  shares                      Int           @default(0)
+  saves                       Int           @default(0)
+  reach                       Int           @default(0)
+  impressions                 Int           @default(0)
+  observations                String?
+  ultimaActualizacionMetricas DateTime?
+  fuenteMetricas              String?
+  estadoSincronizacion        SyncStatus    @default(MANUAL)
+  errorSincronizacion         String?
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
 }
 
 enum ContentType {
   REEL
-  CAROUSEL
-  FLYER
+  VIDEO_HORIZONTAL
+  FOTO
+  IMAGEN_FLYER
+  EXTRA
 }
 
 enum ContentStatus {
-  PENDING
-  EDITING
-  APPROVED
-  PUBLISHED
-  COMPLETED
+  PENDIENTE
+  EN_PROCESO
+  ENTREGADO
+  PUBLICADO
+}
+
+enum SyncStatus {
+  MANUAL
+  PENDIENTE
+  ACTUALIZADO
+  ERROR
 }
 
 enum TipoServicio {

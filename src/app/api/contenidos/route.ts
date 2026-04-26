@@ -4,22 +4,21 @@ import { getUserFromRequest } from '@/lib/auth'
 import { canWriteContents } from '@/lib/permissions'
 import { z } from 'zod'
 
-const contentSchema = z.object({
+const createSchema = z.object({
   clientId: z.string().min(1),
-  planId: z.string().min(1),
-  type: z.enum(['REEL', 'CAROUSEL', 'FLYER']),
+  planId: z.string().optional().nullable(),
+  type: z.enum(['REEL', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA']),
   title: z.string().min(1),
-  status: z.enum(['PENDING', 'EDITING', 'APPROVED', 'PUBLISHED', 'COMPLETED']).default('PENDING'),
-  driveLink: z.string().url().optional().or(z.literal('')),
-  publishedLink: z.string().url().optional().or(z.literal('')),
-  publishedAt: z.string().optional(),
-  views: z.number().int().min(0).default(0),
-  likes: z.number().int().min(0).default(0),
-  comments: z.number().int().min(0).default(0),
-  shares: z.number().int().min(0).default(0),
-  saves: z.number().int().min(0).default(0),
-  observations: z.string().optional(),
+  status: z.enum(['PENDIENTE', 'EN_PROCESO', 'ENTREGADO', 'PUBLICADO']).default('PENDIENTE'),
+  requierePublicacion: z.boolean().optional(),
+  driveLink: z.string().url().optional().or(z.literal('')).nullable(),
+  publishedLink: z.string().url().optional().or(z.literal('')).nullable(),
+  observations: z.string().optional().nullable(),
 })
+
+function defaultRequierePublicacion(type: string): boolean {
+  return type === 'REEL'
+}
 
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request)
@@ -30,29 +29,20 @@ export async function GET(request: NextRequest) {
   const planId = searchParams.get('planId')
   const type = searchParams.get('type')
   const status = searchParams.get('status')
-  const month = searchParams.get('month')
-  const year = searchParams.get('year')
+
+  const where: any = {}
+  if (clientId) where.clientId = clientId
+  if (planId) where.planId = planId
+  if (type) where.type = type
+  if (status) where.status = status
 
   const contents = await prisma.content.findMany({
-    where: {
-      ...(clientId && { clientId }),
-      ...(planId && { planId }),
-      ...(type && { type: type as 'REEL' | 'CAROUSEL' | 'FLYER' }),
-      ...(status && { status: status as 'PENDING' | 'EDITING' | 'APPROVED' | 'PUBLISHED' | 'COMPLETED' }),
-      ...(month || year
-        ? {
-            plan: {
-              ...(month && { month: parseInt(month) }),
-              ...(year && { year: parseInt(year) }),
-            },
-          }
-        : {}),
-    },
+    where,
     include: {
-      client: { select: { id: true, name: true } },
+      client: { select: { id: true, name: true, business: true } },
       plan: { select: { id: true, month: true, year: true } },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ clientId: 'asc' }, { type: 'asc' }, { title: 'asc' }],
   })
 
   return NextResponse.json(contents)
@@ -61,31 +51,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (!canWriteContents(user.role)) return NextResponse.json({ error: 'Sin permisos para crear contenidos' }, { status: 403 })
+  if (!canWriteContents(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   try {
     const body = await request.json()
-    const data = contentSchema.parse(body)
+    const data = createSchema.parse(body)
+
+    const requiere = data.requierePublicacion !== undefined
+      ? data.requierePublicacion
+      : defaultRequierePublicacion(data.type)
 
     const content = await prisma.content.create({
       data: {
         clientId: data.clientId,
-        planId: data.planId,
+        planId: data.planId || null,
         type: data.type,
         title: data.title,
         status: data.status,
+        requierePublicacion: requiere,
         driveLink: data.driveLink || null,
         publishedLink: data.publishedLink || null,
-        publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
-        views: data.views,
-        likes: data.likes,
-        comments: data.comments,
-        shares: data.shares,
-        saves: data.saves,
         observations: data.observations || null,
       },
       include: {
-        client: { select: { id: true, name: true } },
+        client: { select: { id: true, name: true, business: true } },
         plan: { select: { id: true, month: true, year: true } },
       },
     })

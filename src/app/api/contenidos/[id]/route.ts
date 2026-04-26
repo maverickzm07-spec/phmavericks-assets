@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canWriteContents, canDeleteContents } from '@/lib/permissions'
 import { z } from 'zod'
 
-const contentSchema = z.object({
-  clientId: z.string().min(1),
-  planId: z.string().min(1),
-  type: z.enum(['REEL', 'CAROUSEL', 'FLYER']),
-  title: z.string().min(1),
-  status: z.enum(['PENDING', 'EDITING', 'APPROVED', 'PUBLISHED', 'COMPLETED']),
-  driveLink: z.string().url().optional().or(z.literal('')),
-  publishedLink: z.string().url().optional().or(z.literal('')),
-  publishedAt: z.string().optional(),
-  views: z.number().int().min(0),
-  likes: z.number().int().min(0),
-  comments: z.number().int().min(0),
-  shares: z.number().int().min(0),
-  saves: z.number().int().min(0),
-  observations: z.string().optional(),
+const updateSchema = z.object({
+  clientId: z.string().min(1).optional(),
+  planId: z.string().optional().nullable(),
+  type: z.enum(['REEL', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA']).optional(),
+  title: z.string().min(1).optional(),
+  status: z.enum(['PENDIENTE', 'EN_PROCESO', 'ENTREGADO', 'PUBLICADO']).optional(),
+  requierePublicacion: z.boolean().optional(),
+  driveLink: z.string().url().optional().or(z.literal('')).nullable(),
+  publishedLink: z.string().url().optional().or(z.literal('')).nullable(),
+  observations: z.string().optional().nullable(),
 })
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -27,43 +23,37 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   const content = await prisma.content.findUnique({
     where: { id: params.id },
     include: {
-      client: true,
-      plan: { include: { client: true } },
+      client: { select: { id: true, name: true, business: true } },
+      plan: { select: { id: true, month: true, year: true } },
     },
   })
 
-  if (!content) return NextResponse.json({ error: 'Contenido no encontrado' }, { status: 404 })
+  if (!content) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
   return NextResponse.json(content)
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canWriteContents(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   try {
     const body = await request.json()
-    const data = contentSchema.parse(body)
+    const data = updateSchema.parse(body)
+
+    const existing = await prisma.content.findUnique({ where: { id: params.id } })
+    if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+
+    const updateData: any = { ...data }
+    if ('driveLink' in data) updateData.driveLink = data.driveLink || null
+    if ('publishedLink' in data) updateData.publishedLink = data.publishedLink || null
+    if ('planId' in data) updateData.planId = data.planId || null
 
     const content = await prisma.content.update({
       where: { id: params.id },
-      data: {
-        clientId: data.clientId,
-        planId: data.planId,
-        type: data.type,
-        title: data.title,
-        status: data.status,
-        driveLink: data.driveLink || null,
-        publishedLink: data.publishedLink || null,
-        publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
-        views: data.views,
-        likes: data.likes,
-        comments: data.comments,
-        shares: data.shares,
-        saves: data.saves,
-        observations: data.observations || null,
-      },
+      data: updateData,
       include: {
-        client: { select: { id: true, name: true } },
+        client: { select: { id: true, name: true, business: true } },
         plan: { select: { id: true, month: true, year: true } },
       },
     })
@@ -80,6 +70,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canDeleteContents(user.role)) return NextResponse.json({ error: 'Solo el Super Admin puede eliminar contenidos' }, { status: 403 })
 
   await prisma.content.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })

@@ -55,11 +55,10 @@ export function paymentStatusBadge(status: string) {
 
 export function contentStatusBadge(status: string) {
   const map: Record<string, { variant: BadgeProps['variant']; label: string }> = {
-    PENDING: { variant: 'gray', label: 'Pendiente' },
-    EDITING: { variant: 'yellow', label: 'En Edición' },
-    APPROVED: { variant: 'blue', label: 'Aprobado' },
-    PUBLISHED: { variant: 'purple', label: 'Publicado' },
-    COMPLETED: { variant: 'green', label: 'Completado' },
+    PENDIENTE: { variant: 'gray', label: 'Pendiente' },
+    EN_PROCESO: { variant: 'yellow', label: 'En proceso' },
+    ENTREGADO: { variant: 'blue', label: 'Entregado' },
+    PUBLICADO: { variant: 'purple', label: 'Publicado' },
   }
   const { variant, label } = map[status] || { variant: 'gray', label: status }
   return <Badge variant={variant}>{label}</Badge>
@@ -68,8 +67,10 @@ export function contentStatusBadge(status: string) {
 export function contentTypeBadge(type: string) {
   const map: Record<string, { variant: BadgeProps['variant']; label: string }> = {
     REEL: { variant: 'purple', label: 'Reel' },
-    CAROUSEL: { variant: 'blue', label: 'Carrusel' },
-    FLYER: { variant: 'orange', label: 'Flyer' },
+    VIDEO_HORIZONTAL: { variant: 'blue', label: 'Video H.' },
+    FOTO: { variant: 'orange', label: 'Foto' },
+    IMAGEN_FLYER: { variant: 'green', label: 'Img/Flyer' },
+    EXTRA: { variant: 'gray', label: 'Extra' },
   }
   const { variant, label } = map[type] || { variant: 'gray', label: type }
   return <Badge variant={variant}>{label}</Badge>

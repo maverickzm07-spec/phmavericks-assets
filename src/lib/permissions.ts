@@ -32,9 +32,22 @@ export function canWriteMonthlyPlans(role: string) {
   return ['SUPER_ADMIN', 'ADMIN'].includes(role)
 }
 
+// Lectura de contenidos: todos los roles autenticados
+export function canViewContents(_role: string) { return true }
+
 // Escritura en contenidos: SUPER_ADMIN, ADMIN, PRODUCCION
 export function canWriteContents(role: string) {
   return ['SUPER_ADMIN', 'ADMIN', 'PRODUCCION'].includes(role)
+}
+
+// Eliminar contenidos: solo SUPER_ADMIN
+export function canDeleteContents(role: string) {
+  return role === 'SUPER_ADMIN'
+}
+
+// Generar entregables automáticos: SUPER_ADMIN, ADMIN
+export function canGenerateEntregables(role: string) {
+  return ['SUPER_ADMIN', 'ADMIN'].includes(role)
 }
 
 // Asignar planes de servicio a clientes: SUPER_ADMIN, ADMIN, VENTAS

@@ -7,10 +7,12 @@ export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-  const [activeClients, pendingContents, completedContents, allPlans] = await Promise.all([
+  const [activeClients, pendingContents, inProccessContents, deliveredContents, publishedContents, allPlans] = await Promise.all([
     prisma.client.count({ where: { status: 'ACTIVE' } }),
-    prisma.content.count({ where: { status: { in: ['PENDING', 'EDITING', 'APPROVED'] } } }),
-    prisma.content.count({ where: { status: { in: ['PUBLISHED', 'COMPLETED'] } } }),
+    prisma.content.count({ where: { status: 'PENDIENTE' } }),
+    prisma.content.count({ where: { status: 'EN_PROCESO' } }),
+    prisma.content.count({ where: { status: 'ENTREGADO' } }),
+    prisma.content.count({ where: { status: 'PUBLICADO' } }),
     prisma.monthlyPlan.findMany({
       include: { contents: true },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
@@ -44,7 +46,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     activeClients,
     pendingContents,
-    completedContents,
+    inProccessContents,
+    deliveredContents,
+    publishedContents,
     completedPlans,
     delayedPlans,
     avgCompliance,
