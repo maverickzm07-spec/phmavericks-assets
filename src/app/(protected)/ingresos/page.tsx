@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -87,7 +87,7 @@ function calcAuto(monto: string, pagado: string) {
   return { saldo, pct, estado }
 }
 
-export default function IngresosPage() {
+function IngresosPageInner() {
   const searchParams = useSearchParams()
   const clienteIdParam = searchParams.get('clienteId') || ''
   const createParam = searchParams.get('create') === '1'
@@ -736,5 +736,13 @@ export default function IngresosPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function IngresosPage() {
+  return (
+    <Suspense fallback={<div className="text-zinc-500 text-sm py-10 text-center">Cargando...</div>}>
+      <IngresosPageInner />
+    </Suspense>
   )
 }
