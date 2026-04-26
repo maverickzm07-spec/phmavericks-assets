@@ -10,6 +10,7 @@ interface ServicePlan {
   tipo: PlanType
   precio: number
   cantidadReels: number
+  cantidadVideosHorizontales: number
   cantidadFotos: number
   jornadasGrabacion: number
   duracion: string | null
@@ -54,6 +55,7 @@ const EMPTY_FORM = {
   tipo: 'PERSONALIZADO' as PlanType,
   precio: '',
   cantidadReels: '',
+  cantidadVideosHorizontales: '',
   cantidadFotos: '',
   jornadasGrabacion: '',
   duracion: '',
@@ -119,6 +121,7 @@ export default function ServiciosPage() {
       tipo: plan.tipo,
       precio: plan.precio.toString(),
       cantidadReels: plan.cantidadReels.toString(),
+      cantidadVideosHorizontales: plan.cantidadVideosHorizontales.toString(),
       cantidadFotos: plan.cantidadFotos.toString(),
       jornadasGrabacion: plan.jornadasGrabacion.toString(),
       duracion: plan.duracion || '',
@@ -151,6 +154,7 @@ export default function ServiciosPage() {
       tipo: form.tipo,
       precio,
       cantidadReels: parseInt(form.cantidadReels) || 0,
+      cantidadVideosHorizontales: parseInt(form.cantidadVideosHorizontales) || 0,
       cantidadFotos: parseInt(form.cantidadFotos) || 0,
       jornadasGrabacion: parseInt(form.jornadasGrabacion) || 0,
       duracion: form.duracion.trim() || undefined,
@@ -308,6 +312,11 @@ export default function ServiciosPage() {
                     <span className="text-purple-400">▶</span> {plan.cantidadReels} reels
                   </span>
                 )}
+                {plan.cantidadVideosHorizontales > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="text-green-400">▬</span> {plan.cantidadVideosHorizontales} horiz.
+                  </span>
+                )}
                 {plan.cantidadFotos > 0 && (
                   <span className="flex items-center gap-1">
                     <span className="text-amber-400">◆</span> {plan.cantidadFotos} fotos
@@ -458,6 +467,19 @@ export default function ServiciosPage() {
                     value={form.cantidadReels}
                     onChange={handleFormChange}
                     placeholder="0"
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Cantidad de videos horizontales</label>
+                  <input
+                    name="cantidadVideosHorizontales"
+                    type="number"
+                    min="0"
+                    value={form.cantidadVideosHorizontales}
+                    onChange={handleFormChange}
+                    placeholder="Ej: 2"
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500"
                   />
                 </div>

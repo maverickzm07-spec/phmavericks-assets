@@ -9,6 +9,7 @@ const updateSchema = z.object({
   tipo: z.enum(['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO']).optional(),
   precio: z.number().positive().optional(),
   cantidadReels: z.number().int().min(0).optional(),
+  cantidadVideosHorizontales: z.number().int().min(0).optional(),
   cantidadFotos: z.number().int().min(0).optional(),
   jornadasGrabacion: z.number().int().min(0).optional(),
   duracion: z.string().optional(),

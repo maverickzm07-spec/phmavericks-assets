@@ -56,9 +56,10 @@ model ServicePlan {
   nombre            String
   tipo              ServicePlanType
   precio            Float
-  cantidadReels     Int             @default(0)
-  cantidadFotos     Int             @default(0)
-  jornadasGrabacion Int             @default(0)
+  cantidadReels              Int             @default(0)
+  cantidadVideosHorizontales Int             @default(0)
+  cantidadFotos              Int             @default(0)
+  jornadasGrabacion          Int             @default(0)
   duracion          String?
   vestuarios        Int             @default(0)
   descripcion       String?

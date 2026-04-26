@@ -13,6 +13,9 @@ interface ServicePlan {
   nombre: string
   tipo: string
   precio: number
+  cantidadReels: number
+  cantidadVideosHorizontales: number
+  cantidadFotos: number
 }
 
 const TIPO_LABEL: Record<string, string> = {
@@ -197,11 +200,24 @@ export default function ClienteDetailPage() {
               })}
             </select>
             {client?.servicePlan && (
-              <p className="text-xs text-zinc-500 mt-1.5">
-                Actual: <span className="text-zinc-300">{client.servicePlan.nombre}</span>
-                {' · '}<span className="text-zinc-400">${client.servicePlan.precio}</span>
-                {' · '}<span className="text-zinc-500">{TIPO_LABEL[client.servicePlan.tipo]}</span>
-              </p>
+              <div className="mt-1.5 space-y-1">
+                <p className="text-xs text-zinc-500">
+                  Actual: <span className="text-zinc-300">{client.servicePlan.nombre}</span>
+                  {' · '}<span className="text-zinc-400">${client.servicePlan.precio}</span>
+                  {' · '}<span className="text-zinc-500">{TIPO_LABEL[client.servicePlan.tipo]}</span>
+                </p>
+                <div className="flex gap-3 flex-wrap text-xs text-zinc-500">
+                  {client.servicePlan.cantidadReels > 0 && (
+                    <span><span className="text-purple-400">▶</span> {client.servicePlan.cantidadReels} reels</span>
+                  )}
+                  {client.servicePlan.cantidadVideosHorizontales > 0 && (
+                    <span><span className="text-green-400">▬</span> {client.servicePlan.cantidadVideosHorizontales} videos horizontales</span>
+                  )}
+                  {client.servicePlan.cantidadFotos > 0 && (
+                    <span><span className="text-amber-400">◆</span> {client.servicePlan.cantidadFotos} fotos</span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 

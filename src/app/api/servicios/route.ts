@@ -113,6 +113,7 @@ const createSchema = z.object({
   tipo: z.enum(['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO']),
   precio: z.number().positive(),
   cantidadReels: z.number().int().min(0).default(0),
+  cantidadVideosHorizontales: z.number().int().min(0).default(0),
   cantidadFotos: z.number().int().min(0).default(0),
   jornadasGrabacion: z.number().int().min(0).default(0),
   duracion: z.string().optional(),

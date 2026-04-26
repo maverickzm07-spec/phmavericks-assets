@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         include: { _count: { select: { contents: true } } },
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
       },
-      servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true } },
+      servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true, cantidadReels: true, cantidadVideosHorizontales: true, cantidadFotos: true } },
       _count: { select: { monthlyPlans: true, contents: true } },
     },
   })
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const client = await prisma.client.update({
       where: { id: params.id },
       data: updateData,
-      include: { servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true } } },
+      include: { servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true, cantidadReels: true, cantidadVideosHorizontales: true, cantidadFotos: true } } },
     })
 
     return NextResponse.json(client)
