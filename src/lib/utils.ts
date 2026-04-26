@@ -49,13 +49,13 @@ export function calculateCompliance(
 ): ComplianceData {
   const delivered = contents.filter(
     (c) =>
-      (c.status === 'PUBLISHED' || c.status === 'COMPLETED') &&
+      (c.status === 'ENTREGADO' || c.status === 'PUBLICADO') &&
       (c.driveLink || c.publishedLink)
   )
 
   const reelsDelivered = delivered.filter((c) => c.type === 'REEL').length
-  const carouselsDelivered = delivered.filter((c) => c.type === 'CAROUSEL').length
-  const flyersDelivered = delivered.filter((c) => c.type === 'FLYER').length
+  const carouselsDelivered = delivered.filter((c) => c.type === 'FOTO' || c.type === 'VIDEO_HORIZONTAL').length
+  const flyersDelivered = delivered.filter((c) => c.type === 'IMAGEN_FLYER').length
 
   const totalContracted = plan.reelsCount + plan.carouselsCount + plan.flyersCount
   const totalDelivered = reelsDelivered + carouselsDelivered + flyersDelivered
@@ -77,13 +77,19 @@ export function getStatusLabel(status: string, type: 'client' | 'plan' | 'conten
   const labels: Record<string, Record<string, string>> = {
     client: { ACTIVE: 'Activo', PAUSED: 'Pausado', FINISHED: 'Finalizado' },
     plan: { IN_PROGRESS: 'En Proceso', COMPLETED: 'Completado', DELAYED: 'Atrasado' },
-    content: { PENDING: 'Pendiente', EDITING: 'En Edición', APPROVED: 'Aprobado', PUBLISHED: 'Publicado', COMPLETED: 'Completado' },
+    content: { PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', ENTREGADO: 'Entregado', PUBLICADO: 'Publicado' },
     payment: { PENDING: 'Pendiente', PARTIAL: 'Parcial', PAID: 'Pagado' },
   }
   return labels[type]?.[status] || status
 }
 
 export function getContentTypeLabel(type: string): string {
-  const labels: Record<string, string> = { REEL: 'Reel', CAROUSEL: 'Carrusel', FLYER: 'Flyer' }
+  const labels: Record<string, string> = {
+    REEL: 'Reel',
+    VIDEO_HORIZONTAL: 'Video horizontal',
+    FOTO: 'Foto',
+    IMAGEN_FLYER: 'Imagen / Flyer',
+    EXTRA: 'Extra',
+  }
   return labels[type] || type
 }

@@ -21,13 +21,14 @@ export async function GET(request: NextRequest, { params }: { params: { planId: 
 
   const deliveredContents = plan.contents.filter(
     (c) =>
-      (c.status === 'PUBLISHED' || c.status === 'COMPLETED') &&
+      (c.status === 'ENTREGADO' || c.status === 'PUBLICADO') &&
       (c.driveLink || c.publishedLink)
   )
 
   const reels = plan.contents.filter((c) => c.type === 'REEL')
-  const carousels = plan.contents.filter((c) => c.type === 'CAROUSEL')
-  const flyers = plan.contents.filter((c) => c.type === 'FLYER')
+  const fotos = plan.contents.filter((c) => c.type === 'FOTO')
+  const imagenesFlyers = plan.contents.filter((c) => c.type === 'IMAGEN_FLYER')
+  const videosHorizontales = plan.contents.filter((c) => c.type === 'VIDEO_HORIZONTAL')
 
   const totalViews = deliveredContents.reduce((s, c) => s + c.views, 0)
   const totalLikes = deliveredContents.reduce((s, c) => s + c.likes, 0)
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: { planId: 
   const totalShares = deliveredContents.reduce((s, c) => s + c.shares, 0)
   const totalSaves = deliveredContents.reduce((s, c) => s + c.saves, 0)
 
-  const publishedReels = reels.filter((c) => c.status === 'PUBLISHED' || c.status === 'COMPLETED')
+  const publishedReels = reels.filter((c) => c.status === 'PUBLICADO')
   const bestReel = publishedReels.sort((a, b) => b.views - a.views)[0] || null
 
   const bestContent = deliveredContents
@@ -50,8 +51,12 @@ export async function GET(request: NextRequest, { params }: { params: { planId: 
     plan,
     compliance,
     reels,
-    carousels,
-    flyers,
+    fotos,
+    imagenesFlyers,
+    videosHorizontales,
+    // Compatibilidad con la vista de reportes existente
+    carousels: fotos,
+    flyers: imagenesFlyers,
     totalViews,
     totalLikes,
     totalComments,
