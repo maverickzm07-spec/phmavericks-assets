@@ -497,11 +497,11 @@ export default function ClienteDetailPage() {
           </div>
         ) : (() => {
           type CT = 'REEL' | 'VIDEO_HORIZONTAL' | 'FOTO' | 'IMAGEN_FLYER'
-          const tiposMeta: { key: CT; label: string; contratados: number }[] = [
-            { key: 'REEL', label: 'Reels', contratados: client?.servicePlan?.cantidadReels || 0 },
-            { key: 'VIDEO_HORIZONTAL', label: 'Videos horizontales', contratados: client?.servicePlan?.cantidadVideosHorizontales || 0 },
-            { key: 'FOTO', label: 'Fotos', contratados: client?.servicePlan?.cantidadFotos || 0 },
-            { key: 'IMAGEN_FLYER', label: 'Imágenes / Flyers', contratados: client?.servicePlan?.cantidadImagenesFlyers || 0 },
+          const tiposMeta = [
+            { key: 'REEL' as CT, label: 'Reels', contratados: client?.servicePlan?.cantidadReels || 0 },
+            { key: 'VIDEO_HORIZONTAL' as CT, label: 'Videos horizontales', contratados: client?.servicePlan?.cantidadVideosHorizontales || 0 },
+            { key: 'FOTO' as CT, label: 'Fotos', contratados: client?.servicePlan?.cantidadFotos || 0 },
+            { key: 'IMAGEN_FLYER' as CT, label: 'Imágenes / Flyers', contratados: client?.servicePlan?.cantidadImagenesFlyers || 0 },
           ].filter(t => t.contratados > 0 || entregables.some(e => e.type === t.key))
 
           const countBy = (type: string, status: string) => entregables.filter(e => e.type === type && e.status === status).length
