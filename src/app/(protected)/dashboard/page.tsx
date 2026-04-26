@@ -53,7 +53,9 @@ export default function DashboardPage() {
           setStats({
             activeClients: data?.activeClients ?? 0,
             pendingContents: data?.pendingContents ?? 0,
-            completedContents: data?.completedContents ?? 0,
+            inProccessContents: data?.inProccessContents ?? 0,
+            deliveredContents: data?.deliveredContents ?? 0,
+            publishedContents: data?.publishedContents ?? 0,
             completedPlans: data?.completedPlans ?? 0,
             delayedPlans: data?.delayedPlans ?? 0,
             avgCompliance: data?.avgCompliance ?? 0,
@@ -68,7 +70,9 @@ export default function DashboardPage() {
         setStats({
           activeClients: 0,
           pendingContents: 0,
-          completedContents: 0,
+          inProccessContents: 0,
+          deliveredContents: 0,
+          publishedContents: 0,
           completedPlans: 0,
           delayedPlans: 0,
           avgCompliance: 0,
