@@ -57,6 +57,19 @@ export function canRead(_role: string) {
   return true
 }
 
+// Ingresos: solo SUPER_ADMIN y ADMIN
+export function canViewIngresos(role: string) {
+  return ['SUPER_ADMIN', 'ADMIN'].includes(role)
+}
+
+export function canWriteIngresos(role: string) {
+  return ['SUPER_ADMIN', 'ADMIN'].includes(role)
+}
+
+export function canDeleteIngresos(role: string) {
+  return role === 'SUPER_ADMIN'
+}
+
 // Ítems del menú lateral por rol
 export const NAV_ROLES: Record<string, string[]> = {
   '/dashboard':  ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
@@ -65,5 +78,6 @@ export const NAV_ROLES: Record<string, string[]> = {
   '/planes':     ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
   '/contenidos': ['SUPER_ADMIN', 'ADMIN', 'PRODUCCION', 'SOLO_LECTURA'],
   '/reportes':   ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'SOLO_LECTURA'],
+  '/ingresos':   ['SUPER_ADMIN', 'ADMIN'],
   '/usuarios':   ['SUPER_ADMIN'],
 }

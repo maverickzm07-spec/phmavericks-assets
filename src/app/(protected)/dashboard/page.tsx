@@ -36,6 +36,11 @@ function MetricCard({ title, value, sub, icon, color }: {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState('')
+
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => { if (d) setUserRole(d.role) }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -98,6 +103,21 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold text-zinc-50">Buen día, Admin 👋</h1>
         <p className="text-zinc-500 text-sm mt-1">Resumen del estado actual del sistema PHMavericks.</p>
       </div>
+
+      {/* Ingresos del mes - solo admin/super_admin */}
+      {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (stats as any)?.ingresosMes !== undefined && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-zinc-400 font-medium">Ingresos cobrados este mes</p>
+            <p className="text-3xl font-bold text-white mt-1">${((stats as any).ingresosMes || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#8B0000' }}>
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      )}
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">

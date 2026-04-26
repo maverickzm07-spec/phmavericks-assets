@@ -33,6 +33,14 @@ export async function GET(request: NextRequest) {
     take: 6,
   })
 
+  const now = new Date()
+  const mesStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const ingresosMesData = await prisma.ingreso.findMany({
+    where: { fechaIngreso: { gte: mesStart }, estadoPago: { not: 'PENDIENTE' } },
+    select: { montoPagado: true },
+  })
+  const ingresosMes = ingresosMesData.reduce((s, i) => s + (i.montoPagado || 0), 0)
+
   return NextResponse.json({
     activeClients,
     pendingContents,
@@ -41,5 +49,6 @@ export async function GET(request: NextRequest) {
     delayedPlans,
     avgCompliance,
     recentPlans,
+    ingresosMes,
   })
 }

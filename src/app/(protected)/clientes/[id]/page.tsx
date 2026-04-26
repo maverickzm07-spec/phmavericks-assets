@@ -242,6 +242,26 @@ export default function ClienteDetailPage() {
         </form>
       </div>
 
+      {/* Acciones rápidas */}
+      <div className="flex gap-3 flex-wrap">
+        <Link
+          href={`/ingresos?clienteId=${client.id}&create=1`}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-all"
+          style={{ backgroundColor: '#8B0000' }}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Registrar ingreso
+        </Link>
+        <Link
+          href={`/ingresos?clienteId=${client.id}`}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-all"
+        >
+          Ver ingresos del cliente
+        </Link>
+      </div>
+
       {/* Plans List */}
       {client.monthlyPlans?.length > 0 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl">

@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  cedula    String?  @unique
-  role      Role     @default(ADMIN)
-  activo    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String    @id @default(cuid())
+  email            String    @unique
+  password         String
+  name             String
+  cedula           String?   @unique
+  role             Role      @default(ADMIN)
+  activo           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  ingresosCreados  Ingreso[] @relation("IngresosCreados")
 }
 
 enum Role {
@@ -42,6 +43,7 @@ model Client {
   updatedAt      DateTime     @updatedAt
   monthlyPlans   MonthlyPlan[]
   contents       Content[]
+  ingresos       Ingreso[]
 }
 
 enum ServicePlanType {
@@ -142,6 +144,47 @@ enum ContentStatus {
   APPROVED
   PUBLISHED
   COMPLETED
+}
+
+enum TipoServicio {
+  FOTOGRAFIA
+  REELS
+  VIDEOS_HORIZONTALES
+  IMAGENES_FLYERS
+  PLAN_MENSUAL
+  PERSONALIZADO
+}
+
+enum EstadoPago {
+  PAGADO
+  PENDIENTE
+  PARCIAL
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  DEPOSITO
+  TARJETA
+  OTRO
+}
+
+model Ingreso {
+  id            String       @id @default(cuid())
+  clienteId     String?
+  cliente       Client?      @relation(fields: [clienteId], references: [id])
+  tipoServicio  TipoServicio
+  descripcion   String?
+  monto         Float
+  montoPagado   Float        @default(0)
+  estadoPago    EstadoPago   @default(PENDIENTE)
+  metodoPago    MetodoPago?
+  fechaIngreso  DateTime     @default(now())
+  observaciones String?
+  creadoPor     String
+  creadoPorUser User         @relation("IngresosCreados", fields: [creadoPor], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model VerificationCode {

@@ -49,5 +49,7 @@ export const config = {
     '/usuarios/:path*',
     '/servicios/:path*',
     '/api/servicios/:path*',
+    '/ingresos/:path*',
+    '/api/ingresos/:path*',
   ],
 }
