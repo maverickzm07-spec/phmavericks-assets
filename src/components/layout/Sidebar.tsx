@@ -114,7 +114,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     : '?'
 
   return (
-    <aside className={`fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+    <aside className={`fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-50 transition-transform duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Close button - solo móvil */}
       <button
         className="md:hidden absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors"
