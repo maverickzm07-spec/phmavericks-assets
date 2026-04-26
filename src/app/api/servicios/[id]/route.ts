@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canManageServices, canDeleteData } from '@/lib/permissions'
 import { z } from 'zod'
 
 const updateSchema = z.object({
@@ -20,7 +21,7 @@ const updateSchema = z.object({
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (user.role !== 'ADMIN') return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  if (!canManageServices(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   try {
     const body = await request.json()
@@ -43,7 +44,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (user.role !== 'ADMIN') return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  if (!canManageServices(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const plan = await prisma.servicePlan.findUnique({ where: { id: params.id } })
   if (!plan) return NextResponse.json({ error: 'Plan no encontrado' }, { status: 404 })

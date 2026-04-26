@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canManageServices } from '@/lib/permissions'
 import { z } from 'zod'
 
 const DEFAULT_PLANS = [
@@ -145,7 +146,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (user.role !== 'ADMIN') return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+  if (!canManageServices(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   try {
     const body = await request.json()
