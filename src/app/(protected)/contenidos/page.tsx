@@ -75,6 +75,7 @@ function ContenidosPageInner() {
 
   const [contents, setContents] = useState<Content[]>([])
   const [clients, setClients] = useState<any[]>([])
+  const [formPlans, setFormPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState('')
   const [filters, setFilters] = useState({ clientId: clienteIdParam, type: '', status: '' })
@@ -100,6 +101,14 @@ function ContenidosPageInner() {
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => { if (d) setUserRole(d.role) })
     fetch('/api/clientes').then(r => r.json()).then(d => setClients(Array.isArray(d) ? d : []))
   }, [])
+
+  useEffect(() => {
+    if (!form.clientId) { setFormPlans([]); return }
+    fetch(`/api/planes?clientId=${form.clientId}`)
+      .then(r => r.json())
+      .then(d => setFormPlans(Array.isArray(d) ? d : []))
+      .catch(() => setFormPlans([]))
+  }, [form.clientId])
 
   const fetchContents = useCallback(() => {
     const params = new URLSearchParams()
@@ -412,12 +421,32 @@ function ContenidosPageInner() {
             <form onSubmit={handleCreate} className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-zinc-400 mb-1.5">Cliente *</label>
-                <select value={form.clientId} onChange={e => setForm(p => ({ ...p, clientId: e.target.value }))} required
+                <select value={form.clientId} onChange={e => setForm(p => ({ ...p, clientId: e.target.value, planId: '' }))} required
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
                   <option value="">Selecciona cliente...</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
                 </select>
               </div>
+              {form.clientId && (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Plan mensual (opcional)</label>
+                  {formPlans.length === 0 ? (
+                    <p className="text-xs text-zinc-600 px-3 py-2 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                      Sin planes para este cliente
+                    </p>
+                  ) : (
+                    <select value={form.planId} onChange={e => setForm(p => ({ ...p, planId: e.target.value }))}
+                      className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
+                      <option value="">Sin plan asociado</option>
+                      {formPlans.map((p: any) => (
+                        <option key={p.id} value={p.id}>
+                          {MESES[p.month - 1]} {p.year}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1.5">Tipo *</label>

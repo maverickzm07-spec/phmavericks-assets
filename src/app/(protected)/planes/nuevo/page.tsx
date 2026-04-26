@@ -52,7 +52,8 @@ function NuevoPlanForm() {
         body: JSON.stringify(form),
       })
       if (res.ok) {
-        router.push('/planes')
+        const created = await res.json()
+        router.push(`/planes/${created.id}`)
       } else {
         const data = await res.json()
         setError(data.error || 'Error al crear el plan')
@@ -133,7 +134,10 @@ function NuevoPlanForm() {
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm text-center focus:outline-none focus:border-zinc-500" />
               </div>
             </div>
-            <p className="text-xs text-zinc-500 mt-2">Total contratado: <span className="text-zinc-300 font-medium">{totalContracted} contenidos</span></p>
+            <p className="text-xs text-zinc-500 mt-2">
+              Total contratado: <span className="text-zinc-300 font-medium">{totalContracted} contenidos</span>
+              {totalContracted > 0 && <span className="text-green-500 ml-2">— se generarán automáticamente al guardar</span>}
+            </p>
           </div>
 
           {/* Precio y estados */}

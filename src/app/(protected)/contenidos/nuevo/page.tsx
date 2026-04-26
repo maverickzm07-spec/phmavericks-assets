@@ -9,12 +9,13 @@ function NuevoContenidoForm() {
   const searchParams = useSearchParams()
 
   const [clients, setClients] = useState<any[]>([])
+  const [plans, setPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
     clientId: searchParams.get('clientId') || '',
-    planId: '',
+    planId: searchParams.get('planId') || '',
     type: 'EXTRA' as string,
     title: '',
     status: 'PENDIENTE',
@@ -27,6 +28,14 @@ function NuevoContenidoForm() {
   useEffect(() => {
     fetch('/api/clientes').then(r => r.json()).then(d => setClients(Array.isArray(d) ? d : []))
   }, [])
+
+  useEffect(() => {
+    if (!form.clientId) { setPlans([]); return }
+    fetch(`/api/planes?clientId=${form.clientId}`)
+      .then(r => r.json())
+      .then(d => setPlans(Array.isArray(d) ? d : []))
+      .catch(() => setPlans([]))
+  }, [form.clientId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +92,30 @@ function NuevoContenidoForm() {
               {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
             </select>
           </div>
+
+          {form.clientId && (
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Plan mensual (opcional)</label>
+              {plans.length === 0 ? (
+                <div className="px-4 py-2.5 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm text-zinc-500">
+                  Sin planes para este cliente —{' '}
+                  <Link href={`/planes/nuevo?clientId=${form.clientId}`} className="text-red-400 hover:text-red-300 underline">
+                    Crear plan primero
+                  </Link>
+                </div>
+              ) : (
+                <select value={form.planId} onChange={e => setForm(p => ({ ...p, planId: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
+                  <option value="">Sin plan asociado</option>
+                  {plans.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      {['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][p.month - 1]} {p.year}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>

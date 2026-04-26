@@ -70,7 +70,14 @@ export async function POST(request: NextRequest) {
       include: { client: true },
     })
 
-    return NextResponse.json(plan, { status: 201 })
+    type CT = 'REEL' | 'FOTO' | 'IMAGEN_FLYER'
+    const entregables: { clientId: string; planId: string; type: CT; title: string; status: 'PENDIENTE'; requierePublicacion: boolean }[] = []
+    for (let i = 1; i <= data.reelsCount; i++) entregables.push({ clientId: data.clientId, planId: plan.id, type: 'REEL', title: `Reel ${i}`, status: 'PENDIENTE', requierePublicacion: true })
+    for (let i = 1; i <= data.carouselsCount; i++) entregables.push({ clientId: data.clientId, planId: plan.id, type: 'FOTO', title: `Foto ${i}`, status: 'PENDIENTE', requierePublicacion: false })
+    for (let i = 1; i <= data.flyersCount; i++) entregables.push({ clientId: data.clientId, planId: plan.id, type: 'IMAGEN_FLYER', title: `Imagen/Flyer ${i}`, status: 'PENDIENTE', requierePublicacion: false })
+    if (entregables.length > 0) await prisma.content.createMany({ data: entregables })
+
+    return NextResponse.json({ ...plan, _contenidosGenerados: entregables.length }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
