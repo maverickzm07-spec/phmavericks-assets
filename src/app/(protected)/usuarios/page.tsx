@@ -80,12 +80,12 @@ export default function UsuariosPage() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Crear usuario
+          <span className="hidden sm:inline">Crear usuario</span>
         </Link>
       </div>
 
       {/* Roles info */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {Object.entries(ROLE_LABELS).map(([key, label]) => (
           <div key={key} className="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
             <RoleBadge role={key} />

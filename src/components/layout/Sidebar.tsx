@@ -71,7 +71,12 @@ const navItems = [
   },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string; role: string } | null>(null)
@@ -100,7 +105,17 @@ export default function Sidebar() {
     : '?'
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-50">
+    <aside className={`fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      {/* Close button - solo móvil */}
+      <button
+        className="md:hidden absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 transition-colors"
+        onClick={onClose}
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
       {/* Logo */}
       <div className="p-6 border-b border-zinc-800">
         <div className="flex items-center gap-3">

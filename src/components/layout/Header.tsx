@@ -14,7 +14,7 @@ const breadcrumbs: Record<string, string> = {
   '/reportes': 'Reportes',
 }
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname()
 
   const getTitle = () => {
@@ -37,7 +37,15 @@ export default function Header() {
   const parent = getParent()
 
   return (
-    <header className="h-16 bg-zinc-900/80 backdrop-blur border-b border-zinc-800 flex items-center px-6 no-print">
+    <header className="h-16 bg-zinc-900/80 backdrop-blur border-b border-zinc-800 flex items-center px-4 md:px-6 no-print">
+      <button
+        className="md:hidden mr-3 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0"
+        onClick={onMenuClick}
+      >
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
       <div className="flex items-center gap-2 text-sm">
         {parent && (
           <>
