@@ -19,11 +19,47 @@ interface ServicePlan {
   cantidadImagenesFlyers: number
 }
 
+interface IngresoCliente {
+  id: string
+  tipoServicio: string
+  descripcion: string | null
+  monto: number
+  montoPagado: number
+  saldoPendiente: number
+  porcentajePagado: number
+  estadoPago: 'PAGADO' | 'PARCIAL' | 'PENDIENTE'
+  metodoPago: string | null
+  fechaIngreso: string
+  observaciones: string | null
+  _count: { abonos: number }
+}
+
 const TIPO_LABEL: Record<string, string> = {
   CONTENIDO: 'Contenido',
   IA: 'IA',
   FOTOGRAFIA: 'Fotografía',
   PERSONALIZADO: 'Personalizado',
+}
+
+const TIPO_SERVICIO_LABEL: Record<string, string> = {
+  FOTOGRAFIA: 'Fotografía',
+  REELS: 'Reels',
+  VIDEOS_HORIZONTALES: 'Videos Horizontales',
+  IMAGENES_FLYERS: 'Imágenes / Flyers',
+  PLAN_MENSUAL: 'Plan Mensual',
+  PERSONALIZADO: 'Personalizado',
+}
+
+const ESTADO_BADGE: Record<string, string> = {
+  PAGADO: 'bg-green-900/50 text-green-400 border border-green-800',
+  PARCIAL: 'bg-amber-900/50 text-amber-400 border border-amber-800',
+  PENDIENTE: 'bg-red-900/50 text-red-400 border border-red-800',
+}
+
+const ESTADO_LABEL: Record<string, string> = {
+  PAGADO: 'Pagado',
+  PARCIAL: 'Parcial',
+  PENDIENTE: 'Pendiente',
 }
 
 export default function ClienteDetailPage() {
@@ -39,6 +75,10 @@ export default function ClienteDetailPage() {
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [servicePlans, setServicePlans] = useState<ServicePlan[]>([])
+  const [ingresos, setIngresos] = useState<IngresoCliente[]>([])
+  const [ingresosTotales, setIngresosTotales] = useState<any>(null)
+  const [loadingIngresos, setLoadingIngresos] = useState(false)
+  const [canVerIngresos, setCanVerIngresos] = useState(false)
   const [form, setForm] = useState({
     name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '', servicePlanId: '',
   })
@@ -49,6 +89,32 @@ export default function ClienteDetailPage() {
       .then((d) => setServicePlans(Array.isArray(d) ? d : []))
       .catch(() => setServicePlans([]))
   }, [])
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((u) => {
+        if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) {
+          setCanVerIngresos(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!id || !canVerIngresos) return
+    setLoadingIngresos(true)
+    fetch(`/api/ingresos?clienteId=${id}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d) {
+          setIngresos(d.ingresos || [])
+          setIngresosTotales(d.totales || null)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingIngresos(false))
+  }, [id, canVerIngresos])
 
   useEffect(() => {
     fetch(`/api/clientes/${id}`)
@@ -261,6 +327,95 @@ export default function ClienteDetailPage() {
           Ver ingresos del cliente
         </Link>
       </div>
+
+      {/* Resumen de Ingresos */}
+      {canVerIngresos && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
+          <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+            <h2 className="font-semibold text-zinc-100">Ingresos del cliente</h2>
+            <Link href={`/ingresos?clienteId=${client.id}`}
+              className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Ver todos →</Link>
+          </div>
+
+          {loadingIngresos ? (
+            <div className="p-6 text-center text-zinc-500 text-sm">Cargando ingresos...</div>
+          ) : ingresos.length === 0 ? (
+            <div className="p-6 text-center">
+              <p className="text-zinc-500 text-sm mb-3">Este cliente no tiene ingresos registrados.</p>
+              <Link href={`/ingresos?clienteId=${client.id}&create=1`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white rounded-lg transition-all"
+                style={{ backgroundColor: '#8B0000' }}>
+                + Registrar primer ingreso
+              </Link>
+            </div>
+          ) : (
+            <>
+              {/* Resumen financiero */}
+              <div className="grid grid-cols-3 divide-x divide-zinc-800 border-b border-zinc-800">
+                <div className="p-4 text-center">
+                  <p className="text-xs text-zinc-500 mb-1">Total contratado</p>
+                  <p className="text-lg font-bold text-zinc-100">
+                    {formatCurrency(ingresos.reduce((s, i) => s + i.monto, 0))}
+                  </p>
+                </div>
+                <div className="p-4 text-center">
+                  <p className="text-xs text-zinc-500 mb-1">Total abonado</p>
+                  <p className="text-lg font-bold text-green-400">
+                    {formatCurrency(ingresos.reduce((s, i) => s + i.montoPagado, 0))}
+                  </p>
+                </div>
+                <div className="p-4 text-center">
+                  <p className="text-xs text-zinc-500 mb-1">Saldo pendiente</p>
+                  <p className="text-lg font-bold text-amber-400">
+                    {formatCurrency(ingresos.reduce((s, i) => s + i.saldoPendiente, 0))}
+                  </p>
+                </div>
+              </div>
+
+              {/* Tabla de ingresos */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Servicio</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Monto</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Abonado</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Saldo</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Estado</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Abonos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/50">
+                    {ingresos.map((ingreso) => (
+                      <tr key={ingreso.id} className="hover:bg-zinc-800/20 transition-colors">
+                        <td className="px-4 py-3 text-zinc-400 whitespace-nowrap">
+                          {new Date(ingreso.fechaIngreso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-zinc-200 font-medium">{TIPO_SERVICIO_LABEL[ingreso.tipoServicio] || ingreso.tipoServicio}</p>
+                          {ingreso.descripcion && <p className="text-zinc-500 text-xs mt-0.5">{ingreso.descripcion}</p>}
+                        </td>
+                        <td className="px-4 py-3 text-right text-zinc-200 font-medium">{formatCurrency(ingreso.monto)}</td>
+                        <td className="px-4 py-3 text-right text-green-400">{formatCurrency(ingreso.montoPagado)}</td>
+                        <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(ingreso.saldoPendiente)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_BADGE[ingreso.estadoPago]}`}>
+                            {ESTADO_LABEL[ingreso.estadoPago]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-xs text-zinc-500">{ingreso._count.abonos}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Plans List */}
       {client.monthlyPlans?.length > 0 && (
