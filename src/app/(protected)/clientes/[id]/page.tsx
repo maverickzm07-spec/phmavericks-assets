@@ -69,6 +69,7 @@ export default function ClienteDetailPage() {
 
   const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -158,7 +159,10 @@ export default function ClienteDetailPage() {
 
   useEffect(() => {
     fetch(`/api/clientes/${id}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Error ${r.status}`)
+        return r.json()
+      })
       .then((data) => {
         setClient(data)
         setForm({
@@ -172,7 +176,10 @@ export default function ClienteDetailPage() {
           servicePlanId: data.servicePlanId || '',
         })
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err)
+        setLoadError('No se pudo cargar el cliente. Intenta recargar la página.')
+      })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -216,6 +223,14 @@ export default function ClienteDetailPage() {
   }
 
   if (loading) return <div className="text-zinc-500 text-sm py-10 text-center">Cargando...</div>
+  if (loadError) return (
+    <div className="flex flex-col items-center gap-3 py-16">
+      <p className="text-red-400 text-sm">{loadError}</p>
+      <button onClick={() => window.location.reload()} className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-all">
+        Recargar
+      </button>
+    </div>
+  )
   if (!client) return <div className="text-red-400 text-sm py-10 text-center">Cliente no encontrado</div>
 
   return (

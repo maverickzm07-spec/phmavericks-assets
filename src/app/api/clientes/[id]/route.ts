@@ -19,20 +19,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-  const client = await prisma.client.findUnique({
-    where: { id: params.id },
-    include: {
-      monthlyPlans: {
-        include: { _count: { select: { contents: true } } },
-        orderBy: [{ year: 'desc' }, { month: 'desc' }],
+  try {
+    const client = await prisma.client.findUnique({
+      where: { id: params.id },
+      include: {
+        monthlyPlans: {
+          include: { _count: { select: { contents: true } } },
+          orderBy: [{ year: 'desc' }, { month: 'desc' }],
+        },
+        servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true, cantidadReels: true, cantidadVideosHorizontales: true, cantidadFotos: true, cantidadImagenesFlyers: true } },
+        _count: { select: { monthlyPlans: true, contents: true } },
       },
-      servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true, cantidadReels: true, cantidadVideosHorizontales: true, cantidadFotos: true, cantidadImagenesFlyers: true } },
-      _count: { select: { monthlyPlans: true, contents: true } },
-    },
-  })
+    })
 
-  if (!client) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
-  return NextResponse.json(client)
+    if (!client) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
+    return NextResponse.json(client)
+  } catch (error) {
+    console.error('GET /api/clientes/[id]:', error)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {

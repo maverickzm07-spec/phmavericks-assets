@@ -24,32 +24,37 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (!canGenerateEntregables(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
-  const client = await prisma.client.findUnique({
-    where: { id: params.id },
-    include: { servicePlan: true },
-  })
+  try {
+    const client = await prisma.client.findUnique({
+      where: { id: params.id },
+      include: { servicePlan: true },
+    })
 
-  if (!client) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
-  if (!client.servicePlan) return NextResponse.json({ error: 'El cliente no tiene plan de servicio asignado' }, { status: 400 })
+    if (!client) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
+    if (!client.servicePlan) return NextResponse.json({ error: 'El cliente no tiene plan de servicio asignado' }, { status: 400 })
 
-  const entregables = buildEntregables(client.servicePlan)
-  if (entregables.length === 0) {
-    return NextResponse.json({ error: 'El plan asignado no tiene cantidades definidas' }, { status: 400 })
-  }
+    const entregables = buildEntregables(client.servicePlan)
+    if (entregables.length === 0) {
+      return NextResponse.json({ error: 'El plan asignado no tiene cantidades definidas' }, { status: 400 })
+    }
 
-  const created = await prisma.$transaction(
-    entregables.map((e) =>
-      prisma.content.create({
-        data: {
-          clientId: params.id,
-          type: e.type,
-          title: e.title,
-          status: 'PENDIENTE',
-          requierePublicacion: e.requierePublicacion,
-        },
-      })
+    const created = await prisma.$transaction(
+      entregables.map((e) =>
+        prisma.content.create({
+          data: {
+            clientId: params.id,
+            type: e.type,
+            title: e.title,
+            status: 'PENDIENTE',
+            requierePublicacion: e.requierePublicacion,
+          },
+        })
+      )
     )
-  )
 
-  return NextResponse.json({ created: created.length, entregables: created }, { status: 201 })
+    return NextResponse.json({ created: created.length, entregables: created }, { status: 201 })
+  } catch (error) {
+    console.error('POST generar-entregables:', error)
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
 }

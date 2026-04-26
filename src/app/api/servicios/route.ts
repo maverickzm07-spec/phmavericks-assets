@@ -109,7 +109,11 @@ async function seedDefaults() {
 }
 
 async function migrateVestuarios() {
-  await prisma.$executeRaw`UPDATE "ServicePlan" SET "cantidadImagenesFlyers" = vestuarios WHERE vestuarios > 0 AND "cantidadImagenesFlyers" = 0`
+  try {
+    await prisma.$executeRaw`UPDATE "ServicePlan" SET "cantidadImagenesFlyers" = vestuarios WHERE vestuarios > 0 AND "cantidadImagenesFlyers" = 0`
+  } catch {
+    // no-op: columns may not exist yet if schema hasn't been pushed
+  }
 }
 
 const createSchema = z.object({
