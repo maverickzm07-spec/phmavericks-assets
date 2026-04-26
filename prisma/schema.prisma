@@ -18,6 +18,7 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   ingresosCreados  Ingreso[] @relation("IngresosCreados")
+  abonosCreados    Abono[]   @relation("AbonosCreados")
 }
 
 enum Role {
@@ -185,6 +186,20 @@ model Ingreso {
   creadoPorUser User         @relation("IngresosCreados", fields: [creadoPor], references: [id])
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  abonos        Abono[]
+}
+
+model Abono {
+  id            String      @id @default(cuid())
+  ingresoId     String
+  ingreso       Ingreso     @relation(fields: [ingresoId], references: [id], onDelete: Cascade)
+  monto         Float
+  metodoPago    MetodoPago?
+  fechaAbono    DateTime    @default(now())
+  observacion   String?
+  creadoPor     String
+  creadoPorUser User        @relation("AbonosCreados", fields: [creadoPor], references: [id])
+  createdAt     DateTime    @default(now())
 }
 
 model VerificationCode {
