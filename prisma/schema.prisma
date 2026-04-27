@@ -137,6 +137,10 @@ enum ContentType {
   REEL
   CAROUSEL
   FLYER
+  VIDEO_HORIZONTAL
+  FOTO
+  IMAGEN_FLYER
+  EXTRA
 }
 
 enum ContentStatus {
@@ -145,6 +149,10 @@ enum ContentStatus {
   APPROVED
   PUBLISHED
   COMPLETED
+  PENDIENTE
+  EN_PROCESO
+  ENTREGADO
+  PUBLICADO
 }
 
 enum TipoServicio {
