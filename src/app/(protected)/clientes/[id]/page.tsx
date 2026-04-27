@@ -117,8 +117,12 @@ export default function ClienteDetailPage() {
   }, [id, canVerIngresos])
 
   useEffect(() => {
+    if (!id) { setLoading(false); return }
     fetch(`/api/clientes/${id}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((data) => {
         setClient(data)
         setForm({
@@ -132,7 +136,7 @@ export default function ClienteDetailPage() {
           servicePlanId: data.servicePlanId || '',
         })
       })
-      .catch(console.error)
+      .catch(() => setClient(null))
       .finally(() => setLoading(false))
   }, [id])
 
