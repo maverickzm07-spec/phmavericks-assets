@@ -7,9 +7,9 @@ import { z } from 'zod'
 const contentSchema = z.object({
   clientId: z.string().min(1),
   planId: z.string().nullable().optional(),
-  type: z.enum(['REEL', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA']),
+  type: z.enum(['REEL', 'CAROUSEL', 'FLYER']),
   title: z.string().min(1),
-  status: z.enum(['PENDIENTE', 'EN_PROCESO', 'ENTREGADO', 'PUBLICADO']).default('PENDIENTE'),
+  status: z.enum(['PENDING', 'EDITING', 'APPROVED', 'PUBLISHED', 'COMPLETED']).default('PENDING'),
   driveLink: z.string().url().optional().or(z.literal('')),
   publishedLink: z.string().url().optional().or(z.literal('')),
   publishedAt: z.string().optional(),
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
     where: {
       ...(clientId && { clientId }),
       ...(planId && { planId }),
-      ...(type && { type: type as 'REEL' | 'VIDEO_HORIZONTAL' | 'FOTO' | 'IMAGEN_FLYER' | 'EXTRA' }),
-      ...(status && { status: status as 'PENDIENTE' | 'EN_PROCESO' | 'ENTREGADO' | 'PUBLICADO' }),
+      ...(type && { type: type as 'REEL' | 'CAROUSEL' | 'FLYER' }),
+      ...(status && { status: status as 'PENDING' | 'EDITING' | 'APPROVED' | 'PUBLISHED' | 'COMPLETED' }),
       ...(month || year
         ? {
             plan: {
