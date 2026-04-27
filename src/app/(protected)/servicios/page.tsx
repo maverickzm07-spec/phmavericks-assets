@@ -1,13 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 type PlanType = 'CONTENIDO' | 'IA' | 'FOTOGRAFIA' | 'PERSONALIZADO'
+type Modalidad = 'MENSUAL' | 'OCASIONAL'
 
 interface ServicePlan {
   id: string
   nombre: string
   tipo: PlanType
+  modalidad: Modalidad
   precio: number
   cantidadReels: number
   cantidadVideosHorizontales: number
@@ -53,6 +56,7 @@ const TABS = [
 const EMPTY_FORM = {
   nombre: '',
   tipo: 'PERSONALIZADO' as PlanType,
+  modalidad: 'MENSUAL' as 'MENSUAL' | 'OCASIONAL',
   precio: '',
   cantidadReels: '',
   cantidadVideosHorizontales: '',
@@ -65,6 +69,7 @@ const EMPTY_FORM = {
 }
 
 export default function ServiciosPage() {
+  const router = useRouter()
   const [plans, setPlans] = useState<ServicePlan[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
@@ -119,6 +124,7 @@ export default function ServiciosPage() {
     setForm({
       nombre: plan.nombre,
       tipo: plan.tipo,
+      modalidad: plan.modalidad || 'MENSUAL',
       precio: plan.precio.toString(),
       cantidadReels: plan.cantidadReels.toString(),
       cantidadVideosHorizontales: plan.cantidadVideosHorizontales.toString(),
@@ -152,6 +158,7 @@ export default function ServiciosPage() {
     const payload = {
       nombre: form.nombre.trim(),
       tipo: form.tipo,
+      modalidad: form.modalidad,
       precio,
       cantidadReels: parseInt(form.cantidadReels) || 0,
       cantidadVideosHorizontales: parseInt(form.cantidadVideosHorizontales) || 0,
@@ -204,6 +211,14 @@ export default function ServiciosPage() {
 
   const handleAssign = async () => {
     if (!showAssign || !assignClientId) return
+
+    if (showAssign.modalidad === 'OCASIONAL') {
+      setShowAssign(null)
+      setAssignClientId('')
+      router.push(`/proyectos/nuevo?clientId=${assignClientId}&serviceId=${showAssign.id}`)
+      return
+    }
+
     setAssignLoading(true)
     await fetch(`/api/clientes/${assignClientId}`, {
       method: 'PUT',
@@ -285,6 +300,13 @@ export default function ServiciosPage() {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${TIPO_COLOR[plan.tipo]}`}>
                       {TIPO_LABEL[plan.tipo]}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                      plan.modalidad === 'OCASIONAL'
+                        ? 'bg-purple-950 text-purple-300 border-purple-800'
+                        : 'bg-blue-950 text-blue-300 border-blue-800'
+                    }`}>
+                      {plan.modalidad === 'OCASIONAL' ? 'Ocasional' : 'Mensual'}
                     </span>
                     {!plan.activo && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-zinc-700 text-zinc-500 bg-zinc-800">
@@ -444,6 +466,19 @@ export default function ServiciosPage() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Modalidad *</label>
+                  <select
+                    name="modalidad"
+                    value={form.modalidad}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500"
+                  >
+                    <option value="MENSUAL">Mensual (plan recurrente)</option>
+                    <option value="OCASIONAL">Ocasional / Proyecto único</option>
+                  </select>
+                </div>
+
+                <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1.5">Precio ($) *</label>
                   <input
                     name="precio"
@@ -592,8 +627,16 @@ export default function ServiciosPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAssign(null)} />
           <div className="relative bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-sm shadow-2xl p-6">
-            <h2 className="font-semibold text-zinc-100 mb-1">Asignar a cliente</h2>
-            <p className="text-xs text-zinc-500 mb-5">Plan: <span className="text-zinc-300">{showAssign.nombre}</span></p>
+            <h2 className="font-semibold text-zinc-100 mb-1">
+              {showAssign.modalidad === 'OCASIONAL' ? 'Crear proyecto para cliente' : 'Asignar a cliente'}
+            </h2>
+            <p className="text-xs text-zinc-500 mb-1">Servicio: <span className="text-zinc-300">{showAssign.nombre}</span></p>
+            {showAssign.modalidad === 'OCASIONAL' && (
+              <p className="text-xs text-amber-500 mb-4">
+                Este es un servicio ocasional. Se abrirá el formulario de nuevo proyecto con los entregables pre-cargados.
+              </p>
+            )}
+            {showAssign.modalidad !== 'OCASIONAL' && <div className="mb-5" />}
 
             <div className="space-y-3">
               <select
@@ -615,7 +658,7 @@ export default function ServiciosPage() {
                 className="flex-1 py-2.5 text-sm font-semibold text-white rounded-lg disabled:opacity-50"
                 style={{ backgroundColor: '#8B0000' }}
               >
-                {assignLoading ? 'Asignando...' : 'Asignar'}
+                {assignLoading ? 'Procesando...' : showAssign.modalidad === 'OCASIONAL' ? 'Crear proyecto →' : 'Asignar'}
               </button>
               <button
                 onClick={() => setShowAssign(null)}

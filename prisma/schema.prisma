@@ -30,21 +30,22 @@ enum Role {
 }
 
 model Client {
-  id             String       @id @default(cuid())
+  id             String          @id @default(cuid())
   name           String
   business       String
   contact        String?
   whatsapp       String?
   email          String?
-  status         ClientStatus @default(ACTIVE)
+  status         ClientStatus    @default(ACTIVE)
   notes          String?
   servicePlanId  String?
-  servicePlan    ServicePlan? @relation(fields: [servicePlanId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  servicePlan    ServicePlan?    @relation(fields: [servicePlanId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   monthlyPlans   MonthlyPlan[]
   contents       Content[]
   ingresos       Ingreso[]
+  projects       ClientProject[]
 }
 
 enum ServicePlanType {
@@ -54,11 +55,17 @@ enum ServicePlanType {
   PERSONALIZADO
 }
 
+enum Modalidad {
+  MENSUAL
+  OCASIONAL
+}
+
 model ServicePlan {
-  id                String          @id @default(cuid())
-  nombre            String
-  tipo              ServicePlanType
-  precio            Float
+  id                         String          @id @default(cuid())
+  nombre                     String
+  tipo                       ServicePlanType
+  modalidad                  Modalidad       @default(MENSUAL)
+  precio                     Float
   cantidadReels              Int             @default(0)
   cantidadVideosHorizontales Int             @default(0)
   cantidadFotos              Int             @default(0)
@@ -66,13 +73,14 @@ model ServicePlan {
   jornadasGrabacion          Int             @default(0)
   duracion                   String?
   vestuarios                 Int             @default(0)
-  descripcion       String?
-  caracteristicas   String[]
-  esDefault         Boolean         @default(false)
-  activo            Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  clients           Client[]
+  descripcion                String?
+  caracteristicas            String[]
+  esDefault                  Boolean         @default(false)
+  activo                     Boolean         @default(true)
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+  clients                    Client[]
+  projects                   ClientProject[]
 }
 
 enum ClientStatus {
@@ -82,21 +90,22 @@ enum ClientStatus {
 }
 
 model MonthlyPlan {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   clientId       String
-  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client         Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
   month          Int
   year           Int
-  reelsCount     Int           @default(0)
-  carouselsCount Int           @default(0)
-  flyersCount    Int           @default(0)
-  monthlyPrice   Float         @default(0)
-  paymentStatus  PaymentStatus @default(PENDING)
-  planStatus     PlanStatus    @default(IN_PROGRESS)
+  reelsCount     Int             @default(0)
+  carouselsCount Int             @default(0)
+  flyersCount    Int             @default(0)
+  monthlyPrice   Float           @default(0)
+  paymentStatus  PaymentStatus   @default(PENDING)
+  planStatus     PlanStatus      @default(IN_PROGRESS)
   observations   String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   contents       Content[]
+  projects       ClientProject[]
 }
 
 enum PaymentStatus {
@@ -111,26 +120,58 @@ enum PlanStatus {
   DELAYED
 }
 
-model Content {
+enum ProjectStatus {
+  PENDIENTE
+  EN_PROCESO
+  EN_EDICION
+  APROBADO
+  ENTREGADO
+  COMPLETADO
+  ATRASADO
+}
+
+model ClientProject {
   id            String        @id @default(cuid())
   clientId      String
   client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  serviceId     String?
+  service       ServicePlan?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  monthlyPlanId String?
+  monthlyPlan   MonthlyPlan?  @relation(fields: [monthlyPlanId], references: [id], onDelete: SetNull)
+  nombre        String
+  modalidad     Modalidad     @default(OCASIONAL)
+  estado        ProjectStatus @default(PENDIENTE)
+  linkEntrega   String?
+  fechaEntrega  DateTime?
+  observaciones String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  contents      Content[]
+}
+
+model Content {
+  id            String         @id @default(cuid())
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
   planId        String?
-  plan          MonthlyPlan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
+  plan          MonthlyPlan?   @relation(fields: [planId], references: [id], onDelete: SetNull)
+  projectId     String?
+  project       ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   type          ContentType
+  formato       ContentFormat?
   title         String
-  status        ContentStatus @default(PENDING)
+  status        ContentStatus  @default(PENDING)
   driveLink     String?
   publishedLink String?
   publishedAt   DateTime?
-  views         Int           @default(0)
-  likes         Int           @default(0)
-  comments      Int           @default(0)
-  shares        Int           @default(0)
-  saves         Int           @default(0)
+  views         Int            @default(0)
+  likes         Int            @default(0)
+  comments      Int            @default(0)
+  shares        Int            @default(0)
+  saves         Int            @default(0)
   observations  String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 enum ContentType {
@@ -141,6 +182,15 @@ enum ContentType {
   FOTO
   IMAGEN_FLYER
   EXTRA
+  VIDEO
+  OTRO
+}
+
+enum ContentFormat {
+  VERTICAL_9_16
+  HORIZONTAL_16_9
+  CUADRADO_1_1
+  NO_APLICA
 }
 
 enum ContentStatus {

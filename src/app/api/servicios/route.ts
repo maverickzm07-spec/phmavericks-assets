@@ -115,6 +115,7 @@ async function migrateVestuarios() {
 const createSchema = z.object({
   nombre: z.string().min(1),
   tipo: z.enum(['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO']),
+  modalidad: z.enum(['MENSUAL', 'OCASIONAL']).default('MENSUAL'),
   precio: z.number().positive(),
   cantidadReels: z.number().int().min(0).default(0),
   cantidadVideosHorizontales: z.number().int().min(0).default(0),

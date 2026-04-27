@@ -7,9 +7,11 @@ import { z } from 'zod'
 const contentSchema = z.object({
   clientId: z.string().min(1),
   planId: z.string().nullable().optional(),
-  type: z.enum(['REEL', 'CAROUSEL', 'FLYER']),
+  projectId: z.string().nullable().optional(),
+  type: z.enum(['REEL', 'CAROUSEL', 'FLYER', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA', 'VIDEO', 'OTRO']),
+  formato: z.enum(['VERTICAL_9_16', 'HORIZONTAL_16_9', 'CUADRADO_1_1', 'NO_APLICA']).nullable().optional(),
   title: z.string().min(1),
-  status: z.enum(['PENDING', 'EDITING', 'APPROVED', 'PUBLISHED', 'COMPLETED']).default('PENDING'),
+  status: z.enum(['PENDING', 'EDITING', 'APPROVED', 'PUBLISHED', 'COMPLETED', 'PENDIENTE', 'EN_PROCESO', 'ENTREGADO', 'PUBLICADO']).default('PENDING'),
   driveLink: z.string().url().optional().or(z.literal('')),
   publishedLink: z.string().url().optional().or(z.literal('')),
   publishedAt: z.string().optional(),
@@ -29,7 +31,9 @@ export async function GET(request: NextRequest) {
   const clientId = searchParams.get('clientId')
   const planId = searchParams.get('planId')
   const type = searchParams.get('type')
+  const formato = searchParams.get('formato')
   const status = searchParams.get('status')
+  const modalidad = searchParams.get('modalidad')
   const month = searchParams.get('month')
   const year = searchParams.get('year')
 
@@ -37,8 +41,10 @@ export async function GET(request: NextRequest) {
     where: {
       ...(clientId && { clientId }),
       ...(planId && { planId }),
-      ...(type && { type: type as 'REEL' | 'CAROUSEL' | 'FLYER' }),
-      ...(status && { status: status as 'PENDING' | 'EDITING' | 'APPROVED' | 'PUBLISHED' | 'COMPLETED' }),
+      ...(type && { type: type as any }),
+      ...(formato && { formato: formato as any }),
+      ...(status && { status: status as any }),
+      ...(modalidad && { project: { modalidad: modalidad as any } }),
       ...(month || year
         ? {
             plan: {
@@ -51,6 +57,7 @@ export async function GET(request: NextRequest) {
     include: {
       client: { select: { id: true, name: true } },
       plan: { select: { id: true, month: true, year: true } },
+      project: { select: { id: true, nombre: true, modalidad: true } },
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -71,7 +78,9 @@ export async function POST(request: NextRequest) {
       data: {
         clientId: data.clientId,
         planId: data.planId || null,
+        projectId: data.projectId || null,
         type: data.type,
+        formato: data.formato || null,
         title: data.title,
         status: data.status,
         driveLink: data.driveLink || null,
@@ -87,8 +96,18 @@ export async function POST(request: NextRequest) {
       include: {
         client: { select: { id: true, name: true } },
         plan: { select: { id: true, month: true, year: true } },
+        project: { select: { id: true, nombre: true, modalidad: true } },
       },
     })
+
+    // Auto-completar proyecto si todos sus entregables están listos
+    if (content.projectId) {
+      const siblings = await prisma.content.findMany({ where: { projectId: content.projectId } })
+      const doneStatuses = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']
+      if (siblings.every((c) => doneStatuses.includes(c.status))) {
+        await prisma.clientProject.update({ where: { id: content.projectId }, data: { estado: 'COMPLETADO' } })
+      }
+    }
 
     return NextResponse.json(content, { status: 201 })
   } catch (error) {

@@ -5,34 +5,53 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getMonthName } from '@/lib/utils'
 
+const CONTENT_TYPES = [
+  { value: 'VIDEO', label: 'Video' },
+  { value: 'FOTO', label: 'Foto' },
+  { value: 'FLYER', label: 'Flyer' },
+  { value: 'CAROUSEL', label: 'Carrusel' },
+  { value: 'REEL', label: 'Reel' },
+  { value: 'VIDEO_HORIZONTAL', label: 'Video Horizontal' },
+  { value: 'IMAGEN_FLYER', label: 'Imagen/Flyer' },
+  { value: 'EXTRA', label: 'Extra' },
+  { value: 'OTRO', label: 'Otro' },
+]
+
+const FORMATOS = [
+  { value: '', label: 'Sin formato' },
+  { value: 'VERTICAL_9_16', label: 'Vertical 9:16' },
+  { value: 'HORIZONTAL_16_9', label: 'Horizontal 16:9' },
+  { value: 'CUADRADO_1_1', label: 'Cuadrado 1:1' },
+  { value: 'NO_APLICA', label: 'No aplica' },
+]
+
 function NuevoContenidoForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [clients, setClients] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const [form, setForm] = useState({
     clientId: searchParams.get('clientId') || '',
     planId: searchParams.get('planId') || '',
-    type: 'REEL',
+    projectId: searchParams.get('projectId') || '',
+    type: 'VIDEO',
+    formato: '',
     title: '',
     status: 'PENDING',
     driveLink: '',
     publishedLink: '',
     publishedAt: '',
-    views: 0,
-    likes: 0,
-    comments: 0,
-    shares: 0,
-    saves: 0,
+    views: 0, likes: 0, comments: 0, shares: 0, saves: 0,
     observations: '',
   })
 
   useEffect(() => {
-    fetch('/api/clientes').then((r) => r.json()).then(setClients)
+    fetch('/api/clientes').then((r) => r.json()).then(setClients).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -41,8 +60,13 @@ function NuevoContenidoForm() {
         .then((r) => r.ok ? r.json() : [])
         .then((d) => setPlans(Array.isArray(d) ? d : []))
         .catch(() => setPlans([]))
+      fetch(`/api/proyectos?clientId=${form.clientId}`)
+        .then((r) => r.ok ? r.json() : [])
+        .then((d) => setProjects(Array.isArray(d) ? d : []))
+        .catch(() => setProjects([]))
     } else {
       setPlans([])
+      setProjects([])
     }
   }, [form.clientId])
 
@@ -51,7 +75,7 @@ function NuevoContenidoForm() {
     setForm((prev) => ({
       ...prev,
       [name]: type === 'number' ? Number(value) : value,
-      ...(name === 'clientId' ? { planId: '' } : {}),
+      ...(name === 'clientId' ? { planId: '', projectId: '' } : {}),
     }))
   }
 
@@ -63,10 +87,16 @@ function NuevoContenidoForm() {
       const res = await fetch('/api/contenidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, planId: form.planId || null }),
+        body: JSON.stringify({
+          ...form,
+          planId: form.planId || null,
+          projectId: form.projectId || null,
+          formato: form.formato || null,
+        }),
       })
       if (res.ok) {
-        router.push('/contenidos')
+        const dest = form.projectId ? `/proyectos/${form.projectId}` : '/contenidos'
+        router.push(dest)
       } else {
         const data = await res.json()
         setError(data.error || 'Error al crear el contenido')
@@ -88,19 +118,33 @@ function NuevoContenidoForm() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-zinc-50">Nuevo Contenido</h1>
-          <p className="text-zinc-500 text-sm">Registra un nuevo contenido en el plan</p>
+          <p className="text-zinc-500 text-sm">Registra un entregable</p>
         </div>
       </div>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Cliente */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Cliente *</label>
+            <select name="clientId" value={form.clientId} onChange={handleChange} required
+              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
+              <option value="">Selecciona un cliente</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
+            </select>
+          </div>
+
+          {/* Proyecto y Plan */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Cliente *</label>
-              <select name="clientId" value={form.clientId} onChange={handleChange} required
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
-                <option value="">Selecciona un cliente</option>
-                {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                Proyecto <span className="text-zinc-500 font-normal">(opcional)</span>
+              </label>
+              <select name="projectId" value={form.projectId} onChange={handleChange}
+                disabled={!form.clientId}
+                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-40">
+                <option value="">{!form.clientId ? 'Selecciona cliente primero' : 'Sin proyecto'}</option>
+                {projects.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
               </select>
             </div>
             <div>
@@ -108,51 +152,59 @@ function NuevoContenidoForm() {
                 Plan mensual <span className="text-zinc-500 font-normal">(opcional)</span>
               </label>
               <select name="planId" value={form.planId} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                disabled={!form.clientId}>
-                <option value="">
-                  {!form.clientId ? 'Selecciona un cliente primero' : plans.length === 0 ? 'Sin planes disponibles' : 'Sin plan asociado'}
-                </option>
-                {plans.map((p: any) => (
-                  <option key={p.id} value={p.id}>{getMonthName(p.month)} {p.year}</option>
-                ))}
+                disabled={!form.clientId}
+                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-40">
+                <option value="">{!form.clientId ? 'Selecciona cliente primero' : 'Sin plan mensual'}</option>
+                {plans.map((p) => <option key={p.id} value={p.id}>{getMonthName(p.month)} {p.year}</option>)}
               </select>
             </div>
           </div>
 
+          {/* Tipo y Formato */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">Tipo *</label>
               <select name="type" value={form.type} onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
-                <option value="REEL">Reel</option>
-                <option value="CAROUSEL">Carrusel</option>
-                <option value="FLYER">Flyer</option>
+                {CONTENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Formato</label>
+              <select name="formato" value={form.formato} onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
+                {FORMATOS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Estado */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Título *</label>
+              <input name="title" value={form.title} onChange={handleChange} required
+                placeholder="Ej: Video vacacional — corte vertical"
+                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500" />
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">Estado</label>
               <select name="status" value={form.status} onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
                 <option value="PENDING">Pendiente</option>
+                <option value="EN_PROCESO">En Proceso</option>
                 <option value="EDITING">En Edición</option>
                 <option value="APPROVED">Aprobado</option>
+                <option value="ENTREGADO">Entregado</option>
                 <option value="PUBLISHED">Publicado</option>
                 <option value="COMPLETED">Completado</option>
               </select>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Título *</label>
-            <input name="title" value={form.title} onChange={handleChange} required
-              placeholder="Ej: Reel de temporada: tips de verano"
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500" />
-          </div>
-
+          {/* Links */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Link de Drive</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Link de Drive / entrega</label>
               <input name="driveLink" value={form.driveLink} onChange={handleChange} type="url"
                 placeholder="https://drive.google.com/..."
                 className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500" />
@@ -173,7 +225,7 @@ function NuevoContenidoForm() {
 
           {/* Métricas */}
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-3">Métricas</label>
+            <label className="block text-sm font-medium text-zinc-300 mb-3">Métricas <span className="text-zinc-500 font-normal">(opcional, para contenidos de redes)</span></label>
             <div className="grid grid-cols-5 gap-3">
               {[
                 { name: 'views', label: 'Views', icon: '👁' },
@@ -193,7 +245,7 @@ function NuevoContenidoForm() {
 
           <div>
             <label className="block text-sm font-medium text-zinc-300 mb-1.5">Observaciones</label>
-            <textarea name="observations" value={form.observations} onChange={handleChange} rows={3}
+            <textarea name="observations" value={form.observations} onChange={handleChange} rows={2}
               className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 resize-none" />
           </div>
 
