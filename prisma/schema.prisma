@@ -115,8 +115,8 @@ model Content {
   id            String        @id @default(cuid())
   clientId      String
   client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  planId        String
-  plan          MonthlyPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId        String?
+  plan          MonthlyPlan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
   type          ContentType
   title         String
   status        ContentStatus @default(PENDING)
