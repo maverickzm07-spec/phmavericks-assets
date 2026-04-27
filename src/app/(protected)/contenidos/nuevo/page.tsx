@@ -38,8 +38,9 @@ function NuevoContenidoForm() {
   useEffect(() => {
     if (form.clientId) {
       fetch(`/api/planes?clientId=${form.clientId}`)
-        .then((r) => r.json())
-        .then(setPlans)
+        .then((r) => r.ok ? r.json() : [])
+        .then((d) => setPlans(Array.isArray(d) ? d : []))
+        .catch(() => setPlans([]))
     } else {
       setPlans([])
     }
@@ -62,7 +63,7 @@ function NuevoContenidoForm() {
       const res = await fetch('/api/contenidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, planId: form.planId || null }),
       })
       if (res.ok) {
         router.push('/contenidos')
@@ -103,11 +104,15 @@ function NuevoContenidoForm() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Plan mensual *</label>
-              <select name="planId" value={form.planId} onChange={handleChange} required
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500"
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                Plan mensual <span className="text-zinc-500 font-normal">(opcional)</span>
+              </label>
+              <select name="planId" value={form.planId} onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-40 disabled:cursor-not-allowed"
                 disabled={!form.clientId}>
-                <option value="">Selecciona un plan</option>
+                <option value="">
+                  {!form.clientId ? 'Selecciona un cliente primero' : plans.length === 0 ? 'Sin planes disponibles' : 'Sin plan asociado'}
+                </option>
                 {plans.map((p: any) => (
                   <option key={p.id} value={p.id}>{getMonthName(p.month)} {p.year}</option>
                 ))}
