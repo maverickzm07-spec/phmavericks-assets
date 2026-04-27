@@ -10,10 +10,6 @@ const CONTENT_TYPES = [
   { value: 'FOTO', label: 'Foto' },
   { value: 'FLYER', label: 'Flyer' },
   { value: 'CAROUSEL', label: 'Carrusel' },
-  { value: 'REEL', label: 'Reel' },
-  { value: 'VIDEO_HORIZONTAL', label: 'Video Horizontal' },
-  { value: 'IMAGEN_FLYER', label: 'Imagen/Flyer' },
-  { value: 'EXTRA', label: 'Extra' },
   { value: 'OTRO', label: 'Otro' },
 ]
 

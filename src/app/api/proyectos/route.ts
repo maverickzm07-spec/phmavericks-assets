@@ -4,21 +4,23 @@ import { getUserFromRequest } from '@/lib/auth'
 import { canWriteContents } from '@/lib/permissions'
 import { z } from 'zod'
 
+const VALID_CONTENT_TYPES = ['REEL', 'CAROUSEL', 'FLYER', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA', 'VIDEO', 'OTRO'] as const
+const VALID_FORMATS = ['VERTICAL_9_16', 'HORIZONTAL_16_9', 'CUADRADO_1_1', 'NO_APLICA'] as const
+
 const createSchema = z.object({
-  clientId: z.string().min(1),
+  clientId: z.string().min(1, 'El cliente es obligatorio'),
   serviceId: z.string().nullable().optional(),
   monthlyPlanId: z.string().nullable().optional(),
-  nombre: z.string().min(1),
-  modalidad: z.enum(['MENSUAL', 'OCASIONAL']).default('OCASIONAL'),
+  nombre: z.string().min(1, 'El nombre del proyecto es obligatorio'),
+  modalidad: z.enum(['MENSUAL', 'OCASIONAL'], { errorMap: () => ({ message: 'Modalidad inválida' }) }).default('OCASIONAL'),
   estado: z.enum(['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO', 'ENTREGADO', 'COMPLETADO', 'ATRASADO']).default('PENDIENTE'),
-  linkEntrega: z.string().url().optional().or(z.literal('')),
-  fechaEntrega: z.string().optional(),
-  observaciones: z.string().optional(),
-  // Entregables a generar automáticamente
+  linkEntrega: z.union([z.string().url('El link de entrega debe ser una URL válida'), z.literal(''), z.null()]).optional(),
+  fechaEntrega: z.union([z.string(), z.null()]).optional(),
+  observaciones: z.union([z.string(), z.null()]).optional(),
   entregables: z.array(z.object({
-    type: z.enum(['REEL', 'CAROUSEL', 'FLYER', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA', 'VIDEO', 'OTRO']),
-    formato: z.enum(['VERTICAL_9_16', 'HORIZONTAL_16_9', 'CUADRADO_1_1', 'NO_APLICA']).nullable().optional(),
-    title: z.string().min(1),
+    type: z.enum(VALID_CONTENT_TYPES, { errorMap: () => ({ message: 'Tipo de contenido inválido' }) }),
+    formato: z.enum(VALID_FORMATS).nullable().optional(),
+    title: z.string().min(1, 'El título del entregable es obligatorio'),
   })).optional(),
 })
 
@@ -102,8 +104,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(projectWithContents, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
+      const messages = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(' | ')
+      return NextResponse.json({ error: `Datos inválidos — ${messages}`, details: error.errors }, { status: 400 })
     }
+    console.error('[POST /api/proyectos]', error)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

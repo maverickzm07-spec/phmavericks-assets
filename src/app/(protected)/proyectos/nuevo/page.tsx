@@ -10,9 +10,6 @@ const CONTENT_TYPES = [
   { value: 'FOTO', label: 'Foto' },
   { value: 'FLYER', label: 'Flyer' },
   { value: 'CAROUSEL', label: 'Carrusel' },
-  { value: 'REEL', label: 'Reel' },
-  { value: 'VIDEO_HORIZONTAL', label: 'Video Horizontal' },
-  { value: 'IMAGEN_FLYER', label: 'Imagen/Flyer' },
   { value: 'OTRO', label: 'Otro' },
 ]
 
@@ -77,8 +74,8 @@ function NuevoProyectoForm() {
     const svc = services.find((s) => s.id === form.serviceId)
     if (!svc) return
     const auto: Entregable[] = []
-    for (let i = 0; i < svc.cantidadReels; i++) auto.push({ type: 'REEL', formato: 'VERTICAL_9_16', title: `Reel ${i + 1}` })
-    for (let i = 0; i < svc.cantidadVideosHorizontales; i++) auto.push({ type: 'VIDEO', formato: 'HORIZONTAL_16_9', title: `Video Horizontal ${i + 1}` })
+    for (let i = 0; i < svc.cantidadReels; i++) auto.push({ type: 'VIDEO', formato: 'VERTICAL_9_16', title: `Video ${i + 1}` })
+    for (let i = 0; i < svc.cantidadVideosHorizontales; i++) auto.push({ type: 'VIDEO', formato: 'HORIZONTAL_16_9', title: `Video horizontal ${i + 1}` })
     for (let i = 0; i < svc.cantidadFotos; i++) auto.push({ type: 'FOTO', formato: 'NO_APLICA', title: `Foto ${i + 1}` })
     for (let i = 0; i < svc.cantidadImagenesFlyers; i++) auto.push({ type: 'FLYER', formato: 'CUADRADO_1_1', title: `Flyer ${i + 1}` })
     if (auto.length > 0) setEntregables(auto)
@@ -104,17 +101,26 @@ function NuevoProyectoForm() {
     e.preventDefault()
     setLoading(true)
     setError('')
+
+    if (!form.clientId) { setError('Selecciona un cliente'); setLoading(false); return }
+    if (!form.nombre.trim()) { setError('El nombre del proyecto es obligatorio'); setLoading(false); return }
+
     const validEntregables = entregables.filter((e) => e.title.trim())
+
     try {
       const res = await fetch('/api/proyectos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
+          clientId: form.clientId,
           serviceId: form.serviceId || null,
           monthlyPlanId: form.monthlyPlanId || null,
-          linkEntrega: form.linkEntrega || null,
+          nombre: form.nombre.trim(),
+          modalidad: form.modalidad,
+          estado: form.estado,
+          linkEntrega: form.linkEntrega.trim() || '',
           fechaEntrega: form.fechaEntrega || null,
+          observaciones: form.observaciones.trim() || null,
           entregables: validEntregables.length > 0 ? validEntregables : undefined,
         }),
       })
