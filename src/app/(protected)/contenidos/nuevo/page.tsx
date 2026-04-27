@@ -19,7 +19,7 @@ function NuevoContenidoForm() {
     planId: searchParams.get('planId') || '',
     type: 'REEL',
     title: '',
-    status: 'PENDING',
+    status: 'PENDIENTE',
     driveLink: '',
     publishedLink: '',
     publishedAt: '',
@@ -126,19 +126,20 @@ function NuevoContenidoForm() {
               <select name="type" value={form.type} onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
                 <option value="REEL">Reel</option>
-                <option value="CAROUSEL">Carrusel</option>
-                <option value="FLYER">Flyer</option>
+                <option value="VIDEO_HORIZONTAL">Video Horizontal</option>
+                <option value="FOTO">Foto</option>
+                <option value="IMAGEN_FLYER">Imagen / Flyer</option>
+                <option value="EXTRA">Extra</option>
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">Estado</label>
               <select name="status" value={form.status} onChange={handleChange}
                 className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
-                <option value="PENDING">Pendiente</option>
-                <option value="EDITING">En Edición</option>
-                <option value="APPROVED">Aprobado</option>
-                <option value="PUBLISHED">Publicado</option>
-                <option value="COMPLETED">Completado</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="EN_PROCESO">En Proceso</option>
+                <option value="ENTREGADO">Entregado</option>
+                <option value="PUBLICADO">Publicado</option>
               </select>
             </div>
           </div>

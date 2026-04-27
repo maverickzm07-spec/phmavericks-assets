@@ -6,10 +6,10 @@ import { z } from 'zod'
 
 const contentSchema = z.object({
   clientId: z.string().min(1),
-  planId: z.string().min(1),
-  type: z.enum(['REEL', 'CAROUSEL', 'FLYER']),
+  planId: z.string().nullable().optional(),
+  type: z.enum(['REEL', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA']),
   title: z.string().min(1),
-  status: z.enum(['PENDING', 'EDITING', 'APPROVED', 'PUBLISHED', 'COMPLETED']).default('PENDING'),
+  status: z.enum(['PENDIENTE', 'EN_PROCESO', 'ENTREGADO', 'PUBLICADO']).default('PENDIENTE'),
   driveLink: z.string().url().optional().or(z.literal('')),
   publishedLink: z.string().url().optional().or(z.literal('')),
   publishedAt: z.string().optional(),
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
     where: {
       ...(clientId && { clientId }),
       ...(planId && { planId }),
-      ...(type && { type: type as 'REEL' | 'CAROUSEL' | 'FLYER' }),
-      ...(status && { status: status as 'PENDING' | 'EDITING' | 'APPROVED' | 'PUBLISHED' | 'COMPLETED' }),
+      ...(type && { type: type as 'REEL' | 'VIDEO_HORIZONTAL' | 'FOTO' | 'IMAGEN_FLYER' | 'EXTRA' }),
+      ...(status && { status: status as 'PENDIENTE' | 'EN_PROCESO' | 'ENTREGADO' | 'PUBLICADO' }),
       ...(month || year
         ? {
             plan: {
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const content = await prisma.content.create({
       data: {
         clientId: data.clientId,
-        planId: data.planId,
+        planId: data.planId || null,
         type: data.type,
         title: data.title,
         status: data.status,
