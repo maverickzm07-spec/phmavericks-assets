@@ -7,20 +7,20 @@ import {
   updateGoogleEvent,
   listGoogleEvents,
   buildDescription,
+  isReadOnlyGoogleEvent,
+  isReadOnlyError,
   type GoogleEvent,
 } from '@/lib/google-calendar'
 
-// Convierte un evento de Google a fechas válidas para PHM.
+// Convierte fechas de Google a objetos Date válidos.
 // Acepta dateTime (con hora) o date (día completo → 09:00–10:00).
 function parseGoogleDates(gEv: GoogleEvent): { start: Date; end: Date } | null {
   try {
     let startStr = gEv.start?.dateTime
     let endStr = gEv.end?.dateTime
 
-    // Evento de día completo: usar 09:00–10:00 del día
     if (!startStr && gEv.start?.date) startStr = `${gEv.start.date}T09:00:00`
     if (!endStr && gEv.end?.date) {
-      // Google end.date es exclusivo (día siguiente), usamos la misma fecha que start
       const d = gEv.start?.date || gEv.end.date
       endStr = `${d}T10:00:00`
     }
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
   let phmToGoogle = 0
   let googleToPHM = 0
   let cancelled = 0
+  let readOnly = 0
   const errorDetails: string[] = []
 
   // ── 1. PHM → Google ──────────────────────────────────────────
@@ -77,11 +78,22 @@ export async function POST(request: NextRequest) {
       if (ev.googleEventId) {
         const result = await updateGoogleEvent(accessToken, ev.googleEventId, payload)
         if (result === null) {
-          const created = await createGoogleEvent(accessToken, payload)
-          await prisma.calendarEvent.update({
-            where: { id: ev.id },
-            data: { googleEventId: created.id, syncStatus: 'SYNCED' },
-          })
+          // Fue eliminado en Google → recrear solo si es evento PHM propio
+          if (ev.source === 'PHM') {
+            const created = await createGoogleEvent(accessToken, payload)
+            await prisma.calendarEvent.update({
+              where: { id: ev.id },
+              data: { googleEventId: created.id, syncStatus: 'SYNCED' },
+            })
+          } else {
+            // Evento externo eliminado en Google → marcar cancelado en PHM
+            await prisma.calendarEvent.update({
+              where: { id: ev.id },
+              data: { status: 'CANCELADO', syncStatus: 'SYNCED' },
+            })
+            cancelled++
+            continue
+          }
         } else {
           await prisma.calendarEvent.update({ where: { id: ev.id }, data: { syncStatus: 'SYNCED' } })
         }
@@ -95,9 +107,21 @@ export async function POST(request: NextRequest) {
       phmToGoogle++
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      console.error(`PHM→Google "${ev.title}":`, msg)
-      errorDetails.push(`PHM→Google "${ev.title}": ${msg}`)
-      await prisma.calendarEvent.update({ where: { id: ev.id }, data: { syncStatus: 'ERROR' } }).catch(() => {})
+      if (isReadOnlyError(msg)) {
+        // Evento de solo lectura (vuelo, reserva, etc.) → ignorar sin error
+        readOnly++
+        await prisma.calendarEvent.update({
+          where: { id: ev.id },
+          data: { syncStatus: 'SYNCED' },
+        }).catch(() => {})
+      } else {
+        console.error(`PHM→Google "${ev.title}":`, msg)
+        errorDetails.push(`"${ev.title}": ${msg}`)
+        await prisma.calendarEvent.update({
+          where: { id: ev.id },
+          data: { syncStatus: 'ERROR' },
+        }).catch(() => {})
+      }
     }
   }
 
@@ -113,12 +137,12 @@ export async function POST(request: NextRequest) {
       phmToGoogle,
       googleToPHM: 0,
       cancelled: 0,
+      readOnly,
       errors: errorDetails.length + 1,
       errorDetails: [...errorDetails, `Google Calendar: ${msg}`],
     })
   }
 
-  // Mapa googleEventId → evento PHM (incluye los recién actualizados)
   const phmByGoogleId = await prisma.calendarEvent.findMany({
     where: { googleEventId: { not: null } },
     select: { id: true, googleEventId: true, updatedAt: true },
@@ -126,7 +150,7 @@ export async function POST(request: NextRequest) {
   const phmGoogleMap = new Map(phmByGoogleId.map(e => [e.googleEventId!, e]))
 
   for (const gEv of googleEvents) {
-    // ── Primero verificar si está cancelado (puede no tener fechas) ──
+    // Verificar cancelados primero (pueden no tener fechas)
     if (gEv.status === 'cancelled') {
       const existing = phmGoogleMap.get(gEv.id)
       if (existing) {
@@ -136,25 +160,19 @@ export async function POST(request: NextRequest) {
             data: { status: 'CANCELADO', syncStatus: 'SYNCED' },
           })
           cancelled++
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          errorDetails.push(`Cancelar "${gEv.summary || gEv.id}": ${msg}`)
-        }
+        } catch { /* ignorar */ }
       }
       continue
     }
 
-    // ── Parsear fechas (dateTime o date) ──
     const dates = parseGoogleDates(gEv)
-    if (!dates) {
-      // Evento sin fechas válidas, saltar silenciosamente
-      continue
-    }
+    if (!dates) continue
 
     const existing = phmGoogleMap.get(gEv.id)
+    const externalEvent = isReadOnlyGoogleEvent(gEv)
 
     if (existing) {
-      // Actualizar si Google es más reciente
+      // Actualizar en PHM si Google es más reciente
       const googleUpdated = gEv.updated ? new Date(gEv.updated) : new Date(0)
       if (isNaN(googleUpdated.getTime()) || googleUpdated > existing.updatedAt) {
         try {
@@ -173,12 +191,16 @@ export async function POST(request: NextRequest) {
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)
           console.error(`Google→PHM actualizar "${gEv.summary}":`, msg)
-          errorDetails.push(`Google→PHM actualizar "${gEv.summary || gEv.id}": ${msg}`)
+          errorDetails.push(`"${gEv.summary || gEv.id}": ${msg}`)
         }
       }
     } else {
-      // Evento nuevo en Google → crear en PHM
+      // Evento nuevo desde Google → importar para visualización
       try {
+        const notesValue = externalEvent
+          ? [gEv.description?.trim(), '(Evento externo — solo lectura)'].filter(Boolean).join('\n')
+          : gEv.description?.trim() || null
+
         await prisma.calendarEvent.create({
           data: {
             title: gEv.summary?.trim() || 'Sin título',
@@ -186,7 +208,7 @@ export async function POST(request: NextRequest) {
             startDateTime: dates.start,
             endDateTime: dates.end,
             location: gEv.location?.trim() || null,
-            notes: gEv.description?.trim() || null,
+            notes: notesValue,
             status: 'AGENDADO',
             source: 'GOOGLE',
             googleEventId: gEv.id,
@@ -197,7 +219,7 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
         console.error(`Google→PHM crear "${gEv.summary}":`, msg)
-        errorDetails.push(`Google→PHM crear "${gEv.summary || gEv.id}": ${msg}`)
+        errorDetails.push(`"${gEv.summary || gEv.id}": ${msg}`)
       }
     }
   }
@@ -208,6 +230,7 @@ export async function POST(request: NextRequest) {
     phmToGoogle,
     googleToPHM,
     cancelled,
+    readOnly,
     errors: errorDetails.length,
     errorDetails,
   })

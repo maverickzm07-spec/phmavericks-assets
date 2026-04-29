@@ -170,6 +170,7 @@ export default function CalendarioPage() {
         if (data.phmToGoogle > 0) parts.push(`${data.phmToGoogle} enviado${data.phmToGoogle !== 1 ? 's' : ''} a Google`)
         if (data.googleToPHM > 0) parts.push(`${data.googleToPHM} importado${data.googleToPHM !== 1 ? 's' : ''} de Google`)
         if (data.cancelled > 0) parts.push(`${data.cancelled} cancelado${data.cancelled !== 1 ? 's' : ''}`)
+        if (data.readOnly > 0) parts.push(`${data.readOnly} evento${data.readOnly !== 1 ? 's' : ''} externo${data.readOnly !== 1 ? 's' : ''} (solo lectura)`)
 
         let msg = parts.length > 0 ? `Sincronizado: ${parts.join(' · ')}` : 'Todo sincronizado'
 

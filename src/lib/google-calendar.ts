@@ -15,6 +15,21 @@ export interface GoogleEvent {
   description?: string
   status: string
   updated: string
+  eventType?: string  // 'default' | 'focusTime' | 'outOfOffice' | 'workingLocation' | 'fromGmail'
+}
+
+export function isReadOnlyGoogleEvent(gEv: GoogleEvent): boolean {
+  return !!gEv.eventType && gEv.eventType !== 'default'
+}
+
+export function isReadOnlyError(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('event type cannot be changed') ||
+    lower.includes('cannot be changed') ||
+    lower.includes('not the organizer') ||
+    lower.includes('forbidden') && lower.includes('event')
+  )
 }
 
 export function buildDescription(
