@@ -530,38 +530,46 @@ export default function CalendarioPage() {
                     {cell.day}
                   </span>
 
-                  {/* Indicadores de eventos */}
+                  {/* Indicador dorado — móvil: punto, escritorio: títulos + punto */}
                   {cellEvents.length > 0 && (
-                    <div className="flex flex-wrap gap-0.5 mt-auto">
-                      {cellEvents.slice(0, 3).map(ev => (
+                    <>
+                      {/* Punto dorado visible en móvil */}
+                      <div className="sm:hidden flex items-center gap-0.5 mt-auto">
                         <span
-                          key={ev.id}
-                          className="block w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: TYPE_COLORS[ev.type] || '#d4af37' }}
-                          title={ev.title}
+                          className="block w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: '#C9A84C' }}
                         />
-                      ))}
-                      {cellEvents.length > 3 && (
-                        <span className="text-[9px] text-zinc-500 leading-none mt-0.5">+{cellEvents.length - 3}</span>
-                      )}
-                    </div>
-                  )}
+                        {cellEvents.length > 1 && (
+                          <span className="text-[9px] leading-none" style={{ color: '#C9A84C' }}>
+                            {cellEvents.length}
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Títulos de eventos (solo escritorio) */}
-                  <div className="hidden sm:flex flex-col gap-0.5 w-full">
-                    {cellEvents.slice(0, 2).map(ev => (
-                      <span
-                        key={ev.id}
-                        className="text-[10px] leading-tight px-1 py-0.5 rounded truncate w-full"
-                        style={{ backgroundColor: TYPE_COLORS[ev.type] + '33', color: TYPE_COLORS[ev.type] }}
-                      >
-                        {formatTime(ev.startDateTime)} {ev.title}
-                      </span>
-                    ))}
-                    {cellEvents.length > 2 && (
-                      <span className="text-[10px] text-zinc-500 px-1">+{cellEvents.length - 2} más</span>
-                    )}
-                  </div>
+                      {/* Títulos en escritorio + línea dorada inferior */}
+                      <div className="hidden sm:flex flex-col gap-0.5 w-full">
+                        {cellEvents.slice(0, 2).map(ev => (
+                          <span
+                            key={ev.id}
+                            className="text-[10px] leading-tight px-1 py-0.5 rounded truncate w-full"
+                            style={{ backgroundColor: '#C9A84C22', color: '#C9A84C' }}
+                          >
+                            {formatTime(ev.startDateTime)} {ev.title}
+                          </span>
+                        ))}
+                        {cellEvents.length > 2 && (
+                          <span className="text-[10px] px-1" style={{ color: '#C9A84C' }}>
+                            +{cellEvents.length - 2} más
+                          </span>
+                        )}
+                        {/* Línea dorada inferior */}
+                        <div
+                          className="mt-auto h-0.5 w-full rounded-full"
+                          style={{ backgroundColor: '#C9A84C' }}
+                        />
+                      </div>
+                    </>
+                  )}
                 </button>
               )
             })}
