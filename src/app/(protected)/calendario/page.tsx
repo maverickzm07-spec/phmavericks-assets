@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 // ── Tipos ─────────────────────────────────────────────────────
 
@@ -119,6 +119,68 @@ export default function CalendarioPage() {
   // Confirmación eliminación
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  // Google Calendar
+  const [googleConnected, setGoogleConnected] = useState(false)
+  const [googleConfigured, setGoogleConfigured] = useState(true)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
+  const googleChecked = useRef(false)
+
+  useEffect(() => {
+    if (googleChecked.current) return
+    googleChecked.current = true
+
+    // Detectar parámetro ?google=... tras el OAuth redirect
+    const params = new URLSearchParams(window.location.search)
+    const g = params.get('google')
+    if (g === 'connected') {
+      setSyncMsg('Google Calendar conectado correctamente')
+      setGoogleConnected(true)
+      window.history.replaceState({}, '', '/calendario')
+    } else if (g === 'error') {
+      setSyncMsg('Error al conectar con Google Calendar')
+      window.history.replaceState({}, '', '/calendario')
+    } else if (g === 'no-config') {
+      setSyncMsg('Configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en el servidor')
+      window.history.replaceState({}, '', '/calendario')
+    }
+
+    fetch('/api/calendario/google-status')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) {
+          setGoogleConnected(d.connected)
+          setGoogleConfigured(d.configured)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleGoogleSync = async () => {
+    setSyncing(true)
+    setSyncMsg('')
+    try {
+      const res = await fetch('/api/calendario/sync', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setSyncMsg(data.error || 'Error al sincronizar')
+      } else {
+        setSyncMsg(`Sincronizado: ${data.synced} evento${data.synced !== 1 ? 's' : ''}${data.errors > 0 ? ` (${data.errors} error${data.errors !== 1 ? 'es' : ''})` : ''}`)
+        fetchMonthEvents()
+      }
+    } catch {
+      setSyncMsg('Error de conexión')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const handleGoogleDisconnect = async () => {
+    await fetch('/api/auth/google/disconnect', { method: 'POST' })
+    setGoogleConnected(false)
+    setSyncMsg('Google Calendar desconectado')
+  }
 
   // ── Fetch eventos del mes ──────────────────────────────────
 
@@ -343,18 +405,54 @@ export default function CalendarioPage() {
             </svg>
             Nuevo evento
           </button>
-          <button
-            onClick={() => {}}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 border border-zinc-700 hover:border-zinc-500 hover:text-zinc-200 transition-colors"
-            title="Conectar Google Calendar (próximamente)"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Sincronizar Google
-          </button>
+          {googleConnected ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGoogleSync}
+                disabled={syncing}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 border border-zinc-600 hover:border-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+              >
+                <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {syncing ? 'Sincronizando...' : 'Sincronizar'}
+              </button>
+              <button
+                onClick={handleGoogleDisconnect}
+                className="px-2 py-2 rounded-lg text-xs text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                title="Desconectar Google Calendar"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <a
+              href={googleConfigured ? '/api/auth/google' : undefined}
+              onClick={!googleConfigured ? () => setSyncMsg('Configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en el servidor') : undefined}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 border border-zinc-700 hover:border-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Conectar Google Calendar
+            </a>
+          )}
         </div>
       </div>
+
+      {/* Mensaje de estado Google */}
+      {syncMsg && (
+        <div className={`mx-4 sm:mx-6 mt-2 px-4 py-2.5 rounded-lg text-sm flex items-center justify-between gap-3 ${syncMsg.includes('Error') || syncMsg.includes('error') || syncMsg.includes('Configura') ? 'bg-red-950/60 border border-red-900 text-red-300' : 'bg-zinc-800 border border-zinc-700 text-zinc-300'}`}>
+          <span>{syncMsg}</span>
+          <button onClick={() => setSyncMsg('')} className="text-zinc-500 hover:text-zinc-300 flex-shrink-0">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Navegación del mes */}
       <div className="px-4 sm:px-6 py-4 flex items-center justify-between">

@@ -271,6 +271,16 @@ model VerificationCode {
   @@index([email])
 }
 
+// ── Google Calendar Token (singleton) ────────────────────────
+
+model GoogleToken {
+  id           String   @id @default("singleton")
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  updatedAt    DateTime @updatedAt
+}
+
 // ── Módulo Calendario ─────────────────────────────────────────
 
 enum EventType {
