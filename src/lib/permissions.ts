@@ -81,4 +81,5 @@ export const NAV_ROLES: Record<string, string[]> = {
   '/reportes':   ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'SOLO_LECTURA'],
   '/ingresos':   ['SUPER_ADMIN', 'ADMIN'],
   '/usuarios':   ['SUPER_ADMIN'],
+  '/calendario': ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
 }

@@ -270,3 +270,50 @@ model VerificationCode {
 
   @@index([email])
 }
+
+// ── Módulo Calendario ─────────────────────────────────────────
+
+enum EventType {
+  GRABACION
+  SESION_FOTOGRAFICA
+  REUNION
+  ENTREGA
+  EDICION
+  EVENTO
+  OTRO
+}
+
+enum EventStatus {
+  AGENDADO
+  REALIZADO
+  CANCELADO
+}
+
+enum EventSource {
+  PHM
+  GOOGLE
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  ERROR
+}
+
+model CalendarEvent {
+  id            String      @id @default(cuid())
+  title         String
+  type          EventType   @default(OTRO)
+  startDateTime DateTime
+  endDateTime   DateTime
+  location      String?
+  notes         String?
+  clientId      String?
+  clientName    String?
+  status        EventStatus @default(AGENDADO)
+  googleEventId String?
+  source        EventSource @default(PHM)
+  syncStatus    SyncStatus  @default(PENDING)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
