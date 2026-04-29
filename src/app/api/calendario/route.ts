@@ -6,12 +6,12 @@ import { z } from 'zod'
 const eventSchema = z.object({
   title: z.string().min(1),
   type: z.enum(['GRABACION', 'SESION_FOTOGRAFICA', 'REUNION', 'ENTREGA', 'EDICION', 'EVENTO', 'OTRO']).default('OTRO'),
-  startDateTime: z.string(),
-  endDateTime: z.string(),
-  location: z.string().optional(),
-  notes: z.string().optional(),
-  clientId: z.string().optional().nullable(),
-  clientName: z.string().optional().nullable(),
+  startDateTime: z.string().refine(v => !isNaN(Date.parse(v)), { message: 'startDateTime inválido' }),
+  endDateTime: z.string().refine(v => !isNaN(Date.parse(v)), { message: 'endDateTime inválido' }),
+  location: z.string().nullish(),
+  notes: z.string().nullish(),
+  clientId: z.string().nullish(),
+  clientName: z.string().nullish(),
   status: z.enum(['AGENDADO', 'REALIZADO', 'CANCELADO']).default('AGENDADO'),
 })
 
@@ -87,8 +87,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(event, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
+      const details = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      return NextResponse.json({ error: `Datos inválidos: ${details}` }, { status: 400 })
     }
+    console.error('POST /api/calendario error:', error)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }

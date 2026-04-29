@@ -6,12 +6,12 @@ import { z } from 'zod'
 const eventSchema = z.object({
   title: z.string().min(1).optional(),
   type: z.enum(['GRABACION', 'SESION_FOTOGRAFICA', 'REUNION', 'ENTREGA', 'EDICION', 'EVENTO', 'OTRO']).optional(),
-  startDateTime: z.string().optional(),
-  endDateTime: z.string().optional(),
-  location: z.string().optional().nullable(),
-  notes: z.string().optional().nullable(),
-  clientId: z.string().optional().nullable(),
-  clientName: z.string().optional().nullable(),
+  startDateTime: z.string().refine(v => !isNaN(Date.parse(v)), { message: 'startDateTime inválido' }).optional(),
+  endDateTime: z.string().refine(v => !isNaN(Date.parse(v)), { message: 'endDateTime inválido' }).optional(),
+  location: z.string().nullish(),
+  notes: z.string().nullish(),
+  clientId: z.string().nullish(),
+  clientName: z.string().nullish(),
   status: z.enum(['AGENDADO', 'REALIZADO', 'CANCELADO']).optional(),
 })
 
@@ -51,8 +51,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json(event)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
+      const details = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      return NextResponse.json({ error: `Datos inválidos: ${details}` }, { status: 400 })
     }
+    console.error('PUT /api/calendario/[id] error:', error)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
 }
