@@ -166,7 +166,12 @@ export default function CalendarioPage() {
       if (!res.ok) {
         setSyncMsg(data.error || 'Error al sincronizar')
       } else {
-        setSyncMsg(`Sincronizado: ${data.synced} evento${data.synced !== 1 ? 's' : ''}${data.errors > 0 ? ` (${data.errors} error${data.errors !== 1 ? 'es' : ''})` : ''}`)
+        const parts: string[] = []
+        if (data.phmToGoogle > 0) parts.push(`${data.phmToGoogle} enviado${data.phmToGoogle !== 1 ? 's' : ''} a Google`)
+        if (data.googleToPHM > 0) parts.push(`${data.googleToPHM} importado${data.googleToPHM !== 1 ? 's' : ''} de Google`)
+        if (data.cancelled > 0) parts.push(`${data.cancelled} cancelado${data.cancelled !== 1 ? 's' : ''}`)
+        if (data.errors > 0) parts.push(`${data.errors} error${data.errors !== 1 ? 'es' : ''}`)
+        setSyncMsg(parts.length > 0 ? `Sincronizado: ${parts.join(' · ')}` : 'Todo sincronizado')
         fetchMonthEvents()
       }
     } catch {

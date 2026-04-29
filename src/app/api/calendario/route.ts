@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { z } from 'zod'
+import { getValidAccessToken, createGoogleEvent, buildDescription } from '@/lib/google-calendar'
 
 const eventSchema = z.object({
   title: z.string().min(1),
@@ -83,6 +84,26 @@ export async function POST(request: NextRequest) {
         syncStatus: 'PENDING',
       },
     })
+
+    // Empujar a Google Calendar si está conectado
+    try {
+      const accessToken = await getValidAccessToken()
+      const gEvent = await createGoogleEvent(accessToken, {
+        title: event.title,
+        startDateTime: event.startDateTime.toISOString(),
+        endDateTime: event.endDateTime.toISOString(),
+        location: event.location,
+        description: buildDescription(event.type, event.clientName, event.notes),
+      })
+      await prisma.calendarEvent.update({
+        where: { id: event.id },
+        data: { googleEventId: gEvent.id, syncStatus: 'SYNCED' },
+      })
+      event.googleEventId = gEvent.id
+      event.syncStatus = 'SYNCED' as typeof event.syncStatus
+    } catch {
+      // Sin Google conectado: continuar sin error
+    }
 
     return NextResponse.json(event, { status: 201 })
   } catch (error) {

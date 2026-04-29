@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { z } from 'zod'
+import { getValidAccessToken, createGoogleEvent, updateGoogleEvent, deleteGoogleEvent, buildDescription } from '@/lib/google-calendar'
 
 const eventSchema = z.object({
   title: z.string().min(1).optional(),
@@ -48,6 +49,39 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       data: updateData,
     })
 
+    // Actualizar en Google Calendar si está conectado
+    try {
+      const accessToken = await getValidAccessToken()
+      const payload = {
+        title: event.title,
+        startDateTime: event.startDateTime.toISOString(),
+        endDateTime: event.endDateTime.toISOString(),
+        location: event.location,
+        description: buildDescription(event.type, event.clientName, event.notes),
+      }
+      if (event.googleEventId) {
+        const result = await updateGoogleEvent(accessToken, event.googleEventId, payload)
+        if (result === null) {
+          // Fue eliminado en Google, lo recreamos
+          const created = await createGoogleEvent(accessToken, payload)
+          await prisma.calendarEvent.update({
+            where: { id: event.id },
+            data: { googleEventId: created.id, syncStatus: 'SYNCED' },
+          })
+        } else {
+          await prisma.calendarEvent.update({ where: { id: event.id }, data: { syncStatus: 'SYNCED' } })
+        }
+      } else {
+        const created = await createGoogleEvent(accessToken, payload)
+        await prisma.calendarEvent.update({
+          where: { id: event.id },
+          data: { googleEventId: created.id, syncStatus: 'SYNCED' },
+        })
+      }
+    } catch {
+      // Sin Google conectado: continuar sin error
+    }
+
     return NextResponse.json(event)
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -62,6 +96,18 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
+  const event = await prisma.calendarEvent.findUnique({ where: { id: params.id } })
+
+  // Eliminar en Google Calendar si está conectado
+  if (event?.googleEventId) {
+    try {
+      const accessToken = await getValidAccessToken()
+      await deleteGoogleEvent(accessToken, event.googleEventId)
+    } catch {
+      // Sin Google conectado: continuar sin error
+    }
+  }
 
   await prisma.calendarEvent.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })

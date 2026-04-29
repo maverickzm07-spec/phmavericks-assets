@@ -1,9 +1,33 @@
 import { prisma } from './prisma'
+import { TYPE_LABELS_ES } from './calendar-constants'
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const CALENDAR_API = 'https://www.googleapis.com/calendar/v3'
 const TIMEZONE = 'America/Mexico_City'
+
+export interface GoogleEvent {
+  id: string
+  summary?: string
+  start: { dateTime?: string; date?: string }
+  end: { dateTime?: string; date?: string }
+  location?: string
+  description?: string
+  status: string
+  updated: string
+}
+
+export function buildDescription(
+  type: string | null | undefined,
+  clientName: string | null | undefined,
+  notes: string | null | undefined,
+): string | undefined {
+  const parts: string[] = []
+  if (type && type !== 'OTRO') parts.push(`Tipo: ${TYPE_LABELS_ES[type] || type}`)
+  if (clientName) parts.push(`Cliente: ${clientName}`)
+  if (notes) parts.push(`\n${notes}`)
+  return parts.length > 0 ? parts.join('\n') : undefined
+}
 
 export function getAuthUrl(): string {
   const params = new URLSearchParams({
@@ -119,4 +143,43 @@ export async function updateGoogleEvent(accessToken: string, googleEventId: stri
   const data = await res.json()
   if (!res.ok) throw new Error(data.error?.message || 'Error al actualizar evento en Google')
   return data as { id: string }
+}
+
+export async function deleteGoogleEvent(accessToken: string, googleEventId: string): Promise<void> {
+  const res = await fetch(`${CALENDAR_API}/calendars/primary/events/${googleEventId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (res.status !== 204 && res.status !== 404) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error?.message || 'Error al eliminar evento en Google')
+  }
+}
+
+export async function listGoogleEvents(accessToken: string, timeMin: Date, timeMax: Date): Promise<GoogleEvent[]> {
+  const all: GoogleEvent[] = []
+  let pageToken: string | undefined
+
+  do {
+    const params = new URLSearchParams({
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: 'true',
+      showDeleted: 'true',
+      maxResults: '250',
+      orderBy: 'updated',
+      ...(pageToken ? { pageToken } : {}),
+    })
+
+    const res = await fetch(`${CALENDAR_API}/calendars/primary/events?${params}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error?.message || 'Error al listar eventos de Google')
+
+    if (data.items) all.push(...(data.items as GoogleEvent[]))
+    pageToken = data.nextPageToken
+  } while (pageToken)
+
+  return all
 }
