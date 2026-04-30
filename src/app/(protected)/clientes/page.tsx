@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Plus, Search, Sparkles, ArrowUpRight } from 'lucide-react'
 import { Client } from '@/types'
 import { clientStatusBadge } from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
 import Modal from '@/components/ui/Modal'
+import PremiumCard from '@/components/ui/PremiumCard'
 
 export default function ClientesPage() {
   const [clients, setClients] = useState<Client[]>([])
@@ -49,118 +51,125 @@ export default function ClientesPage() {
   const deletingClient = clients.find((c) => c.id === deleteId)
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-50">Clientes</h1>
-          <p className="text-zinc-500 text-sm">{clients.length} cliente{clients.length !== 1 ? 's' : ''} encontrado{clients.length !== 1 ? 's' : ''}</p>
+    <div className="space-y-6">
+      <header>
+        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-gold-premium">Gestión</span>
         </div>
-        <Link
-          href="/clientes/nuevo"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-all"
-          style={{ backgroundColor: '#8B0000' }}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="hidden sm:inline">Nuevo Cliente</span>
-        </Link>
-      </div>
+        <div className="flex items-start justify-between mt-1">
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Clientes</h1>
+            <p className="text-phm-gray-soft text-sm mt-1">
+              {clients.length} cliente{clients.length !== 1 ? 's' : ''} registrado{clients.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <Link href="/clientes/nuevo" className="inline-flex items-center gap-2 px-4 py-2 bg-phm-red hover:bg-phm-red-hover text-white text-sm font-semibold rounded-lg transition-colors">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Nuevo Cliente</span>
+          </Link>
+        </div>
+      </header>
 
-      {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por nombre o negocio..."
-          className="flex-1 min-w-[200px] px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-all"
-        />
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-zinc-500 transition-all"
-        >
-          <option value="">Todos los estados</option>
-          <option value="ACTIVE">Activo</option>
-          <option value="PAUSED">Pausado</option>
-          <option value="FINISHED">Finalizado</option>
-        </select>
-      </div>
+      <PremiumCard padding="sm">
+        <div className="flex gap-3 flex-wrap items-center">
+          <div className="flex items-center gap-2 flex-1 min-w-[200px] bg-phm-surface border border-phm-border-soft rounded-lg px-3 py-2 focus-within:border-phm-gold/40 transition-colors">
+            <Search className="w-4 h-4 text-phm-gray-soft flex-shrink-0" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nombre o negocio..."
+              className="bg-transparent outline-none text-sm text-white placeholder:text-phm-gray-soft flex-1 min-w-0"
+            />
+          </div>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors"
+          >
+            <option value="">Todos los estados</option>
+            <option value="ACTIVE">Activo</option>
+            <option value="PAUSED">Pausado</option>
+            <option value="FINISHED">Finalizado</option>
+          </select>
+        </div>
+      </PremiumCard>
 
-      {/* Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-40 text-zinc-500 text-sm">Cargando...</div>
-        ) : clients.length === 0 ? (
+      {loading ? (
+        <PremiumCard padding="none">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-[58px] skeleton-shimmer border-b border-phm-border-soft last:border-0" />
+          ))}
+        </PremiumCard>
+      ) : clients.length === 0 ? (
+        <PremiumCard padding="none">
           <EmptyState
             title="No hay clientes"
             description="Agrega tu primer cliente para empezar a gestionar contenidos."
             actionLabel="Nuevo Cliente"
             actionHref="/clientes/nuevo"
           />
-        ) : (
+        </PremiumCard>
+      ) : (
+        <PremiumCard padding="none">
           <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Cliente / Negocio</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Contacto</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Servicio</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Estado</th>
-                <th className="text-right text-xs font-medium text-zinc-500 px-5 py-3">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/50">
-              {clients.map((client) => (
-                <tr key={client.id} className="hover:bg-zinc-800/30 transition-colors group">
-                  <td className="px-5 py-3.5">
-                    <div>
-                      <p className="text-sm font-medium text-zinc-200">{client.name}</p>
-                      <p className="text-xs text-zinc-500">{client.business}</p>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div>
-                      <p className="text-sm text-zinc-300">{client.contact || '—'}</p>
-                      {client.email && <p className="text-xs text-zinc-500">{client.email}</p>}
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {(client as any).servicePlan ? (
-                      <div>
-                        <p className="text-sm text-zinc-200">{(client as any).servicePlan.nombre}</p>
-                        <p className="text-xs text-zinc-500">${(client as any).servicePlan.precio}</p>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-zinc-600">Sin asignar</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">{clientStatusBadge(client.status)}</td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-2 justify-end">
-                      <Link
-                        href={`/clientes/${client.id}`}
-                        className="px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-all"
-                      >
-                        Ver / Editar
-                      </Link>
-                      <button
-                        onClick={() => setDeleteId(client.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-red-400 bg-red-950/50 hover:bg-red-950 rounded-md transition-all"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </td>
+            <table className="w-full min-w-[640px]">
+              <thead>
+                <tr className="border-b border-phm-border-soft bg-white/[0.015]">
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Cliente / Negocio</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Contacto</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Servicio</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Estado</th>
+                  <th className="text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-phm-border-soft">
+                {clients.map((client) => (
+                  <tr key={client.id} className="row-hover">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-phm-red to-phm-red-mid text-white text-[11px] font-bold shadow-glow-red flex-shrink-0">
+                          {(client.name || '?').split(' ').map((s: string) => s[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-white leading-tight">{client.name}</p>
+                          <p className="text-xs text-phm-gray-soft">{client.business}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <p className="text-sm text-phm-gray">{client.contact || '—'}</p>
+                      {client.email && <p className="text-xs text-phm-gray-soft">{client.email}</p>}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {(client as any).servicePlan ? (
+                        <div>
+                          <p className="text-sm text-white">{(client as any).servicePlan.nombre}</p>
+                          <p className="text-xs text-phm-gray-soft">${(client as any).servicePlan.precio}</p>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-phm-gray-soft">Sin asignar</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">{clientStatusBadge(client.status)}</td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2 justify-end">
+                        <Link href={`/clientes/${client.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
+                          Ver <ArrowUpRight className="w-3 h-3" />
+                        </Link>
+                        <button onClick={() => setDeleteId(client.id)} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </PremiumCard>
+      )}
 
       <Modal
         isOpen={!!deleteId}

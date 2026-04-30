@@ -3,23 +3,121 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
+  html, body { background-color: #050506; }
   body {
-    @apply bg-zinc-950 text-zinc-50 antialiased;
+    background-color: #050506;
+    color: #FFFFFF;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', system-ui, sans-serif;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(139, 0, 0, 0.06), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(201, 168, 76, 0.04), transparent 50%);
+    background-attachment: fixed;
   }
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-zinc-900;
-  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #09090B; }
   ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-700 rounded-full;
+    background: linear-gradient(180deg, #27272A 0%, #1F1F23 100%);
+    border-radius: 999px;
+    border: 1px solid #18181B;
   }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #3F3F46 0%, #27272A 100%);
+  }
+  ::selection { background: rgba(139, 0, 0, 0.45); color: #FFFFFF; }
+}
+
+@layer components {
+  .premium-card {
+    position: relative;
+    background-color: #111113;
+    border: 1px solid #1F1F23;
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px -8px rgba(0,0,0,0.6), 0 2px 8px -2px rgba(0,0,0,0.5);
+    overflow: hidden;
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+  }
+  .premium-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 40%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  .premium-card-hover { transition: all 0.3s ease; }
+  .premium-card-hover:hover {
+    box-shadow: 0 16px 48px -12px rgba(0,0,0,0.7), 0 4px 12px -2px rgba(139,0,0,0.25);
+    transform: translateY(-2px);
+    border-color: rgba(201, 168, 76, 0.25);
+  }
+
+  .glass {
+    background: rgba(20, 20, 23, 0.65);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .gold-line {
+    background: linear-gradient(90deg, transparent, #C9A84C, transparent);
+    height: 1px;
+  }
+
+  .text-gold-premium {
+    background: linear-gradient(135deg, #E5C76B 0%, #C9A84C 60%, #A88B3A 100%);
+    -webkit-background-clip: text;
+            background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #18181B 0%, #27272A 50%, #18181B 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2.5s linear infinite;
+  }
+
+  .nav-item-active {
+    background: linear-gradient(90deg, rgba(139, 0, 0, 0.95) 0%, rgba(176, 0, 0, 0.55) 100%);
+    box-shadow: 0 0 24px rgba(139, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    position: relative;
+  }
+  .nav-item-active::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 22px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #C9A84C 0%, #E5C76B 100%);
+    box-shadow: 0 0 10px rgba(201, 168, 76, 0.7);
+  }
+
+  .row-hover { transition: all 0.15s ease; }
+  .row-hover:hover {
+    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(139,0,0,0.04));
+  }
+
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.10s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.20s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.30s; }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @media print {

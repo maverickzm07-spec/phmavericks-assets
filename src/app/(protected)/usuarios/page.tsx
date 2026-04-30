@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Plus, Sparkles, ArrowUpRight } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
+import PremiumCard from '@/components/ui/PremiumCard'
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/permissions'
 
 function RoleBadge({ role }: { role: string }) {
@@ -16,16 +18,24 @@ function RoleBadge({ role }: { role: string }) {
 
 function StatusBadge({ activo }: { activo: boolean }) {
   return activo ? (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-950 text-green-400 border border-green-800">
-      <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-emerald-950/60 text-emerald-300 border border-emerald-700/60">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
       Activo
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-zinc-800 text-zinc-500 border border-zinc-700">
-      <span className="w-1.5 h-1.5 rounded-full bg-zinc-500 inline-block" />
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-zinc-800/60 text-zinc-300 border border-zinc-700/70">
+      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 inline-block" />
       Inactivo
     </span>
   )
+}
+
+const ROLE_DESCS: Record<string, string> = {
+  SUPER_ADMIN: 'Control total del sistema',
+  ADMIN: 'Gestión de clientes y planes',
+  VENTAS: 'Clientes y asignación de servicios',
+  PRODUCCION: 'Ver y actualizar contenidos',
+  SOLO_LECTURA: 'Solo visualización',
 }
 
 export default function UsuariosPage() {
@@ -66,100 +76,91 @@ export default function UsuariosPage() {
   const deletingUser = users.find((u) => u.id === deleteId)
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-50">Equipo</h1>
-          <p className="text-zinc-500 text-sm">{users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}</p>
+    <div className="space-y-6">
+      <header>
+        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-gold-premium">Administración</span>
         </div>
-        <Link
-          href="/usuarios/nuevo"
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-all"
-          style={{ backgroundColor: '#8B0000' }}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span className="hidden sm:inline">Crear usuario</span>
-        </Link>
-      </div>
-
-      {/* Roles info */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        {Object.entries(ROLE_LABELS).map(([key, label]) => (
-          <div key={key} className="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-            <RoleBadge role={key} />
-            <p className="text-xs text-zinc-600 mt-2 leading-relaxed">
-              {key === 'SUPER_ADMIN' && 'Control total del sistema'}
-              {key === 'ADMIN' && 'Gestión de clientes y planes'}
-              {key === 'VENTAS' && 'Clientes y asignación de servicios'}
-              {key === 'PRODUCCION' && 'Ver y actualizar contenidos'}
-              {key === 'SOLO_LECTURA' && 'Solo visualización'}
+        <div className="flex items-start justify-between mt-1">
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Equipo</h1>
+            <p className="text-phm-gray-soft text-sm mt-1">
+              {users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}
             </p>
           </div>
+          <Link href="/usuarios/nuevo" className="inline-flex items-center gap-2 px-4 py-2 bg-phm-red hover:bg-phm-red-hover text-white text-sm font-semibold rounded-lg transition-colors">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Crear usuario</span>
+          </Link>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        {Object.entries(ROLE_LABELS).map(([key, label]) => (
+          <PremiumCard key={key} padding="sm">
+            <RoleBadge role={key} />
+            <p className="text-xs text-phm-gray-soft mt-2 leading-relaxed">{ROLE_DESCS[key]}</p>
+          </PremiumCard>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-40 text-zinc-500 text-sm">Cargando...</div>
-        ) : users.length === 0 ? (
+      {loading ? (
+        <PremiumCard padding="none">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-[58px] skeleton-shimmer border-b border-phm-border-soft last:border-0" />
+          ))}
+        </PremiumCard>
+      ) : users.length === 0 ? (
+        <PremiumCard padding="none">
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-zinc-400 font-medium mb-1">No hay usuarios</p>
-            <p className="text-zinc-600 text-sm mb-4">Crea el primer miembro del equipo.</p>
-            <Link href="/usuarios/nuevo" className="text-sm font-medium text-white px-4 py-2 rounded-lg" style={{ backgroundColor: '#8B0000' }}>
+            <p className="text-white font-medium mb-1">No hay usuarios</p>
+            <p className="text-phm-gray-soft text-sm mb-4">Crea el primer miembro del equipo.</p>
+            <Link href="/usuarios/nuevo" className="text-sm font-medium text-white px-4 py-2 bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors">
               Crear usuario
             </Link>
           </div>
-        ) : (
+        </PremiumCard>
+      ) : (
+        <PremiumCard padding="none">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[680px]">
               <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Usuario</th>
-                  <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Correo</th>
-                  <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Cédula</th>
-                  <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Rol</th>
-                  <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Estado</th>
-                  <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Desde</th>
-                  <th className="text-right text-xs font-medium text-zinc-500 px-5 py-3">Acciones</th>
+                <tr className="border-b border-phm-border-soft bg-white/[0.015]">
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Usuario</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Correo</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Cédula</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Rol</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Estado</th>
+                  <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Desde</th>
+                  <th className="text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/50">
+              <tbody className="divide-y divide-phm-border-soft">
                 {users.map((u) => (
-                  <tr key={u.id} className={`hover:bg-zinc-800/30 transition-colors ${!u.activo ? 'opacity-60' : ''}`}>
+                  <tr key={u.id} className={`row-hover ${!u.activo ? 'opacity-50' : ''}`}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: u.role === 'SUPER_ADMIN' ? '#78350f' : '#27272a' }}>
-                          <span className="text-xs font-bold text-zinc-200">
-                            {u.name.charAt(0).toUpperCase()}
-                          </span>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-phm-red to-phm-red-mid text-white text-[11px] font-bold shadow-glow-red">
+                          {u.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm font-medium text-zinc-200">{u.name}</span>
+                        <span className="text-sm font-semibold text-white">{u.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-zinc-400">{u.email}</td>
-                    <td className="px-5 py-3.5 text-sm text-zinc-500">{u.cedula || '—'}</td>
+                    <td className="px-5 py-3.5 text-sm text-phm-gray">{u.email}</td>
+                    <td className="px-5 py-3.5 text-sm text-phm-gray-soft">{u.cedula || '—'}</td>
                     <td className="px-5 py-3.5"><RoleBadge role={u.role} /></td>
                     <td className="px-5 py-3.5"><StatusBadge activo={u.activo} /></td>
-                    <td className="px-5 py-3.5 text-sm text-zinc-500">
+                    <td className="px-5 py-3.5 text-sm text-phm-gray-soft">
                       {new Date(u.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2 justify-end">
-                        <Link
-                          href={`/usuarios/${u.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-all"
-                        >
-                          Editar
+                        <Link href={`/usuarios/${u.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
+                          Editar <ArrowUpRight className="w-3 h-3" />
                         </Link>
                         {u.role !== 'SUPER_ADMIN' && (
-                          <button
-                            onClick={() => { setDeleteError(''); setDeleteId(u.id) }}
-                            className="px-3 py-1.5 text-xs font-medium text-red-400 bg-red-950/50 hover:bg-red-950 rounded-md transition-all"
-                          >
+                          <button onClick={() => { setDeleteError(''); setDeleteId(u.id) }} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
                             Eliminar
                           </button>
                         )}
@@ -170,8 +171,8 @@ export default function UsuariosPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </PremiumCard>
+      )}
 
       <Modal
         isOpen={!!deleteId}
@@ -179,11 +180,7 @@ export default function UsuariosPage() {
         onConfirm={deleteError ? () => { setDeleteId(null); setDeleteError('') } : handleDelete}
         isLoading={deleting}
         title="¿Eliminar usuario?"
-        description={
-          deleteError
-            ? deleteError
-            : `Se eliminará permanentemente la cuenta de "${deletingUser?.name}". Esta acción no se puede deshacer.`
-        }
+        description={deleteError ? deleteError : `Se eliminará permanentemente la cuenta de "${deletingUser?.name}". Esta acción no se puede deshacer.`}
         confirmLabel={deleteError ? 'Cerrar' : 'Eliminar'}
       />
     </div>

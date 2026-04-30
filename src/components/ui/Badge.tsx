@@ -4,20 +4,31 @@ interface BadgeProps {
   size?: 'sm' | 'md'
 }
 
-const variants = {
-  green: 'bg-green-950 text-green-400 border border-green-800',
-  yellow: 'bg-yellow-950 text-yellow-400 border border-yellow-800',
-  red: 'bg-red-950 text-red-400 border border-red-800',
-  blue: 'bg-blue-950 text-blue-400 border border-blue-800',
-  gray: 'bg-zinc-800 text-zinc-400 border border-zinc-700',
-  purple: 'bg-purple-950 text-purple-400 border border-purple-800',
-  orange: 'bg-orange-950 text-orange-400 border border-orange-800',
+const variants: Record<BadgeProps['variant'], string> = {
+  green: 'bg-emerald-950/60 text-emerald-300 border-emerald-700/60 shadow-[0_0_12px_rgba(16,185,129,0.18)]',
+  yellow: 'bg-amber-950/60 text-amber-300 border-amber-700/60 shadow-[0_0_12px_rgba(245,158,11,0.20)]',
+  red: 'bg-red-950/60 text-red-300 border-red-800/70 shadow-[0_0_12px_rgba(229,9,20,0.25)]',
+  blue: 'bg-blue-950/60 text-blue-300 border-blue-700/60 shadow-[0_0_12px_rgba(59,130,246,0.18)]',
+  gray: 'bg-zinc-800/60 text-zinc-300 border-zinc-700/70',
+  purple: 'bg-purple-950/60 text-purple-300 border-purple-700/60 shadow-[0_0_12px_rgba(139,92,246,0.20)]',
+  orange: 'bg-orange-950/60 text-orange-300 border-orange-700/60 shadow-[0_0_12px_rgba(249,115,22,0.20)]',
+}
+
+const dotColors: Record<BadgeProps['variant'], string> = {
+  green: 'bg-emerald-400',
+  yellow: 'bg-amber-400',
+  red: 'bg-red-400',
+  blue: 'bg-blue-400',
+  gray: 'bg-zinc-400',
+  purple: 'bg-purple-400',
+  orange: 'bg-orange-400',
 }
 
 export default function Badge({ variant, children, size = 'md' }: BadgeProps) {
-  const sizeClass = size === 'sm' ? 'text-xs px-1.5 py-0.5' : 'text-xs px-2 py-1'
+  const sizeClass = size === 'sm' ? 'text-[10px] px-1.5 py-0.5 gap-1' : 'text-xs px-2.5 py-1 gap-1.5'
   return (
-    <span className={`inline-flex items-center rounded-md font-medium ${sizeClass} ${variants[variant]}`}>
+    <span className={'inline-flex items-center rounded-md font-medium border backdrop-blur-sm transition-all ' + sizeClass + ' ' + variants[variant]}>
+      <span className={'w-1.5 h-1.5 rounded-full ' + dotColors[variant] + ' shadow-[0_0_6px_currentColor]'} />
       {children}
     </span>
   )
@@ -35,7 +46,7 @@ export function clientStatusBadge(status: string) {
 
 export function planStatusBadge(status: string) {
   const map: Record<string, { variant: BadgeProps['variant']; label: string }> = {
-    IN_PROGRESS: { variant: 'blue', label: 'En Proceso' },
+    IN_PROGRESS: { variant: 'yellow', label: 'En Proceso' },
     COMPLETED: { variant: 'green', label: 'Completado' },
     DELAYED: { variant: 'red', label: 'Atrasado' },
   }
@@ -56,7 +67,7 @@ export function paymentStatusBadge(status: string) {
 export function contentStatusBadge(status: string) {
   const map: Record<string, { variant: BadgeProps['variant']; label: string }> = {
     PENDING: { variant: 'gray', label: 'Pendiente' },
-    EDITING: { variant: 'yellow', label: 'En Edición' },
+    EDITING: { variant: 'yellow', label: 'En Edicion' },
     APPROVED: { variant: 'blue', label: 'Aprobado' },
     PUBLISHED: { variant: 'purple', label: 'Publicado' },
     COMPLETED: { variant: 'green', label: 'Completado' },

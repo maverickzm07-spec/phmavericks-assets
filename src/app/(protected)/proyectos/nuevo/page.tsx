@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft, X } from 'lucide-react'
+import PremiumCard from '@/components/ui/PremiumCard'
 import { getMonthName } from '@/lib/utils'
 
 const CONTENT_TYPES = [
@@ -59,16 +61,10 @@ function NuevoProyectoForm() {
 
   useEffect(() => {
     if (form.clientId) {
-      fetch(`/api/planes?clientId=${form.clientId}`)
-        .then((r) => r.ok ? r.json() : [])
-        .then((d) => setPlans(Array.isArray(d) ? d : []))
-        .catch(() => setPlans([]))
-    } else {
-      setPlans([])
-    }
+      fetch(`/api/planes?clientId=${form.clientId}`).then((r) => r.ok ? r.json() : []).then((d) => setPlans(Array.isArray(d) ? d : [])).catch(() => setPlans([]))
+    } else { setPlans([]) }
   }, [form.clientId])
 
-  // Cuando se selecciona un servicio, pre-llenar entregables basados en sus cantidades
   useEffect(() => {
     if (!form.serviceId) return
     const svc = services.find((s) => s.id === form.serviceId)
@@ -84,11 +80,7 @@ function NuevoProyectoForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-      ...(name === 'clientId' ? { monthlyPlanId: '' } : {}),
-    }))
+    setForm((prev) => ({ ...prev, [name]: value, ...(name === 'clientId' ? { monthlyPlanId: '' } : {}) }))
   }
 
   const addEntregable = () => setEntregables((prev) => [...prev, { type: 'VIDEO', formato: 'VERTICAL_9_16', title: '' }])
@@ -99,149 +91,125 @@ function NuevoProyectoForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    if (!form.clientId) { setError('Selecciona un cliente'); setLoading(false); return }
-    if (!form.nombre.trim()) { setError('El nombre del proyecto es obligatorio'); setLoading(false); return }
-
+    if (!form.clientId) { setError('Selecciona un cliente'); return }
+    if (!form.nombre.trim()) { setError('El nombre del proyecto es obligatorio'); return }
+    setLoading(true); setError('')
     const validEntregables = entregables.filter((e) => e.title.trim())
-
     try {
       const res = await fetch('/api/proyectos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          clientId: form.clientId,
-          serviceId: form.serviceId || null,
-          monthlyPlanId: form.monthlyPlanId || null,
-          nombre: form.nombre.trim(),
-          modalidad: form.modalidad,
-          estado: form.estado,
-          linkEntrega: form.linkEntrega.trim() || '',
-          fechaEntrega: form.fechaEntrega || null,
+          clientId: form.clientId, serviceId: form.serviceId || null, monthlyPlanId: form.monthlyPlanId || null,
+          nombre: form.nombre.trim(), modalidad: form.modalidad, estado: form.estado,
+          linkEntrega: form.linkEntrega.trim() || '', fechaEntrega: form.fechaEntrega || null,
           observaciones: form.observaciones.trim() || null,
           entregables: validEntregables.length > 0 ? validEntregables : undefined,
         }),
       })
-      if (res.ok) {
-        router.push('/proyectos')
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Error al crear el proyecto')
-      }
-    } catch {
-      setError('Error de conexión')
-    } finally {
-      setLoading(false)
-    }
+      if (res.ok) { router.push('/proyectos') }
+      else { const data = await res.json(); setError(data.error || 'Error al crear el proyecto') }
+    } catch { setError('Error de conexión') }
+    finally { setLoading(false) }
   }
+
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/proyectos" className="text-zinc-500 hover:text-zinc-300 transition-colors">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+        <Link href="/proyectos" className="text-phm-gray-soft hover:text-white transition-colors p-1">
+          <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-zinc-50">Nuevo Proyecto</h1>
-          <p className="text-zinc-500 text-sm">Registra un trabajo mensual u ocasional</p>
+          <h1 className="text-2xl font-bold text-white">Nuevo Proyecto</h1>
+          <p className="text-phm-gray-soft text-sm">Registra un trabajo mensual u ocasional</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-5">
-          <h2 className="text-sm font-semibold text-zinc-300">Información general</h2>
+        <PremiumCard padding="md">
+          <h2 className="text-sm font-semibold text-phm-gray mb-4">Información general</h2>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Cliente *</label>
-              <select name="clientId" value={form.clientId} onChange={handleChange} required
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
-                <option value="">Selecciona un cliente</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
-              </select>
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Cliente *</label>
+                <select name="clientId" value={form.clientId} onChange={handleChange} required className={selectCls}>
+                  <option value="">Selecciona un cliente</option>
+                  {clients.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Modalidad *</label>
+                <select name="modalidad" value={form.modalidad} onChange={handleChange} className={selectCls}>
+                  <option value="OCASIONAL">Ocasional / Proyecto único</option>
+                  <option value="MENSUAL">Mensual</option>
+                </select>
+              </div>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Modalidad *</label>
-              <select name="modalidad" value={form.modalidad} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
-                <option value="OCASIONAL">Ocasional / Proyecto único</option>
-                <option value="MENSUAL">Mensual</option>
-              </select>
+              <label className={labelCls}>Nombre del proyecto *</label>
+              <input name="nombre" value={form.nombre} onChange={handleChange} required
+                placeholder="Ej: Vacacionales Calderón 2026" className={inputCls} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Servicio <span className="text-phm-gray-soft font-normal">(opcional)</span></label>
+                <select name="serviceId" value={form.serviceId} onChange={handleChange} className={selectCls}>
+                  <option value="">Sin servicio base</option>
+                  {services.map((s) => <option key={s.id} value={s.id}>{s.nombre} ({s.modalidad === 'MENSUAL' ? 'Mensual' : 'Ocasional'})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Plan mensual <span className="text-phm-gray-soft font-normal">(opcional)</span></label>
+                <select name="monthlyPlanId" value={form.monthlyPlanId} onChange={handleChange} disabled={!form.clientId}
+                  className={`${selectCls} disabled:opacity-40`}>
+                  <option value="">{!form.clientId ? 'Selecciona cliente primero' : 'Sin plan mensual'}</option>
+                  {plans.map((p) => <option key={p.id} value={p.id}>{getMonthName(p.month)} {p.year}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Estado inicial</label>
+                <select name="estado" value={form.estado} onChange={handleChange} className={selectCls}>
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="EN_PROCESO">En Proceso</option>
+                  <option value="EN_EDICION">En Edición</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Fecha de entrega</label>
+                <input name="fechaEntrega" value={form.fechaEntrega} onChange={handleChange} type="date" className={inputCls} />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>Link de entrega general</label>
+              <input name="linkEntrega" value={form.linkEntrega} onChange={handleChange} type="url"
+                placeholder="https://drive.google.com/..." className={inputCls} />
+            </div>
+
+            <div>
+              <label className={labelCls}>Observaciones</label>
+              <textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows={2}
+                className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
             </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Nombre del proyecto *</label>
-            <input name="nombre" value={form.nombre} onChange={handleChange} required
-              placeholder="Ej: Vacacionales Calderón 2026"
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                Servicio <span className="text-zinc-500 font-normal">(opcional)</span>
-              </label>
-              <select name="serviceId" value={form.serviceId} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
-                <option value="">Sin servicio base</option>
-                {services.map((s) => <option key={s.id} value={s.id}>{s.nombre} ({s.modalidad === 'MENSUAL' ? 'Mensual' : 'Ocasional'})</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                Plan mensual <span className="text-zinc-500 font-normal">(opcional)</span>
-              </label>
-              <select name="monthlyPlanId" value={form.monthlyPlanId} onChange={handleChange}
-                disabled={!form.clientId}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500 disabled:opacity-40">
-                <option value="">{!form.clientId ? 'Selecciona cliente primero' : 'Sin plan mensual'}</option>
-                {plans.map((p) => <option key={p.id} value={p.id}>{getMonthName(p.month)} {p.year}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Estado inicial</label>
-              <select name="estado" value={form.estado} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500">
-                <option value="PENDIENTE">Pendiente</option>
-                <option value="EN_PROCESO">En Proceso</option>
-                <option value="EN_EDICION">En Edición</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Fecha de entrega</label>
-              <input name="fechaEntrega" value={form.fechaEntrega} onChange={handleChange} type="date"
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Link de entrega general</label>
-            <input name="linkEntrega" value={form.linkEntrega} onChange={handleChange} type="url"
-              placeholder="https://drive.google.com/..."
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Observaciones</label>
-            <textarea name="observaciones" value={form.observaciones} onChange={handleChange} rows={2}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 resize-none" />
-          </div>
-        </div>
+        </PremiumCard>
 
         {/* Entregables */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+        <PremiumCard padding="md">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-zinc-300">Entregables</h2>
+            <h2 className="text-sm font-semibold text-phm-gray">Entregables</h2>
             <button type="button" onClick={addEntregable}
-              className="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg transition-colors">
+              className="text-xs px-3 py-1.5 text-phm-gold border border-phm-gold/30 hover:border-phm-gold/60 bg-phm-surface rounded-lg transition-all">
               + Agregar
             </button>
           </div>
@@ -250,37 +218,38 @@ function NuevoProyectoForm() {
               <div key={i} className="flex gap-2 items-start">
                 <div className="flex-1 grid grid-cols-3 gap-2">
                   <select value={ent.type} onChange={(e) => updateEntregable(i, 'type', e.target.value)}
-                    className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none">
+                    className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors">
                     {CONTENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                   <select value={ent.formato} onChange={(e) => updateEntregable(i, 'formato', e.target.value)}
-                    className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none">
+                    className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors">
                     {FORMATOS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
                   </select>
                   <input value={ent.title} onChange={(e) => updateEntregable(i, 'title', e.target.value)}
                     placeholder="Título del entregable"
-                    className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none" />
+                    className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors" />
                 </div>
                 {entregables.length > 1 && (
                   <button type="button" onClick={() => removeEntregable(i)}
-                    className="mt-1 text-red-500 hover:text-red-400 text-lg leading-none">×</button>
+                    className="mt-1.5 text-phm-gray-soft hover:text-red-400 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             ))}
           </div>
-          <p className="text-xs text-zinc-600 mt-3">Los entregables se crean automáticamente como contenidos al guardar.</p>
-        </div>
+          <p className="text-xs text-phm-gray-soft mt-3">Los entregables se crean automáticamente como contenidos al guardar.</p>
+        </PremiumCard>
 
-        {error && <div className="px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-sm text-red-400">{error}</div>}
+        {error && <div className="px-4 py-3 bg-red-950/60 border border-red-900/60 rounded-lg text-sm text-red-300">{error}</div>}
 
         <div className="flex gap-3">
           <button type="submit" disabled={loading}
-            className="flex-1 py-2.5 text-sm font-semibold text-white rounded-lg disabled:opacity-50"
-            style={{ backgroundColor: '#8B0000' }}>
+            className="flex-1 py-2.5 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors disabled:opacity-50">
             {loading ? 'Guardando...' : 'Guardar Proyecto'}
           </button>
           <Link href="/proyectos"
-            className="px-6 py-2.5 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-center">
+            className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-all text-center">
             Cancelar
           </Link>
         </div>
@@ -291,7 +260,13 @@ function NuevoProyectoForm() {
 
 export default function NuevoProyectoPage() {
   return (
-    <Suspense fallback={<div className="text-zinc-500 text-sm py-10 text-center">Cargando...</div>}>
+    <Suspense fallback={
+      <div className="max-w-2xl space-y-4">
+        <div className="h-8 w-48 skeleton-shimmer rounded-lg" />
+        <div className="h-96 skeleton-shimmer rounded-2xl" />
+        <div className="h-48 skeleton-shimmer rounded-2xl" />
+      </div>
+    }>
       <NuevoProyectoForm />
     </Suspense>
   )

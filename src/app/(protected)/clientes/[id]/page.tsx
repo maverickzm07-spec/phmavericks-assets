@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { Client } from '@/types'
 import { clientStatusBadge, planStatusBadge, paymentStatusBadge } from '@/components/ui/Badge'
+import PremiumCard from '@/components/ui/PremiumCard'
 import { getMonthName, formatCurrency } from '@/lib/utils'
 import Modal from '@/components/ui/Modal'
 
@@ -51,9 +53,9 @@ const TIPO_SERVICIO_LABEL: Record<string, string> = {
 }
 
 const ESTADO_BADGE: Record<string, string> = {
-  PAGADO: 'bg-green-900/50 text-green-400 border border-green-800',
-  PARCIAL: 'bg-amber-900/50 text-amber-400 border border-amber-800',
-  PENDIENTE: 'bg-red-900/50 text-red-400 border border-red-800',
+  PAGADO: 'bg-emerald-950/60 text-emerald-400 border border-emerald-900/60',
+  PARCIAL: 'bg-amber-950/60 text-amber-400 border border-amber-900/60',
+  PENDIENTE: 'bg-red-950/60 text-red-400 border border-red-900/60',
 }
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -93,11 +95,7 @@ export default function ClienteDetailPage() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
-      .then((u) => {
-        if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) {
-          setCanVerIngresos(true)
-        }
-      })
+      .then((u) => { if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) setCanVerIngresos(true) })
       .catch(() => {})
   }, [])
 
@@ -106,12 +104,7 @@ export default function ClienteDetailPage() {
     setLoadingIngresos(true)
     fetch(`/api/ingresos?clienteId=${id}`)
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        if (d) {
-          setIngresos(d.ingresos || [])
-          setIngresosTotales(d.totales || null)
-        }
-      })
+      .then((d) => { if (d) { setIngresos(d.ingresos || []); setIngresosTotales(d.totales || null) } })
       .catch(() => {})
       .finally(() => setLoadingIngresos(false))
   }, [id, canVerIngresos])
@@ -119,21 +112,13 @@ export default function ClienteDetailPage() {
   useEffect(() => {
     if (!id) { setLoading(false); return }
     fetch(`/api/clientes/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((data) => {
         setClient(data)
         setForm({
-          name: data.name || '',
-          business: data.business || '',
-          contact: data.contact || '',
-          whatsapp: data.whatsapp || '',
-          email: data.email || '',
-          status: data.status || 'ACTIVE',
-          notes: data.notes || '',
-          servicePlanId: data.servicePlanId || '',
+          name: data.name || '', business: data.business || '', contact: data.contact || '',
+          whatsapp: data.whatsapp || '', email: data.email || '', status: data.status || 'ACTIVE',
+          notes: data.notes || '', servicePlanId: data.servicePlanId || '',
         })
       })
       .catch(() => setClient(null))
@@ -145,102 +130,85 @@ export default function ClienteDetailPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError('')
-    setSuccess('')
+    e.preventDefault(); setSaving(true); setError(''); setSuccess('')
     try {
-      const res = await fetch(`/api/clientes/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (res.ok) {
-        setSuccess('Cliente actualizado correctamente')
-        setTimeout(() => setSuccess(''), 3000)
-      } else {
-        const data = await res.json()
-        setError(data.error || 'Error al actualizar')
-      }
-    } catch {
-      setError('Error de conexión')
-    } finally {
-      setSaving(false)
-    }
+      const res = await fetch(`/api/clientes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      if (res.ok) { setSuccess('Cliente actualizado correctamente'); setTimeout(() => setSuccess(''), 3000) }
+      else { const data = await res.json(); setError(data.error || 'Error al actualizar') }
+    } catch { setError('Error de conexión') }
+    finally { setSaving(false) }
   }
 
   const handleDelete = async () => {
     setDeleting(true)
-    try {
-      await fetch(`/api/clientes/${id}`, { method: 'DELETE' })
-      router.push('/clientes')
-    } finally {
-      setDeleting(false)
-    }
+    try { await fetch(`/api/clientes/${id}`, { method: 'DELETE' }); router.push('/clientes') }
+    finally { setDeleting(false) }
   }
 
-  if (loading) return <div className="text-zinc-500 text-sm py-10 text-center">Cargando...</div>
-  if (!client) return <div className="text-red-400 text-sm py-10 text-center">Cliente no encontrado</div>
+  if (loading) return (
+    <div className="max-w-4xl space-y-4">
+      <div className="h-8 w-64 skeleton-shimmer rounded-lg" />
+      <div className="h-48 skeleton-shimmer rounded-2xl" />
+      <div className="h-64 skeleton-shimmer rounded-2xl" />
+    </div>
+  )
+  if (!client) return <PremiumCard padding="lg" className="text-center"><p className="text-phm-gray">Cliente no encontrado.</p></PremiumCard>
+
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   return (
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/clientes" className="text-zinc-500 hover:text-zinc-300 transition-colors">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+        <Link href="/clientes" className="text-phm-gray-soft hover:text-white transition-colors p-1">
+          <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-bold text-zinc-50">{client.name}</h1>
-          <p className="text-zinc-500 text-sm">{client.business}</p>
+          <h1 className="text-2xl font-bold text-white">{client.name}</h1>
+          <p className="text-phm-gray-soft text-sm">{client.business}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {clientStatusBadge(client.status)}
           <button onClick={() => setShowDelete(true)}
-            className="px-4 py-2 text-sm font-medium text-red-400 bg-red-950/50 hover:bg-red-950 rounded-lg transition-all">
+            className="px-3 py-2 text-sm font-medium text-red-400 border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 rounded-lg transition-all">
             Eliminar
           </button>
         </div>
       </div>
 
-      {/* Edit Form */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <h2 className="font-semibold text-zinc-100 mb-5">Información del cliente</h2>
+      {/* Formulario de edición */}
+      <PremiumCard padding="md">
+        <h2 className="font-semibold text-white mb-5">Información del cliente</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Nombre *</label>
-              <input name="name" value={form.name} onChange={handleChange} required
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 transition-all" />
+              <label className={labelCls}>Nombre *</label>
+              <input name="name" value={form.name} onChange={handleChange} required className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Marca / Negocio *</label>
-              <input name="business" value={form.business} onChange={handleChange} required
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 transition-all" />
+              <label className={labelCls}>Marca / Negocio *</label>
+              <input name="business" value={form.business} onChange={handleChange} required className={inputCls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Contacto</label>
-              <input name="contact" value={form.contact} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 transition-all" />
+              <label className={labelCls}>Contacto</label>
+              <input name="contact" value={form.contact} onChange={handleChange} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">WhatsApp</label>
-              <input name="whatsapp" value={form.whatsapp} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 transition-all" />
+              <label className={labelCls}>WhatsApp</label>
+              <input name="whatsapp" value={form.whatsapp} onChange={handleChange} className={inputCls} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Email</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 transition-all" />
+              <label className={labelCls}>Email</label>
+              <input name="email" type="email" value={form.email} onChange={handleChange} className={inputCls} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Estado</label>
-              <select name="status" value={form.status} onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500 transition-all">
+              <label className={labelCls}>Estado</label>
+              <select name="status" value={form.status} onChange={handleChange} className={selectCls}>
                 <option value="ACTIVE">Activo</option>
                 <option value="PAUSED">Pausado</option>
                 <option value="FINISHED">Finalizado</option>
@@ -248,169 +216,131 @@ export default function ClienteDetailPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Plan o servicio asignado</label>
-            <select
-              name="servicePlanId"
-              value={form.servicePlanId}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm focus:outline-none focus:border-zinc-500 transition-all"
-            >
+            <label className={labelCls}>Plan o servicio asignado</label>
+            <select name="servicePlanId" value={form.servicePlanId} onChange={handleChange} className={selectCls}>
               <option value="">Sin plan asignado</option>
               {['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO'].map((tipo) => {
                 const group = servicePlans.filter((p) => p.tipo === tipo)
                 if (group.length === 0) return null
                 return (
                   <optgroup key={tipo} label={TIPO_LABEL[tipo]}>
-                    {group.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombre} — ${p.precio}
-                      </option>
-                    ))}
+                    {group.map((p) => <option key={p.id} value={p.id}>{p.nombre} — ${p.precio}</option>)}
                   </optgroup>
                 )
               })}
             </select>
             {client?.servicePlan && (
-              <div className="mt-1.5 space-y-1">
-                <p className="text-xs text-zinc-500">
-                  Actual: <span className="text-zinc-300">{client.servicePlan.nombre}</span>
-                  {' · '}<span className="text-zinc-400">${client.servicePlan.precio}</span>
-                  {' · '}<span className="text-zinc-500">{TIPO_LABEL[client.servicePlan.tipo]}</span>
+              <div className="mt-2 space-y-1">
+                <p className="text-xs text-phm-gray-soft">
+                  Actual: <span className="text-phm-gray">{client.servicePlan.nombre}</span>
+                  {' · '}<span className="text-phm-gold">${client.servicePlan.precio}</span>
+                  {' · '}<span className="text-phm-gray-soft">{TIPO_LABEL[client.servicePlan.tipo]}</span>
                 </p>
-                <div className="flex gap-3 flex-wrap text-xs text-zinc-500">
-                  {client.servicePlan.cantidadReels > 0 && (
-                    <span><span className="text-purple-400">▶</span> {client.servicePlan.cantidadReels} reels</span>
-                  )}
-                  {client.servicePlan.cantidadVideosHorizontales > 0 && (
-                    <span><span className="text-green-400">▬</span> {client.servicePlan.cantidadVideosHorizontales} videos horizontales</span>
-                  )}
-                  {client.servicePlan.cantidadFotos > 0 && (
-                    <span><span className="text-amber-400">◆</span> {client.servicePlan.cantidadFotos} fotos</span>
-                  )}
-                  {client.servicePlan.cantidadImagenesFlyers > 0 && (
-                    <span><span className="text-pink-400">◈</span> {client.servicePlan.cantidadImagenesFlyers} imágenes/flyers</span>
-                  )}
+                <div className="flex gap-3 flex-wrap text-xs text-phm-gray-soft">
+                  {client.servicePlan.cantidadReels > 0 && <span><span className="text-purple-400">▶</span> {client.servicePlan.cantidadReels} reels</span>}
+                  {client.servicePlan.cantidadVideosHorizontales > 0 && <span><span className="text-emerald-400">▬</span> {client.servicePlan.cantidadVideosHorizontales} videos horizontales</span>}
+                  {client.servicePlan.cantidadFotos > 0 && <span><span className="text-amber-400">◆</span> {client.servicePlan.cantidadFotos} fotos</span>}
+                  {client.servicePlan.cantidadImagenesFlyers > 0 && <span><span className="text-pink-400">◈</span> {client.servicePlan.cantidadImagenesFlyers} imágenes/flyers</span>}
                 </div>
               </div>
             )}
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Notas</label>
+            <label className={labelCls}>Notas</label>
             <textarea name="notes" value={form.notes} onChange={handleChange} rows={3}
-              className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm focus:outline-none focus:border-zinc-500 transition-all resize-none" />
+              className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
           </div>
-          {error && <div className="px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-sm text-red-400">{error}</div>}
-          {success && <div className="px-4 py-3 bg-green-950 border border-green-800 rounded-lg text-sm text-green-400">{success}</div>}
-          <div className="flex gap-3">
-            <button type="submit" disabled={saving}
-              className="px-6 py-2.5 text-sm font-semibold text-white rounded-lg transition-all disabled:opacity-50"
-              style={{ backgroundColor: '#8B0000' }}>
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </div>
+          {error && <div className="px-4 py-3 bg-red-950/60 border border-red-900/60 rounded-lg text-sm text-red-300">{error}</div>}
+          {success && <div className="px-4 py-3 bg-emerald-950/60 border border-emerald-900/60 rounded-lg text-sm text-emerald-300">{success}</div>}
+          <button type="submit" disabled={saving}
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors disabled:opacity-50">
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
         </form>
-      </div>
+      </PremiumCard>
 
       {/* Acciones rápidas */}
       <div className="flex gap-3 flex-wrap">
-        <Link
-          href={`/ingresos?clienteId=${client.id}&create=1`}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-all"
-          style={{ backgroundColor: '#8B0000' }}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Registrar ingreso
+        <Link href={`/ingresos?clienteId=${client.id}&create=1`}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors">
+          + Registrar ingreso
         </Link>
-        <Link
-          href={`/ingresos?clienteId=${client.id}`}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-all"
-        >
-          Ver ingresos del cliente
+        <Link href={`/ingresos?clienteId=${client.id}`}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-all">
+          Ver todos los ingresos <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
-      {/* Resumen de Ingresos */}
+      {/* Ingresos del cliente */}
       {canVerIngresos && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
-          <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-            <h2 className="font-semibold text-zinc-100">Ingresos del cliente</h2>
+        <PremiumCard padding="none">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-phm-border-soft">
+            <h2 className="font-semibold text-white">Ingresos del cliente</h2>
             <Link href={`/ingresos?clienteId=${client.id}`}
-              className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Ver todos →</Link>
+              className="text-sm text-phm-gray hover:text-phm-gold transition-colors">Ver todos →</Link>
           </div>
 
           {loadingIngresos ? (
-            <div className="p-6 text-center text-zinc-500 text-sm">Cargando ingresos...</div>
+            <div className="p-6 space-y-3">
+              <div className="h-10 skeleton-shimmer rounded-lg" />
+              <div className="h-10 skeleton-shimmer rounded-lg" />
+            </div>
           ) : ingresos.length === 0 ? (
             <div className="p-6 text-center">
-              <p className="text-zinc-500 text-sm mb-3">Este cliente no tiene ingresos registrados.</p>
+              <p className="text-phm-gray-soft text-sm mb-3">Este cliente no tiene ingresos registrados.</p>
               <Link href={`/ingresos?clienteId=${client.id}&create=1`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white rounded-lg transition-all"
-                style={{ backgroundColor: '#8B0000' }}>
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors">
                 + Registrar primer ingreso
               </Link>
             </div>
           ) : (
             <>
-              {/* Resumen financiero */}
-              <div className="grid grid-cols-3 divide-x divide-zinc-800 border-b border-zinc-800">
+              <div className="grid grid-cols-3 divide-x divide-phm-border-soft border-b border-phm-border-soft">
                 <div className="p-4 text-center">
-                  <p className="text-xs text-zinc-500 mb-1">Total contratado</p>
-                  <p className="text-lg font-bold text-zinc-100">
-                    {formatCurrency(ingresos.reduce((s, i) => s + i.monto, 0))}
-                  </p>
+                  <p className="text-xs text-phm-gray-soft mb-1">Total contratado</p>
+                  <p className="text-lg font-bold text-white">{formatCurrency(ingresos.reduce((s, i) => s + i.monto, 0))}</p>
                 </div>
                 <div className="p-4 text-center">
-                  <p className="text-xs text-zinc-500 mb-1">Total abonado</p>
-                  <p className="text-lg font-bold text-green-400">
-                    {formatCurrency(ingresos.reduce((s, i) => s + i.montoPagado, 0))}
-                  </p>
+                  <p className="text-xs text-phm-gray-soft mb-1">Total abonado</p>
+                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(ingresos.reduce((s, i) => s + i.montoPagado, 0))}</p>
                 </div>
                 <div className="p-4 text-center">
-                  <p className="text-xs text-zinc-500 mb-1">Saldo pendiente</p>
-                  <p className="text-lg font-bold text-amber-400">
-                    {formatCurrency(ingresos.reduce((s, i) => s + i.saldoPendiente, 0))}
-                  </p>
+                  <p className="text-xs text-phm-gray-soft mb-1">Saldo pendiente</p>
+                  <p className="text-lg font-bold text-amber-400">{formatCurrency(ingresos.reduce((s, i) => s + i.saldoPendiente, 0))}</p>
                 </div>
               </div>
-
-              {/* Tabla de ingresos */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-zinc-800">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Fecha</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">Servicio</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Monto</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Abonado</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-zinc-500 uppercase tracking-wider">Saldo</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Estado</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-zinc-500 uppercase tracking-wider">Abonos</th>
+                    <tr className="border-b border-phm-border-soft bg-white/[0.015]">
+                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft">Fecha</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft">Servicio</th>
+                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft">Monto</th>
+                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft">Abonado</th>
+                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft">Saldo</th>
+                      <th className="px-5 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft">Estado</th>
+                      <th className="px-5 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft">Abonos</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800/50">
+                  <tbody className="divide-y divide-phm-border-soft">
                     {ingresos.map((ingreso) => (
-                      <tr key={ingreso.id} className="hover:bg-zinc-800/20 transition-colors">
-                        <td className="px-4 py-3 text-zinc-400 whitespace-nowrap">
+                      <tr key={ingreso.id} className="row-hover">
+                        <td className="px-5 py-3 text-phm-gray whitespace-nowrap">
                           {new Date(ingreso.fechaIngreso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </td>
-                        <td className="px-4 py-3">
-                          <p className="text-zinc-200 font-medium">{TIPO_SERVICIO_LABEL[ingreso.tipoServicio] || ingreso.tipoServicio}</p>
-                          {ingreso.descripcion && <p className="text-zinc-500 text-xs mt-0.5">{ingreso.descripcion}</p>}
+                        <td className="px-5 py-3">
+                          <p className="text-white font-medium">{TIPO_SERVICIO_LABEL[ingreso.tipoServicio] || ingreso.tipoServicio}</p>
+                          {ingreso.descripcion && <p className="text-phm-gray-soft text-xs mt-0.5">{ingreso.descripcion}</p>}
                         </td>
-                        <td className="px-4 py-3 text-right text-zinc-200 font-medium">{formatCurrency(ingreso.monto)}</td>
-                        <td className="px-4 py-3 text-right text-green-400">{formatCurrency(ingreso.montoPagado)}</td>
-                        <td className="px-4 py-3 text-right text-amber-400">{formatCurrency(ingreso.saldoPendiente)}</td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-5 py-3 text-right text-white font-medium tabular-nums">{formatCurrency(ingreso.monto)}</td>
+                        <td className="px-5 py-3 text-right text-emerald-400 tabular-nums">{formatCurrency(ingreso.montoPagado)}</td>
+                        <td className="px-5 py-3 text-right text-amber-400 tabular-nums">{formatCurrency(ingreso.saldoPendiente)}</td>
+                        <td className="px-5 py-3 text-center">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${ESTADO_BADGE[ingreso.estadoPago]}`}>
                             {ESTADO_LABEL[ingreso.estadoPago]}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="text-xs text-zinc-500">{ingreso._count.abonos}</span>
-                        </td>
+                        <td className="px-5 py-3 text-center text-xs text-phm-gray-soft">{ingreso._count.abonos}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -418,34 +348,36 @@ export default function ClienteDetailPage() {
               </div>
             </>
           )}
-        </div>
+        </PremiumCard>
       )}
 
-      {/* Plans List */}
+      {/* Planes mensuales */}
       {client.monthlyPlans?.length > 0 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
-          <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-            <h2 className="font-semibold text-zinc-100">Planes Mensuales</h2>
+        <PremiumCard padding="none">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-phm-border-soft">
+            <h2 className="font-semibold text-white">Planes Mensuales</h2>
             <Link href={`/planes/nuevo?clientId=${client.id}`}
-              className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">+ Nuevo plan</Link>
+              className="text-sm text-phm-gold hover:text-phm-gold-bright transition-colors">+ Nuevo plan</Link>
           </div>
-          <div className="divide-y divide-zinc-800/50">
+          <div className="divide-y divide-phm-border-soft">
             {client.monthlyPlans.map((plan: any) => (
-              <div key={plan.id} className="flex items-center justify-between px-5 py-3.5 hover:bg-zinc-800/20 transition-colors">
+              <div key={plan.id} className="flex items-center justify-between px-5 py-3.5 row-hover">
                 <div>
-                  <p className="text-sm font-medium text-zinc-200">{getMonthName(plan.month)} {plan.year}</p>
-                  <p className="text-xs text-zinc-500">{plan._count?.contents || 0} contenidos · {formatCurrency(plan.monthlyPrice)}</p>
+                  <p className="text-sm font-medium text-white">{getMonthName(plan.month)} {plan.year}</p>
+                  <p className="text-xs text-phm-gray-soft">{plan._count?.contents || 0} contenidos · {formatCurrency(plan.monthlyPrice)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {planStatusBadge(plan.planStatus)}
                   {paymentStatusBadge(plan.paymentStatus)}
                   <Link href={`/planes/${plan.id}`}
-                    className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors ml-2">Ver →</Link>
+                    className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors ml-2">
+                    Ver <ArrowUpRight className="w-3 h-3" />
+                  </Link>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </PremiumCard>
       )}
 
       <Modal
