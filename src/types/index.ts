@@ -115,4 +115,5 @@ export interface DashboardStats {
   delayedPlans: number
   avgCompliance: number
   recentPlans: MonthlyPlan[]
+  recentProjects?: ClientProject[]
 }
