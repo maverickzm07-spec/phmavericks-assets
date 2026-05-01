@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Users,
@@ -23,11 +23,38 @@ import ChartCard from '@/components/ui/ChartCard'
 import Donut from '@/components/ui/Donut'
 import BarChartMini from '@/components/ui/BarChartMini'
 
+interface IncomeData {
+  total: number
+  previousTotal: number
+  percentChange: number | null
+  series: { label: string; value: number }[]
+  label: string
+  rangeStart: string
+  rangeEnd: string
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState('')
   const [userName, setUserName] = useState('')
+
+  // Income widget state
+  const [incomeRange, setIncomeRange] = useState('this_month')
+  const [incomeData, setIncomeData] = useState<IncomeData | null>(null)
+  const [loadingIncome, setLoadingIncome] = useState(false)
+
+  const fetchIncome = useCallback(async (range: string, opts?: { startDate?: string; endDate?: string }) => {
+    setLoadingIncome(true)
+    try {
+      const params = new URLSearchParams({ range })
+      if (opts?.startDate) params.set('startDate', opts.startDate)
+      if (opts?.endDate) params.set('endDate', opts.endDate)
+      const res = await fetch(`/api/dashboard/income?${params}`)
+      if (res.ok) setIncomeData(await res.json())
+    } catch { /* silent */ }
+    finally { setLoadingIncome(false) }
+  }, [])
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -40,6 +67,14 @@ export default function DashboardPage() {
       })
       .catch(() => {})
   }, [])
+
+  // Fetch income data once we know the user has access
+  useEffect(() => {
+    if (['SUPER_ADMIN', 'ADMIN'].includes(userRole)) {
+      fetchIncome(incomeRange)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRole])
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -77,8 +112,7 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const ingresosMes = (stats as any)?.ingresosMes ?? 0
-  const showIngresos = ['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (stats as any)?.ingresosMes !== undefined
+  const showIngresos = ['SUPER_ADMIN', 'ADMIN'].includes(userRole)
 
   const planStatusDonut = useMemo(() => {
     if (!stats) return []
@@ -162,7 +196,21 @@ export default function DashboardPage() {
       </header>
 
       {/* Hero de ingresos */}
-      {showIngresos && <DashboardHero amount={ingresosMes} changePct={12.5} />}
+      {showIngresos && (
+        <DashboardHero
+          amount={incomeData?.total ?? 0}
+          changePct={incomeData?.percentChange ?? null}
+          series={incomeData?.series}
+          rangeStart={incomeData?.rangeStart}
+          rangeEnd={incomeData?.rangeEnd}
+          selectedRange={incomeRange}
+          onRangeChange={(range, opts) => {
+            setIncomeRange(range)
+            fetchIncome(range, opts)
+          }}
+          loading={loadingIncome}
+        />
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
