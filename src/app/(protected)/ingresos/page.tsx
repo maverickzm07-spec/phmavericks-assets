@@ -32,7 +32,7 @@ const TIPO_COLOR: Record<TipoServicio, string> = {
   VIDEOS_HORIZONTALES: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60',
   IMAGENES_FLYERS: 'bg-pink-950/60 text-pink-300 border-pink-800/60',
   PLAN_MENSUAL: 'bg-blue-950/60 text-blue-300 border-blue-800/60',
-  PERSONALIZADO: 'bg-zinc-800/60 text-zinc-300 border-zinc-700/70',
+  PERSONALIZADO: 'bg-phm-surface/60 text-phm-gray border-phm-border-soft',
 }
 const ESTADO_COLOR: Record<EstadoPago, string> = {
   PAGADO: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60',

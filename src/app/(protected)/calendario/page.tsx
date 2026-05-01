@@ -401,12 +401,12 @@ export default function CalendarioPage() {
   // ── Render ─────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="space-y-0">
       {/* Header */}
-      <div className="px-4 sm:px-6 py-5 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="px-4 sm:px-6 py-5 border-b border-phm-border-soft flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-zinc-50">Calendario</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Organiza grabaciones, sesiones, reuniones y más</p>
+          <h1 className="text-xl font-bold text-white">Calendario</h1>
+          <p className="text-sm text-white0 mt-0.5">Organiza grabaciones, sesiones, reuniones y más</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -424,7 +424,7 @@ export default function CalendarioPage() {
               <button
                 onClick={handleGoogleSync}
                 disabled={syncing}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-300 border border-zinc-600 hover:border-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white transition-colors disabled:opacity-50"
               >
                 <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -433,7 +433,7 @@ export default function CalendarioPage() {
               </button>
               <button
                 onClick={handleGoogleDisconnect}
-                className="px-2 py-2 rounded-lg text-xs text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                className="px-2 py-2 rounded-lg text-xs text-white0 hover:text-red-400 hover:bg-phm-surface transition-colors"
                 title="Desconectar Google Calendar"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -445,7 +445,7 @@ export default function CalendarioPage() {
             <a
               href={googleConfigured ? '/api/auth/google' : undefined}
               onClick={!googleConfigured ? () => setSyncMsg('Configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en el servidor') : undefined}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 border border-zinc-700 hover:border-zinc-500 hover:text-zinc-200 transition-colors cursor-pointer"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white transition-colors cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -458,9 +458,9 @@ export default function CalendarioPage() {
 
       {/* Mensaje de estado Google */}
       {syncMsg && (
-        <div className={`mx-4 sm:mx-6 mt-2 px-4 py-2.5 rounded-lg text-sm flex items-center justify-between gap-3 ${syncMsg.includes('Error') || syncMsg.includes('error') || syncMsg.includes('Configura') ? 'bg-red-950/60 border border-red-900 text-red-300' : 'bg-zinc-800 border border-zinc-700 text-zinc-300'}`}>
+        <div className={`mx-4 sm:mx-6 mt-2 px-4 py-2.5 rounded-lg text-sm flex items-center justify-between gap-3 ${syncMsg.includes('Error') || syncMsg.includes('error') || syncMsg.includes('Configura') ? 'bg-red-950/60 border border-red-900 text-red-300' : 'bg-phm-surface border border-phm-border-soft text-phm-gray'}`}>
           <span>{syncMsg}</span>
-          <button onClick={() => setSyncMsg('')} className="text-zinc-500 hover:text-zinc-300 flex-shrink-0">
+          <button onClick={() => setSyncMsg('')} className="text-white0 hover:text-phm-gray flex-shrink-0">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -471,21 +471,21 @@ export default function CalendarioPage() {
       {/* Navegación del mes */}
       <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">
+          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-phm-surface text-phm-gray hover:text-white transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h2 className="text-lg font-semibold text-zinc-50 min-w-[180px] text-center">
+          <h2 className="text-lg font-semibold text-white min-w-[180px] text-center">
             {MONTHS[currentMonth - 1]} {currentYear}
           </h2>
-          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">
+          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-phm-surface text-phm-gray hover:text-white transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
-        <button onClick={goToday} className="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 border border-zinc-700 hover:border-zinc-500 hover:text-zinc-200 transition-colors">
+        <button onClick={goToday} className="px-3 py-1.5 rounded-lg text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white transition-colors">
           Hoy
         </button>
       </div>
@@ -495,15 +495,15 @@ export default function CalendarioPage() {
         {/* Encabezado días */}
         <div className="grid grid-cols-7 mb-1">
           {DAYS.map(d => (
-            <div key={d} className="text-center text-xs font-medium text-zinc-500 py-2">{d}</div>
+            <div key={d} className="text-center text-xs font-medium text-white0 py-2">{d}</div>
           ))}
         </div>
 
         {/* Celdas */}
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-zinc-500 text-sm">Cargando...</div>
+          <div className="flex items-center justify-center py-20 text-white0 text-sm">Cargando...</div>
         ) : (
-          <div className="grid grid-cols-7 gap-px bg-zinc-800 rounded-xl overflow-hidden">
+          <div className="grid grid-cols-7 gap-px bg-phm-surface rounded-xl overflow-hidden">
             {cells.map((cell, idx) => {
               const isToday = cell.dateStr === todayStr
               const isSelected = cell.dateStr === selectedDate
@@ -514,7 +514,7 @@ export default function CalendarioPage() {
                 <button
                   key={idx}
                   onClick={() => openDay(cell.dateStr)}
-                  className={`relative bg-zinc-950 hover:bg-zinc-900 transition-colors min-h-[72px] sm:min-h-[90px] p-1.5 text-left flex flex-col ${!isCurrent ? 'opacity-30' : ''}`}
+                  className={`relative bg-phm-black hover:bg-phm-charcoal transition-colors min-h-[72px] sm:min-h-[90px] p-1.5 text-left flex flex-col ${!isCurrent ? 'opacity-30' : ''}`}
                 >
                   {/* Número del día */}
                   <span
@@ -523,7 +523,7 @@ export default function CalendarioPage() {
                         ? 'text-white'
                         : isSelected
                         ? 'text-white border-2 border-red-700'
-                        : 'text-zinc-300'
+                        : 'text-phm-gray'
                     }`}
                     style={isToday ? { backgroundColor: '#8B0000' } : {}}
                   >
@@ -584,12 +584,12 @@ export default function CalendarioPage() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeDay} />
 
           {/* Panel lateral */}
-          <div className="relative ml-auto w-full max-w-sm sm:max-w-md bg-zinc-900 border-l border-zinc-800 h-full overflow-y-auto flex flex-col shadow-2xl">
+          <div className="relative ml-auto w-full max-w-sm sm:max-w-md bg-phm-charcoal border-l border-phm-border-soft h-full overflow-y-auto flex flex-col shadow-2xl">
             {/* Header del día */}
-            <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between sticky top-0 bg-zinc-900 z-10">
+            <div className="px-5 py-4 border-b border-phm-border-soft flex items-center justify-between sticky top-0 bg-phm-charcoal z-10">
               <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wide">Vista del día</p>
-                <h3 className="text-base font-semibold text-zinc-50 capitalize">
+                <p className="text-xs text-white0 uppercase tracking-wide">Vista del día</p>
+                <h3 className="text-base font-semibold text-white capitalize">
                   {selectedDate && formatDateLabel(selectedDate + 'T12:00:00')}
                 </h3>
               </div>
@@ -604,7 +604,7 @@ export default function CalendarioPage() {
                   </svg>
                   Agregar
                 </button>
-                <button onClick={closeDay} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">
+                <button onClick={closeDay} className="p-1.5 rounded-lg hover:bg-phm-surface text-phm-gray hover:text-white transition-colors">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -614,7 +614,7 @@ export default function CalendarioPage() {
 
             {/* Timeline 24h */}
             {dayLoading ? (
-              <div className="flex items-center justify-center py-20 text-zinc-500 text-sm">Cargando...</div>
+              <div className="flex items-center justify-center py-20 text-white0 text-sm">Cargando...</div>
             ) : (
               <div className="flex-1 px-4 py-2">
                 {Array.from({ length: 24 }, (_, hour) => {
@@ -625,15 +625,15 @@ export default function CalendarioPage() {
                     <div key={hour} className="flex gap-3 group">
                       {/* Hora */}
                       <div className="w-12 flex-shrink-0 pt-2">
-                        <span className="text-xs text-zinc-600 select-none">{label}</span>
+                        <span className="text-xs text-phm-gray-soft select-none">{label}</span>
                       </div>
 
                       {/* Área de eventos */}
-                      <div className="flex-1 border-t border-zinc-800 min-h-[56px] py-1.5 relative">
+                      <div className="flex-1 border-t border-phm-border-soft min-h-[56px] py-1.5 relative">
                         {/* Botón agregar al hover */}
                         <button
                           onClick={() => openNewForm(selectedDate, hour)}
-                          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded flex items-center justify-center text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800"
+                          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded flex items-center justify-center text-phm-gray-soft hover:text-phm-gray hover:bg-phm-surface"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -650,21 +650,21 @@ export default function CalendarioPage() {
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="text-sm font-medium text-zinc-100 truncate">{ev.title}</p>
+                                <p className="text-sm font-medium text-white truncate">{ev.title}</p>
                                 <p className="text-xs mt-0.5" style={{ color: TYPE_COLORS[ev.type] }}>
                                   {formatTime(ev.startDateTime)} – {formatTime(ev.endDateTime)}
                                   {ev.type !== 'OTRO' && ` · ${TYPE_LABELS[ev.type]}`}
                                 </p>
                                 {ev.clientName && (
-                                  <p className="text-xs text-zinc-500 mt-0.5">Cliente: {ev.clientName}</p>
+                                  <p className="text-xs text-white0 mt-0.5">Cliente: {ev.clientName}</p>
                                 )}
                                 {ev.location && (
-                                  <p className="text-xs text-zinc-500 mt-0.5">📍 {ev.location}</p>
+                                  <p className="text-xs text-white0 mt-0.5">📍 {ev.location}</p>
                                 )}
                               </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); setDeleteId(ev.id) }}
-                                className="flex-shrink-0 p-1 rounded hover:bg-zinc-700 text-zinc-600 hover:text-red-400 transition-colors"
+                                className="flex-shrink-0 p-1 rounded hover:bg-phm-surface text-phm-gray-soft hover:text-red-400 transition-colors"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -687,13 +687,13 @@ export default function CalendarioPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeForm} />
-          <div className="relative w-full max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-lg bg-phm-charcoal rounded-2xl border border-phm-border-soft shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-zinc-50">
+            <div className="px-6 py-4 border-b border-phm-border-soft flex items-center justify-between">
+              <h3 className="text-base font-semibold text-white">
                 {editingEvent ? 'Editar evento' : 'Nuevo evento'}
               </h3>
-              <button onClick={closeForm} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button onClick={closeForm} className="p-1.5 rounded-lg hover:bg-phm-surface text-phm-gray hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -704,54 +704,54 @@ export default function CalendarioPage() {
             <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
               {/* Título */}
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Título *</label>
+                <label className="block text-xs font-medium text-phm-gray mb-1.5">Título *</label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={e => handleFormChange('title', e.target.value)}
                   placeholder="Nombre del evento"
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-red-700 transition-colors"
+                  className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                 />
               </div>
 
               {/* Fecha + Horas */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-3 sm:col-span-1">
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Fecha *</label>
+                  <label className="block text-xs font-medium text-phm-gray mb-1.5">Fecha *</label>
                   <input
                     type="date"
                     value={form.startDate}
                     onChange={e => handleFormChange('startDate', e.target.value)}
-                    className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:border-red-700 transition-colors"
+                    className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Inicio *</label>
+                  <label className="block text-xs font-medium text-phm-gray mb-1.5">Inicio *</label>
                   <input
                     type="time"
                     value={form.startTime}
                     onChange={e => handleFormChange('startTime', e.target.value)}
-                    className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:border-red-700 transition-colors"
+                    className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-400 mb-1.5">Fin *</label>
+                  <label className="block text-xs font-medium text-phm-gray mb-1.5">Fin *</label>
                   <input
                     type="time"
                     value={form.endTime}
                     onChange={e => handleFormChange('endTime', e.target.value)}
-                    className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:border-red-700 transition-colors"
+                    className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                   />
                 </div>
               </div>
 
               {/* Tipo */}
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Tipo</label>
+                <label className="block text-xs font-medium text-phm-gray mb-1.5">Tipo</label>
                 <select
                   value={form.type}
                   onChange={e => handleFormChange('type', e.target.value)}
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:border-red-700 transition-colors"
+                  className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                 >
                   {Object.entries(TYPE_LABELS).map(([v, l]) => (
                     <option key={v} value={v}>{l}</option>
@@ -761,11 +761,11 @@ export default function CalendarioPage() {
 
               {/* Cliente */}
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Cliente (opcional)</label>
+                <label className="block text-xs font-medium text-phm-gray mb-1.5">Cliente (opcional)</label>
                 <select
                   value={form.clientId}
                   onChange={e => handleFormChange('clientId', e.target.value)}
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:border-red-700 transition-colors"
+                  className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                 >
                   <option value="">Sin cliente</option>
                   {clients.map(c => (
@@ -776,11 +776,11 @@ export default function CalendarioPage() {
 
               {/* Estado */}
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Estado</label>
+                <label className="block text-xs font-medium text-phm-gray mb-1.5">Estado</label>
                 <select
                   value={form.status}
                   onChange={e => handleFormChange('status', e.target.value)}
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:border-red-700 transition-colors"
+                  className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                 >
                   {Object.entries(STATUS_LABELS).map(([v, l]) => (
                     <option key={v} value={v}>{l}</option>
@@ -790,25 +790,25 @@ export default function CalendarioPage() {
 
               {/* Ubicación */}
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Ubicación (opcional)</label>
+                <label className="block text-xs font-medium text-phm-gray mb-1.5">Ubicación (opcional)</label>
                 <input
                   type="text"
                   value={form.location}
                   onChange={e => handleFormChange('location', e.target.value)}
                   placeholder="Lugar del evento"
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-red-700 transition-colors"
+                  className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors"
                 />
               </div>
 
               {/* Notas */}
               <div>
-                <label className="block text-xs font-medium text-zinc-400 mb-1.5">Notas (opcional)</label>
+                <label className="block text-xs font-medium text-phm-gray mb-1.5">Notas (opcional)</label>
                 <textarea
                   value={form.notes}
                   onChange={e => handleFormChange('notes', e.target.value)}
                   placeholder="Notas adicionales..."
                   rows={3}
-                  className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-red-700 transition-colors resize-none"
+                  className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white focus:outline-none focus:border-red-700 transition-colors resize-none"
                 />
               </div>
 
@@ -818,11 +818,11 @@ export default function CalendarioPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-zinc-800 flex items-center justify-between gap-3">
+            <div className="px-6 py-4 border-t border-phm-border-soft flex items-center justify-between gap-3">
               {editingEvent && (
                 <button
                   onClick={() => { setShowForm(false); setDeleteId(editingEvent.id) }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-white0 hover:text-red-400 hover:bg-phm-surface transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -833,7 +833,7 @@ export default function CalendarioPage() {
               <div className="flex items-center gap-2 ml-auto">
                 <button
                   onClick={closeForm}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-phm-gray hover:text-white hover:bg-phm-surface transition-colors"
                 >
                   Cancelar
                 </button>
@@ -855,7 +855,7 @@ export default function CalendarioPage() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
-          <div className="relative w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl p-6">
+          <div className="relative w-full max-w-sm bg-phm-charcoal rounded-2xl border border-phm-border-soft shadow-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-950 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -863,14 +863,14 @@ export default function CalendarioPage() {
                 </svg>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-zinc-50">Eliminar evento</h4>
-                <p className="text-xs text-zinc-500 mt-0.5">Esta acción no se puede deshacer</p>
+                <h4 className="text-sm font-semibold text-white">Eliminar evento</h4>
+                <p className="text-xs text-white0 mt-0.5">Esta acción no se puede deshacer</p>
               </div>
             </div>
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={() => setDeleteId(null)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-phm-gray hover:text-white hover:bg-phm-surface transition-colors"
               >
                 Cancelar
               </button>

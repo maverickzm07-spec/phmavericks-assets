@@ -8,7 +8,7 @@ import PremiumCard from '@/components/ui/PremiumCard'
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/permissions'
 
 function RoleBadge({ role }: { role: string }) {
-  const cls = ROLE_COLORS[role] || 'bg-zinc-800 text-zinc-400 border-zinc-700'
+  const cls = ROLE_COLORS[role] || 'bg-phm-surface text-phm-gray border-phm-border-soft'
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${cls}`}>
       {ROLE_LABELS[role] || role}
@@ -23,8 +23,8 @@ function StatusBadge({ activo }: { activo: boolean }) {
       Activo
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-zinc-800/60 text-zinc-300 border border-zinc-700/70">
-      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 inline-block" />
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-phm-surface/60 text-phm-gray border border-phm-border-soft">
+      <span className="w-1.5 h-1.5 rounded-full bg-phm-gray-soft inline-block" />
       Inactivo
     </span>
   )

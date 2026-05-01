@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Sparkles, X } from 'lucide-react'
+import { Plus, Sparkles, X, UserPlus } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
 
 type PlanType = 'CONTENIDO' | 'IA' | 'FOTOGRAFIA' | 'PERSONALIZADO'
@@ -35,7 +35,7 @@ const TIPO_COLOR: Record<PlanType, string> = {
   CONTENIDO: 'bg-purple-950/60 text-purple-300 border-purple-800/60',
   IA: 'bg-blue-950/60 text-blue-300 border-blue-800/60',
   FOTOGRAFIA: 'bg-amber-950/60 text-amber-300 border-amber-800/60',
-  PERSONALIZADO: 'bg-zinc-800/60 text-zinc-300 border-zinc-700/70',
+  PERSONALIZADO: 'bg-phm-surface/60 text-phm-gray border-phm-border-soft',
 }
 
 const TABS = [
@@ -264,8 +264,8 @@ export default function ServiciosPage() {
                   <button onClick={() => setShowDeleteConfirm(plan)} className="py-1.5 px-3 text-xs font-medium text-red-400 border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 rounded-md transition-all">Eliminar</button>
                 )}
                 <button onClick={() => { setShowAssign(plan); setAssignClientId('') }}
-                  className="w-full py-2 text-xs font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-md transition-colors mt-1">
-                  Asignar a cliente
+                  className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-400/20 hover:bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.15)] rounded-md transition-all mt-1">
+                  <UserPlus className="w-3.5 h-3.5" /> + Asignar a cliente
                 </button>
               </div>
             </PremiumCard>
