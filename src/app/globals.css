@@ -16,6 +16,49 @@
       radial-gradient(ellipse at bottom right, rgba(201, 168, 76, 0.04), transparent 50%);
     background-attachment: fixed;
   }
+
+  /* ── Dark mode global para todos los campos de formulario ── */
+  input,
+  select,
+  textarea {
+    background-color: #141417;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.08);
+    color-scheme: dark;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #71717A;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: rgba(201, 168, 76, 0.4);
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.08);
+  }
+  /* Icono del date picker en chrome/edge */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    cursor: pointer;
+    opacity: 0.6;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  /* Opciones del select */
+  option {
+    background-color: #141417;
+    color: #ffffff;
+  }
+  optgroup {
+    background-color: #111113;
+    color: #A1A1AA;
+  }
+
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: #09090B; }
   ::-webkit-scrollbar-thumb {
