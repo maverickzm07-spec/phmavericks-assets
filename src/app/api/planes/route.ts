@@ -54,6 +54,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const data = planSchema.parse(body)
 
+    const existingPlan = await prisma.monthlyPlan.findFirst({
+      where: { clientId: data.clientId, month: data.month, year: data.year },
+    })
+    if (existingPlan) {
+      return NextResponse.json(
+        { error: `Ya existe un plan para este cliente en ${data.month}/${data.year}`, existingId: existingPlan.id },
+        { status: 409 }
+      )
+    }
+
     const plan = await prisma.monthlyPlan.create({
       data: {
         clientId: data.clientId,

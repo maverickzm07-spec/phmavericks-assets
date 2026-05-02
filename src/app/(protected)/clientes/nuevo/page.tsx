@@ -1,40 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
 
-interface ServicePlan {
-  id: string
-  nombre: string
-  tipo: string
-  precio: number
-}
-
-const TIPO_LABEL: Record<string, string> = {
-  CONTENIDO: 'Contenido',
-  IA: 'IA',
-  FOTOGRAFIA: 'Fotografía',
-  PERSONALIZADO: 'Personalizado',
-}
-
 export default function NuevoClientePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [servicePlans, setServicePlans] = useState<ServicePlan[]>([])
   const [form, setForm] = useState({
-    name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '', servicePlanId: '',
+    name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '',
   })
-
-  useEffect(() => {
-    fetch('/api/servicios')
-      .then((r) => r.json())
-      .then((d) => setServicePlans(Array.isArray(d) ? d : []))
-      .catch(() => setServicePlans([]))
-  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -103,22 +81,6 @@ export default function NuevoClientePage() {
                 <option value="FINISHED">Finalizado</option>
               </select>
             </div>
-          </div>
-
-          <div>
-            <label className={labelCls}>Plan o servicio asignado</label>
-            <select name="servicePlanId" value={form.servicePlanId} onChange={handleChange} className={selectCls}>
-              <option value="">Sin plan asignado</option>
-              {['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO'].map((tipo) => {
-                const group = servicePlans.filter((p) => p.tipo === tipo)
-                if (group.length === 0) return null
-                return (
-                  <optgroup key={tipo} label={TIPO_LABEL[tipo]}>
-                    {group.map((p) => <option key={p.id} value={p.id}>{p.nombre} — ${p.precio}</option>)}
-                  </optgroup>
-                )
-              })}
-            </select>
           </div>
 
           <div>

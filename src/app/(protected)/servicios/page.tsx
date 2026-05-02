@@ -27,7 +27,7 @@ interface ServicePlan {
   _count?: { clients: number }
 }
 
-interface Client { id: string; name: string; business: string }
+interface Client { id: string; name: string; business: string; status: string }
 
 const TIPO_LABEL: Record<PlanType, string> = { CONTENIDO: 'Contenido', IA: 'IA', FOTOGRAFIA: 'Fotografía', PERSONALIZADO: 'Personalizado' }
 
@@ -152,8 +152,18 @@ export default function ServiciosPage() {
       return
     }
     setAssignLoading(true)
-    await fetch(`/api/clientes/${assignClientId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ servicePlanId: showAssign.id }) })
-    setAssignLoading(false); setShowAssign(null); setAssignClientId('')
+    const res = await fetch(`/api/servicios/${showAssign.id}/asignar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: assignClientId }),
+    })
+    setAssignLoading(false)
+    if (!res.ok) {
+      const data = await res.json()
+      alert(data.error || 'Error al asignar el servicio')
+      return
+    }
+    setShowAssign(null); setAssignClientId('')
   }
 
   const filtered = showInactive ? plans : plans.filter((p) => p.activo)
@@ -363,13 +373,25 @@ export default function ServiciosPage() {
             <h2 className="font-semibold text-white mb-1">{showAssign.modalidad === 'OCASIONAL' ? 'Crear proyecto para cliente' : 'Asignar a cliente'}</h2>
             <p className="text-xs text-phm-gray-soft mb-1">Servicio: <span className="text-white">{showAssign.nombre}</span></p>
             {showAssign.modalidad === 'OCASIONAL' && (
-              <p className="text-xs text-amber-300 mb-4">Este es un servicio ocasional. Se abrirá el formulario de nuevo proyecto con los entregables pre-cargados.</p>
+              <p className="text-xs text-amber-300 mb-2">Este es un servicio ocasional. Se abrirá el formulario de nuevo proyecto con los entregables pre-cargados.</p>
             )}
-            {showAssign.modalidad !== 'OCASIONAL' && <div className="mb-5" />}
+            {showAssign.modalidad === 'MENSUAL' && !showAssign.cantidadReels && !showAssign.cantidadVideosHorizontales && !showAssign.cantidadFotos && !showAssign.cantidadImagenesFlyers && (
+              <p className="text-xs text-amber-300 mb-2">⚠ Este servicio no tiene entregables definidos. El plan mensual se creará sin contenidos automáticos.</p>
+            )}
+            <div className="mb-3" />
             <select value={assignClientId} onChange={(e) => setAssignClientId(e.target.value)} className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors">
               <option value="">Selecciona un cliente...</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {c.business}{c.status !== 'ACTIVE' ? ` (${c.status === 'PAUSED' ? 'Pausado' : 'Finalizado'})` : ''}
+                </option>
+              ))}
             </select>
+            {assignClientId && clients.find((c) => c.id === assignClientId)?.status !== 'ACTIVE' && (
+              <p className="text-xs text-amber-300 mt-2">
+                ⚠ Este cliente está {clients.find((c) => c.id === assignClientId)?.status === 'PAUSED' ? 'pausado' : 'finalizado'}. Confirma si deseas continuar.
+              </p>
+            )}
             <div className="flex gap-3 mt-5">
               <button onClick={handleAssign} disabled={!assignClientId || assignLoading}
                 className="flex-1 py-2.5 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors disabled:opacity-50">

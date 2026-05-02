@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowUpRight } from 'lucide-react'
-import { Client } from '@/types'
 import { clientStatusBadge, planStatusBadge, paymentStatusBadge } from '@/components/ui/Badge'
 import PremiumCard from '@/components/ui/PremiumCard'
 import { getMonthName, formatCurrency } from '@/lib/utils'
@@ -76,21 +75,13 @@ export default function ClienteDetailPage() {
   const [success, setSuccess] = useState('')
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [servicePlans, setServicePlans] = useState<ServicePlan[]>([])
   const [ingresos, setIngresos] = useState<IngresoCliente[]>([])
   const [ingresosTotales, setIngresosTotales] = useState<any>(null)
   const [loadingIngresos, setLoadingIngresos] = useState(false)
   const [canVerIngresos, setCanVerIngresos] = useState(false)
   const [form, setForm] = useState({
-    name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '', servicePlanId: '',
+    name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '',
   })
-
-  useEffect(() => {
-    fetch('/api/servicios')
-      .then((r) => r.json())
-      .then((d) => setServicePlans(Array.isArray(d) ? d : []))
-      .catch(() => setServicePlans([]))
-  }, [])
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -118,7 +109,7 @@ export default function ClienteDetailPage() {
         setForm({
           name: data.name || '', business: data.business || '', contact: data.contact || '',
           whatsapp: data.whatsapp || '', email: data.email || '', status: data.status || 'ACTIVE',
-          notes: data.notes || '', servicePlanId: data.servicePlanId || '',
+          notes: data.notes || '',
         })
       })
       .catch(() => setClient(null))
@@ -216,32 +207,25 @@ export default function ClienteDetailPage() {
             </div>
           </div>
           <div>
-            <label className={labelCls}>Plan o servicio asignado</label>
-            <select name="servicePlanId" value={form.servicePlanId} onChange={handleChange} className={selectCls}>
-              <option value="">Sin plan asignado</option>
-              {['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO'].map((tipo) => {
-                const group = servicePlans.filter((p) => p.tipo === tipo)
-                if (group.length === 0) return null
-                return (
-                  <optgroup key={tipo} label={TIPO_LABEL[tipo]}>
-                    {group.map((p) => <option key={p.id} value={p.id}>{p.nombre} — ${p.precio}</option>)}
-                  </optgroup>
-                )
-              })}
-            </select>
-            {client?.servicePlan && (
-              <div className="mt-2 space-y-1">
+            <label className={labelCls}>Servicio asignado</label>
+            {client?.servicePlan ? (
+              <div className="px-4 py-3 bg-phm-surface border border-phm-border-soft rounded-lg space-y-1">
+                <p className="text-sm text-white font-medium">{client.servicePlan.nombre}</p>
                 <p className="text-xs text-phm-gray-soft">
-                  Actual: <span className="text-phm-gray">{client.servicePlan.nombre}</span>
-                  {' · '}<span className="text-phm-gold">${client.servicePlan.precio}</span>
-                  {' · '}<span className="text-phm-gray-soft">{TIPO_LABEL[client.servicePlan.tipo]}</span>
+                  <span className="text-phm-gold">${client.servicePlan.precio}</span>
+                  {' · '}{TIPO_LABEL[client.servicePlan.tipo]}
                 </p>
-                <div className="flex gap-3 flex-wrap text-xs text-phm-gray-soft">
+                <div className="flex gap-3 flex-wrap text-xs text-phm-gray-soft mt-1">
                   {client.servicePlan.cantidadReels > 0 && <span><span className="text-purple-400">▶</span> {client.servicePlan.cantidadReels} reels</span>}
-                  {client.servicePlan.cantidadVideosHorizontales > 0 && <span><span className="text-emerald-400">▬</span> {client.servicePlan.cantidadVideosHorizontales} videos horizontales</span>}
+                  {client.servicePlan.cantidadVideosHorizontales > 0 && <span><span className="text-emerald-400">▬</span> {client.servicePlan.cantidadVideosHorizontales} videos horiz.</span>}
                   {client.servicePlan.cantidadFotos > 0 && <span><span className="text-amber-400">◆</span> {client.servicePlan.cantidadFotos} fotos</span>}
-                  {client.servicePlan.cantidadImagenesFlyers > 0 && <span><span className="text-pink-400">◈</span> {client.servicePlan.cantidadImagenesFlyers} imágenes/flyers</span>}
+                  {client.servicePlan.cantidadImagenesFlyers > 0 && <span><span className="text-pink-400">◈</span> {client.servicePlan.cantidadImagenesFlyers} imgs/flyers</span>}
                 </div>
+                <p className="text-xs text-phm-gray-soft mt-1">Para cambiar el servicio, usa <span className="text-phm-gold">Asignar a cliente</span> en la sección Servicios.</p>
+              </div>
+            ) : (
+              <div className="px-4 py-3 bg-phm-surface border border-phm-border-soft rounded-lg">
+                <p className="text-sm text-phm-gray-soft">Sin servicio asignado. Usa <span className="text-phm-gold">Asignar a cliente</span> en la sección Servicios.</p>
               </div>
             )}
           </div>

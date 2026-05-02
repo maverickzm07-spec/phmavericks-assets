@@ -81,6 +81,7 @@ model ServicePlan {
   updatedAt                  DateTime        @updatedAt
   clients                    Client[]
   projects                   ClientProject[]
+  monthlyPlans               MonthlyPlan[]
 }
 
 enum ClientStatus {
@@ -93,6 +94,8 @@ model MonthlyPlan {
   id             String          @id @default(cuid())
   clientId       String
   client         Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  servicePlanId  String?
+  servicePlan    ServicePlan?    @relation(fields: [servicePlanId], references: [id], onDelete: SetNull)
   month          Int
   year           Int
   reelsCount     Int             @default(0)

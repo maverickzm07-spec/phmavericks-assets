@@ -82,7 +82,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       if (siblings.every((c) => DONE_STATUSES.includes(c.status))) {
         await prisma.clientProject.update({ where: { id: content.projectId }, data: { estado: 'COMPLETADO' } })
       } else {
-        // Si al menos uno está en proceso, asegurarse de que no esté PENDIENTE
         const anyInProgress = siblings.some((c) => ['EDITING', 'EN_PROCESO', 'EN_EDICION'].includes(c.status))
         if (anyInProgress) {
           await prisma.clientProject.updateMany({
@@ -90,6 +89,19 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             data: { estado: 'EN_PROCESO' },
           })
         }
+      }
+    }
+
+    // Auto-actualizar estado del Plan Mensual si todos sus contenidos están listos
+    if (content.planId) {
+      const planContents = await prisma.content.findMany({ where: { planId: content.planId } })
+      if (planContents.length > 0 && planContents.every((c) => DONE_STATUSES.includes(c.status))) {
+        await prisma.monthlyPlan.update({ where: { id: content.planId }, data: { planStatus: 'COMPLETED' } })
+      } else if (planContents.some((c) => ['EDITING', 'EN_PROCESO', 'APPROVED', 'PUBLISHED'].includes(c.status))) {
+        await prisma.monthlyPlan.updateMany({
+          where: { id: content.planId, planStatus: 'COMPLETED' },
+          data: { planStatus: 'IN_PROGRESS' },
+        })
       }
     }
 
