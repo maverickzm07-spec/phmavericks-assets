@@ -1,282 +1,368 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'next/navigation'
-import { CheckCircle, Clock, AlertCircle, ExternalLink, Package, Film, LayoutGrid, Image } from 'lucide-react'
+import Image from 'next/image'
+import {
+  CheckCircle2, Clock, AlertTriangle, ExternalLink,
+  Copy, Check, AlertCircle,
+} from 'lucide-react'
 
-const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+// ─── Configuración central ────────────────────────────────────────────────────
 
-function statusLabel(status: string) {
-  const map: Record<string, { label: string; color: string }> = {
-    PENDING: { label: 'Pendiente', color: 'text-yellow-400' },
-    PENDIENTE: { label: 'Pendiente', color: 'text-yellow-400' },
-    EDITING: { label: 'En edición', color: 'text-blue-400' },
-    EN_PROCESO: { label: 'En proceso', color: 'text-blue-400' },
-    APPROVED: { label: 'Aprobado', color: 'text-green-400' },
-    APROBADO: { label: 'Aprobado', color: 'text-green-400' },
-    PUBLISHED: { label: 'Publicado', color: 'text-purple-400' },
-    PUBLICADO: { label: 'Publicado', color: 'text-purple-400' },
-    COMPLETED: { label: 'Completado', color: 'text-green-500' },
-    COMPLETADO: { label: 'Completado', color: 'text-green-500' },
-    ENTREGADO: { label: 'Entregado', color: 'text-green-400' },
+const PHM_WHATSAPP = process.env.NEXT_PUBLIC_PHM_WHATSAPP_NUMBER ?? '593XXXXXXXXX'
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getGoogleDrivePreviewUrl(url: string): string | null {
+  if (!url) return null
+  try {
+    const driveFile = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
+    if (driveFile) return `https://drive.google.com/file/d/${driveFile[1]}/preview`
+
+    const docs = url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([a-zA-Z0-9_-]+)/)
+    if (docs) return `https://docs.google.com/${docs[1]}/d/${docs[2]}/preview`
+
+    return null
+  } catch {
+    return null
   }
-  return map[status] ?? { label: status, color: 'text-gray-400' }
 }
 
-function planStatusInfo(status: string) {
-  if (status === 'COMPLETED') return { label: 'Completado', icon: <CheckCircle className="w-5 h-5 text-green-400" /> }
-  if (status === 'DELAYED') return { label: 'Atrasado', icon: <AlertCircle className="w-5 h-5 text-red-400" /> }
-  return { label: 'En progreso', icon: <Clock className="w-5 h-5 text-yellow-400" /> }
+function buildWhatsappUrl(clientName: string, subject: string): string {
+  const msg = encodeURIComponent(
+    `Hola, soy ${clientName}. Tengo una consulta sobre mi entrega: ${subject}.`
+  )
+  return `https://wa.me/${PHM_WHATSAPP}?text=${msg}`
 }
 
-function projectStatusInfo(status: string) {
-  const map: Record<string, string> = {
-    PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', EN_EDICION: 'En edición',
-    APROBADO: 'Aprobado', ENTREGADO: 'Entregado', COMPLETADO: 'Completado', ATRASADO: 'Atrasado',
-  }
-  return map[status] ?? status
+function formatCOP(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
-function typeIcon(type: string) {
-  if (type === 'REEL' || type === 'VIDEO') return <Film className="w-4 h-4 text-purple-400" />
-  if (type === 'CAROUSEL') return <LayoutGrid className="w-4 h-4 text-blue-400" />
-  if (type === 'FLYER' || type === 'IMAGEN_FLYER') return <Image className="w-4 h-4 text-orange-400" />
-  return <Package className="w-4 h-4 text-gray-400" />
+// ─── Status configs ───────────────────────────────────────────────────────────
+
+interface StatusCfg {
+  label: string
+  color: string
+  bg: string
+  border: string
+  icon: 'check' | 'clock' | 'alert' | 'progress'
 }
 
-function RingProgress({ value }: { value: number }) {
-  const r = 36
-  const circ = 2 * Math.PI * r
-  const offset = circ - (value / 100) * circ
+const PLAN_STATUS: Record<string, StatusCfg> = {
+  IN_PROGRESS: { label: 'En producción', color: 'text-blue-300',    bg: 'bg-blue-950/50',    border: 'border-blue-800/50',    icon: 'progress' },
+  COMPLETED:   { label: 'Completado',    color: 'text-emerald-300', bg: 'bg-emerald-950/50', border: 'border-emerald-800/50', icon: 'check'    },
+  DELAYED:     { label: 'Atrasado',      color: 'text-red-300',     bg: 'bg-red-950/50',     border: 'border-red-800/50',     icon: 'alert'    },
+}
+
+const PROJECT_STATUS: Record<string, StatusCfg> = {
+  PENDIENTE:  { label: 'Pendiente',     color: 'text-yellow-300',  bg: 'bg-yellow-950/50',  border: 'border-yellow-800/50',  icon: 'clock'    },
+  EN_PROCESO: { label: 'En producción', color: 'text-blue-300',    bg: 'bg-blue-950/50',    border: 'border-blue-800/50',    icon: 'progress' },
+  EN_EDICION: { label: 'En edición',    color: 'text-purple-300',  bg: 'bg-purple-950/50',  border: 'border-purple-800/50',  icon: 'progress' },
+  APROBADO:   { label: 'En revisión',   color: 'text-cyan-300',    bg: 'bg-cyan-950/50',    border: 'border-cyan-800/50',    icon: 'progress' },
+  ENTREGADO:  { label: 'Entregado',     color: 'text-emerald-300', bg: 'bg-emerald-950/50', border: 'border-emerald-800/50', icon: 'check'    },
+  COMPLETADO: { label: 'Completado',    color: 'text-emerald-300', bg: 'bg-emerald-950/50', border: 'border-emerald-800/50', icon: 'check'    },
+  ATRASADO:   { label: 'Atrasado',      color: 'text-red-300',     bg: 'bg-red-950/50',     border: 'border-red-800/50',     icon: 'alert'    },
+}
+
+const PAYMENT_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  PENDING: { label: 'Pendiente de pago', color: 'text-red-300',     bg: 'bg-red-950/40',     border: 'border-red-800/40'     },
+  PARTIAL: { label: 'Pago parcial',      color: 'text-yellow-300',  bg: 'bg-yellow-950/40',  border: 'border-yellow-800/40'  },
+  PAID:    { label: 'Pago completado',   color: 'text-emerald-300', bg: 'bg-emerald-950/40', border: 'border-emerald-800/40' },
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function WhatsAppIcon({ className }: { className?: string }) {
   return (
-    <svg width="88" height="88" viewBox="0 0 88 88">
-      <circle cx="44" cy="44" r={r} fill="none" stroke="#27272a" strokeWidth="8" />
-      <circle cx="44" cy="44" r={r} fill="none" stroke="#D4AF37" strokeWidth="8"
-        strokeDasharray={circ} strokeDashoffset={offset}
-        strokeLinecap="round" transform="rotate(-90 44 44)" />
-      <text x="44" y="49" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">{value}%</text>
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
     </svg>
   )
 }
 
+function StatusIcon({ type }: { type: StatusCfg['icon'] }) {
+  if (type === 'check')   return <CheckCircle2 className="w-7 h-7" />
+  if (type === 'alert')   return <AlertTriangle className="w-7 h-7" />
+  return <Clock className="w-7 h-7" />
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function EntregaTokenPage() {
   const { token } = useParams<{ token: string }>()
-  const [data, setData] = useState<any>(null)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [data, setData]               = useState<any>(null)
+  const [error, setError]             = useState('')
+  const [loading, setLoading]         = useState(true)
+  const [copied, setCopied]           = useState(false)
+  const [previewFailed, setPreviewFailed] = useState(false)
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetch(`/api/public/delivery/${token}`)
       .then(async (r) => {
-        if (!r.ok) { const e = await r.json(); setError(e.error || 'Error'); return }
+        if (!r.ok) { const e = await r.json(); setError(e.error ?? 'Error'); return }
         setData(await r.json())
       })
-      .catch(() => setError('No se pudo cargar la información'))
+      .catch(() => setError('No se pudo cargar la información.'))
       .finally(() => setLoading(false))
   }, [token])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin" />
-      </div>
-    )
-  }
+  // ─ Loading
+  if (loading) return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin" />
+    </div>
+  )
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-white mb-2">Link no disponible</h1>
-          <p className="text-zinc-400">{error}</p>
-        </div>
-      </div>
-    )
-  }
+  // ─ Error
+  if (error || !data) return (
+    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4 text-center gap-4">
+      <AlertCircle className="w-10 h-10 text-zinc-600" />
+      <p className="text-white font-semibold text-lg">Link no disponible</p>
+      <p className="text-zinc-500 text-sm">{error || 'Este link no existe o ha sido desactivado.'}</p>
+    </div>
+  )
 
   const { client, monthlyPlan, project } = data
 
-  // Calcular progreso del plan mensual
-  let ringValue = 0
-  let totalContracted = 0
-  let totalDelivered = 0
-  if (monthlyPlan) {
-    const DELIVERED = ['APPROVED','PUBLISHED','COMPLETED','ENTREGADO','PUBLICADO','COMPLETADO','APROBADO']
-    const delivered = (monthlyPlan.contents || []).filter((c: any) => DELIVERED.includes(c.status)).length
-    const contracted = (monthlyPlan.reelsCount || 0) + (monthlyPlan.carouselsCount || 0) + (monthlyPlan.flyersCount || 0)
-    totalContracted = contracted
-    totalDelivered = delivered
-    ringValue = contracted > 0 ? Math.round((delivered / contracted) * 100) : 0
-  }
+  const deliveryLink  = monthlyPlan?.deliveryLink || project?.linkEntrega || null
+  const previewUrl    = deliveryLink ? getGoogleDrivePreviewUrl(deliveryLink) : null
+  const statusCfg     = monthlyPlan
+    ? (PLAN_STATUS[monthlyPlan.planStatus] ?? PLAN_STATUS['IN_PROGRESS'])
+    : (PROJECT_STATUS[project?.estado]    ?? PROJECT_STATUS['PENDIENTE'])
+  const paymentCfg    = monthlyPlan ? PAYMENT_CFG[monthlyPlan.paymentStatus] : null
+  const isPaid        = monthlyPlan?.paymentStatus === 'PAID'
+  const isPending     = monthlyPlan?.paymentStatus === 'PENDING'
 
-  const planInfo = monthlyPlan ? planStatusInfo(monthlyPlan.planStatus) : null
+  const subjectName   = monthlyPlan
+    ? `Plan ${MONTHS[(monthlyPlan.month ?? 1) - 1]} ${monthlyPlan.year}`
+    : (project?.nombre ?? 'entrega')
+  const waUrl = buildWhatsappUrl(client.name, subjectName)
+
+  function copyLink() {
+    if (!deliveryLink) return
+    navigator.clipboard.writeText(deliveryLink).then(() => {
+      setCopied(true)
+      if (copyTimer.current) clearTimeout(copyTimer.current)
+      copyTimer.current = setTimeout(() => setCopied(false), 2500)
+    })
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Header */}
-      <header className="border-b border-zinc-800 px-4 py-4">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-            <span className="text-yellow-500 font-bold text-sm">P</span>
+
+      {/* ── HEADER ────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/60">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/logo-phmavericks.png"
+              alt="PHMavericks"
+              width={32}
+              height={32}
+              className="rounded-lg object-contain"
+              priority
+            />
+            <div>
+              <p className="text-xs font-bold text-white leading-tight">PHMavericks</p>
+              <p className="text-[10px] text-zinc-500 leading-tight">Estado de entrega</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider">PHMavericks</p>
-            <p className="text-sm font-semibold text-white">{client.name}</p>
-          </div>
+
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366]/10 border border-[#25D366]/25 text-[#25D366] hover:bg-[#25D366]/20 transition-colors text-sm font-medium"
+          >
+            <WhatsAppIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </a>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-4 pb-20">
 
-        {/* Info del cliente */}
+        {/* ── A. INFO DEL CLIENTE ──────────────────────────────────────────── */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <p className="text-zinc-400 text-sm">{client.business}</p>
-          <h1 className="text-2xl font-bold text-white mt-1">{client.name}</h1>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Cliente</p>
+          <h1 className="text-2xl font-bold text-white leading-snug">{client.name}</h1>
+          {client.business && (
+            <p className="text-zinc-400 text-sm mt-0.5">{client.business}</p>
+          )}
+
+          <div className="mt-4 pt-4 border-t border-zinc-800/80 flex flex-wrap items-start gap-x-6 gap-y-3">
+            <div>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">
+                {monthlyPlan ? 'Plan mensual' : 'Proyecto'}
+              </p>
+              <p className="font-semibold text-white text-sm">
+                {monthlyPlan
+                  ? `${MONTHS[(monthlyPlan.month ?? 1) - 1]} ${monthlyPlan.year}`
+                  : project?.nombre ?? '—'}
+              </p>
+            </div>
+
+            {project?.fechaEntrega && (
+              <div>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Fecha de entrega</p>
+                <p className="font-semibold text-white text-sm">
+                  {new Date(project.fechaEntrega).toLocaleDateString('es-CO', {
+                    day: '2-digit', month: 'long', year: 'numeric',
+                  })}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Plan mensual */}
-        {monthlyPlan && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Plan Mensual</p>
-                <h2 className="text-lg font-bold text-white">
-                  {MONTH_NAMES[monthlyPlan.month - 1]} {monthlyPlan.year}
-                </h2>
-              </div>
-              <div className="flex items-center gap-2 bg-zinc-800 rounded-lg px-3 py-1.5">
-                {planInfo?.icon}
-                <span className="text-sm text-zinc-200">{planInfo?.label}</span>
-              </div>
-            </div>
-
-            {/* Progreso */}
-            <div className="flex items-center gap-6">
-              <RingProgress value={ringValue} />
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <Film className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-zinc-300">Reels: <span className="font-semibold text-white">{monthlyPlan.reelsCount}</span></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <LayoutGrid className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm text-zinc-300">Carruseles: <span className="font-semibold text-white">{monthlyPlan.carouselsCount}</span></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Image className="w-4 h-4 text-orange-400" />
-                  <span className="text-sm text-zinc-300">Flyers: <span className="font-semibold text-white">{monthlyPlan.flyersCount}</span></span>
-                </div>
-                <p className="text-xs text-zinc-500 pt-1">{totalDelivered} de {totalContracted} entregados</p>
-              </div>
-            </div>
-
-            {/* Link de entrega */}
-            {monthlyPlan.deliveryLink && (
-              <a href={monthlyPlan.deliveryLink} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 font-semibold hover:bg-yellow-500/20 transition-colors">
-                <ExternalLink className="w-4 h-4" />
-                Ver Carpeta de Entrega
-              </a>
-            )}
-
-            {/* Contenidos */}
-            {(monthlyPlan.contents || []).length > 0 && (
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Contenidos</p>
-                <div className="space-y-2">
-                  {monthlyPlan.contents.map((c: any) => {
-                    const st = statusLabel(c.status)
-                    return (
-                      <div key={c.id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2.5">
-                        <div className="flex items-center gap-2.5">
-                          {typeIcon(c.type)}
-                          <span className="text-sm text-zinc-200 truncate max-w-[200px]">{c.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-medium ${st.color}`}>{st.label}</span>
-                          {c.publishedLink && (
-                            <a href={c.publishedLink} target="_blank" rel="noopener noreferrer"
-                              className="text-zinc-500 hover:text-white transition-colors">
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
+        {/* ── C. ESTADO ────────────────────────────────────────────────────── */}
+        <div className={`${statusCfg.bg} border ${statusCfg.border} rounded-2xl p-5`}>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Estado actual</p>
+          <div className={`flex items-center gap-3 ${statusCfg.color}`}>
+            <StatusIcon type={statusCfg.icon} />
+            <span className="text-2xl font-bold tracking-tight">{statusCfg.label}</span>
           </div>
-        )}
+          {project?.observaciones && (
+            <p className="mt-3 text-sm text-zinc-400 border-t border-zinc-700/50 pt-3">
+              {project.observaciones}
+            </p>
+          )}
+        </div>
 
-        {/* Proyecto */}
-        {project && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Proyecto</p>
-                <h2 className="text-lg font-bold text-white">{project.nombre}</h2>
+        {/* ── D + E. ENTREGA ────────────────────────────────────────────────── */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4">Archivos de entrega</p>
+
+          {deliveryLink ? (
+            <div className="space-y-3">
+              {/* URL de entrega */}
+              <div className="flex items-center gap-2 bg-zinc-800/70 rounded-xl px-3 py-2.5 border border-zinc-700/50">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  className="w-4 h-4 shrink-0 text-[#C9A84C]">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                <p className="text-xs text-zinc-300 font-mono truncate flex-1 select-all">
+                  {deliveryLink}
+                </p>
               </div>
-              <span className="bg-zinc-800 text-zinc-200 text-sm rounded-lg px-3 py-1.5">
-                {projectStatusInfo(project.estado)}
-              </span>
+
+              {/* Botones de acción */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <a
+                  href={deliveryLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#C9A84C]/10 border border-[#C9A84C]/25 text-[#C9A84C] hover:bg-[#C9A84C]/20 transition-colors text-sm font-semibold"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Abrir entrega
+                </a>
+                <button
+                  onClick={copyLink}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white hover:border-zinc-600 transition-colors text-sm font-semibold"
+                >
+                  {copied
+                    ? <><Check className="w-4 h-4 text-emerald-400" /> Copiado</>
+                    : <><Copy className="w-4 h-4" /> Copiar enlace</>
+                  }
+                </button>
+              </div>
+
+              {/* Vista previa Google Drive */}
+              {previewUrl && !previewFailed && (
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-2 mt-1">
+                    Vista previa
+                  </p>
+                  <div className="rounded-xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
+                    <iframe
+                      src={previewUrl}
+                      title="Vista previa de entrega"
+                      className="w-full"
+                      style={{ height: 420, border: 'none' }}
+                      allow="autoplay"
+                      onError={() => setPreviewFailed(true)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {((previewUrl && previewFailed) || !previewUrl) && (
+                <p className="text-xs text-zinc-600 text-center pt-1">
+                  {previewFailed
+                    ? 'La vista previa no está disponible para este enlace.'
+                    : 'La vista previa no está disponible para este tipo de enlace.'}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-10 space-y-2">
+              <Clock className="w-8 h-8 text-zinc-600 mx-auto" />
+              <p className="text-zinc-200 font-medium">Tu entrega todavía no está disponible.</p>
+              <p className="text-zinc-500 text-sm">Cuando esté lista, aparecerá aquí.</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── F. PAGO (solo planes mensuales) ──────────────────────────────── */}
+        {monthlyPlan && paymentCfg && (
+          <div className={`${paymentCfg.bg} border ${paymentCfg.border} rounded-2xl p-5`}>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Resumen de pago</p>
+
+            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold mb-4 bg-zinc-900/60 ${paymentCfg.color}`}>
+              {isPaid    && <CheckCircle2  className="w-4 h-4" />}
+              {isPending && <Clock        className="w-4 h-4" />}
+              {!isPaid && !isPending && <AlertTriangle className="w-4 h-4" />}
+              {paymentCfg.label}
             </div>
 
-            {project.observaciones && (
-              <p className="text-sm text-zinc-400">{project.observaciones}</p>
-            )}
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { label: 'Total',    value: formatCOP(monthlyPlan.monthlyPrice),                               cls: 'text-white'       },
+                { label: 'Abonado',  value: isPaid ? formatCOP(monthlyPlan.monthlyPrice) : isPending ? formatCOP(0) : '—', cls: isPaid ? 'text-emerald-400' : 'text-zinc-300' },
+                { label: 'Pendiente',value: isPaid ? formatCOP(0) : isPending ? formatCOP(monthlyPlan.monthlyPrice) : '—', cls: isPending ? 'text-red-400' : isPaid ? 'text-emerald-400' : 'text-yellow-400' },
+              ].map(({ label, value, cls }) => (
+                <div key={label} className="bg-zinc-900/70 rounded-xl p-3 text-center">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">{label}</p>
+                  <p className={`text-sm font-bold ${cls}`}>{value}</p>
+                </div>
+              ))}
+            </div>
 
-            {project.fechaEntrega && (
-              <p className="text-sm text-zinc-400">
-                Fecha de entrega: <span className="text-white font-medium">
-                  {new Date(project.fechaEntrega).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
-                </span>
+            {!isPaid && !isPending && (
+              <p className="text-xs text-zinc-500 text-center mt-3">
+                Consulta el detalle de tu pago directamente con PHMavericks.
               </p>
             )}
-
-            {project.linkEntrega && (
-              <a href={project.linkEntrega} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 font-semibold hover:bg-yellow-500/20 transition-colors">
-                <ExternalLink className="w-4 h-4" />
-                Ver Entrega del Proyecto
-              </a>
-            )}
-
-            {(project.contents || []).length > 0 && (
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">Contenidos</p>
-                <div className="space-y-2">
-                  {project.contents.map((c: any) => {
-                    const st = statusLabel(c.status)
-                    return (
-                      <div key={c.id} className="flex items-center justify-between bg-zinc-800 rounded-lg px-3 py-2.5">
-                        <div className="flex items-center gap-2.5">
-                          {typeIcon(c.type)}
-                          <span className="text-sm text-zinc-200 truncate max-w-[200px]">{c.title}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-medium ${st.color}`}>{st.label}</span>
-                          {c.publishedLink && (
-                            <a href={c.publishedLink} target="_blank" rel="noopener noreferrer"
-                              className="text-zinc-500 hover:text-white transition-colors">
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
-        <p className="text-center text-xs text-zinc-600 pb-4">
-          Este link es privado y fue generado específicamente para {client.name} por PHMavericks.
-        </p>
+        {/* ── FOOTER WHATSAPP ──────────────────────────────────────────────── */}
+        <div className="pt-4 text-center space-y-3">
+          <p className="text-zinc-500 text-sm">¿Tienes dudas sobre tu entrega?</p>
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl bg-[#25D366]/10 border border-[#25D366]/25 text-[#25D366] hover:bg-[#25D366]/20 transition-colors font-semibold"
+          >
+            <WhatsAppIcon className="w-5 h-5" />
+            Contactar por WhatsApp
+          </a>
+          <p className="text-zinc-700 text-xs pt-2">
+            © {new Date().getFullYear()} PHMavericks · Entrega privada generada para {client.name}
+          </p>
+        </div>
       </main>
     </div>
   )

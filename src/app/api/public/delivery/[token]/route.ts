@@ -15,20 +15,6 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
           paymentStatus: true,
           monthlyPrice: true,
           deliveryLink: true,
-          reelsCount: true,
-          carouselsCount: true,
-          flyersCount: true,
-          contents: {
-            select: {
-              id: true,
-              type: true,
-              title: true,
-              status: true,
-              driveLink: true,
-              publishedLink: true,
-            },
-            orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
-          },
         },
       },
       project: {
@@ -39,17 +25,6 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
           linkEntrega: true,
           fechaEntrega: true,
           observaciones: true,
-          contents: {
-            select: {
-              id: true,
-              type: true,
-              title: true,
-              status: true,
-              driveLink: true,
-              publishedLink: true,
-            },
-            orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
-          },
         },
       },
     },
