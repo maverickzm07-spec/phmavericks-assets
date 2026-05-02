@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUpRight } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Link2, Copy, Check, Unlink } from 'lucide-react'
 import { clientStatusBadge, planStatusBadge, paymentStatusBadge } from '@/components/ui/Badge'
 import PremiumCard from '@/components/ui/PremiumCard'
 import { getMonthName, formatCurrency } from '@/lib/utils'
@@ -36,10 +36,7 @@ interface IngresoCliente {
 }
 
 const TIPO_LABEL: Record<string, string> = {
-  CONTENIDO: 'Contenido',
-  IA: 'IA',
-  FOTOGRAFIA: 'Fotografía',
-  PERSONALIZADO: 'Personalizado',
+  CONTENIDO: 'Contenido', IA: 'IA', FOTOGRAFIA: 'Fotografía', PERSONALIZADO: 'Personalizado',
 }
 
 const TIPO_SERVICIO_LABEL: Record<string, string> = {
@@ -79,6 +76,12 @@ export default function ClienteDetailPage() {
   const [ingresosTotales, setIngresosTotales] = useState<any>(null)
   const [loadingIngresos, setLoadingIngresos] = useState(false)
   const [canVerIngresos, setCanVerIngresos] = useState(false)
+  const [canAdmin, setCanAdmin] = useState(false)
+  const [portalToken, setPortalToken] = useState<string | null>(null)
+  const [generatingToken, setGeneratingToken] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [showUnassign, setShowUnassign] = useState(false)
+  const [unassigning, setUnassigning] = useState(false)
   const [form, setForm] = useState({
     name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '',
   })
@@ -86,7 +89,9 @@ export default function ClienteDetailPage() {
   useEffect(() => {
     fetch('/api/auth/me')
       .then((r) => r.json())
-      .then((u) => { if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) setCanVerIngresos(true) })
+      .then((u) => {
+        if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) { setCanVerIngresos(true); setCanAdmin(true) }
+      })
       .catch(() => {})
   }, [])
 
@@ -106,6 +111,7 @@ export default function ClienteDetailPage() {
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((data) => {
         setClient(data)
+        setPortalToken(data.clientPortalToken || null)
         setForm({
           name: data.name || '', business: data.business || '', contact: data.contact || '',
           whatsapp: data.whatsapp || '', email: data.email || '', status: data.status || 'ACTIVE',
@@ -134,6 +140,31 @@ export default function ClienteDetailPage() {
     setDeleting(true)
     try { await fetch(`/api/clientes/${id}`, { method: 'DELETE' }); router.push('/clientes') }
     finally { setDeleting(false) }
+  }
+
+  const handleGenerateToken = async () => {
+    setGeneratingToken(true)
+    try {
+      const res = await fetch(`/api/clientes/${id}/portal-token`, { method: 'POST' })
+      if (res.ok) { const data = await res.json(); setPortalToken(data.token); setClient((prev: any) => ({ ...prev, clientPortalToken: data.token })) }
+    } catch { /* silent */ }
+    finally { setGeneratingToken(false) }
+  }
+
+  const handleCopyPortalLink = () => {
+    if (!portalToken) return
+    const url = `${window.location.origin}/cliente/${portalToken}`
+    navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+  }
+
+  const handleUnassignService = async () => {
+    setUnassigning(true)
+    try {
+      const res = await fetch(`/api/clientes/${id}/servicio`, { method: 'DELETE' })
+      if (res.ok) { setClient((prev: any) => ({ ...prev, servicePlanId: null, servicePlan: null })); setShowUnassign(false) }
+      else { const data = await res.json(); alert(data.error || 'Error al desasignar') }
+    } catch { alert('Error de conexión') }
+    finally { setUnassigning(false) }
   }
 
   if (loading) return (
@@ -207,13 +238,21 @@ export default function ClienteDetailPage() {
             </div>
           </div>
           <div>
-            <label className={labelCls}>Servicio asignado</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={labelCls + ' mb-0'}>Servicio asignado</label>
+              {canAdmin && client?.servicePlan && (
+                <button type="button" onClick={() => setShowUnassign(true)}
+                  className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors">
+                  <Unlink className="w-3 h-3" /> Desasignar
+                </button>
+              )}
+            </div>
             {client?.servicePlan ? (
               <div className="px-4 py-3 bg-phm-surface border border-phm-border-soft rounded-lg space-y-1">
                 <p className="text-sm text-white font-medium">{client.servicePlan.nombre}</p>
                 <p className="text-xs text-phm-gray-soft">
-                  <span className="text-phm-gold">${client.servicePlan.precio}</span>
-                  {' · '}{TIPO_LABEL[client.servicePlan.tipo]}
+                  {canAdmin && <span className="text-phm-gold">${client.servicePlan.precio} · </span>}
+                  {TIPO_LABEL[client.servicePlan.tipo]}
                 </p>
                 <div className="flex gap-3 flex-wrap text-xs text-phm-gray-soft mt-1">
                   {client.servicePlan.cantidadReels > 0 && <span><span className="text-purple-400">▶</span> {client.servicePlan.cantidadReels} reels</span>}
@@ -243,17 +282,53 @@ export default function ClienteDetailPage() {
         </form>
       </PremiumCard>
 
-      {/* Acciones rápidas */}
-      <div className="flex gap-3 flex-wrap">
-        <Link href={`/ingresos?clienteId=${client.id}&create=1`}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors">
-          + Registrar ingreso
-        </Link>
-        <Link href={`/ingresos?clienteId=${client.id}`}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-all">
-          Ver todos los ingresos <ArrowUpRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
+      {/* Portal del cliente */}
+      {canAdmin && (
+        <PremiumCard padding="md">
+          <div className="flex items-center gap-2 mb-3">
+            <Link2 className="w-4 h-4 text-phm-gold" />
+            <h2 className="font-semibold text-white">Portal del cliente</h2>
+          </div>
+          <p className="text-xs text-phm-gray-soft mb-4">
+            Genera un enlace único y seguro para que el cliente vea el avance de sus contenidos. No requiere inicio de sesión.
+          </p>
+          {portalToken ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-phm-surface border border-phm-border-soft rounded-lg">
+                <code className="text-xs text-phm-gold flex-1 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/cliente/${portalToken}`}</code>
+                <button onClick={handleCopyPortalLink}
+                  className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-white px-2.5 py-1.5 rounded-md border border-phm-border-soft hover:border-phm-gold/40 transition-all">
+                  {copied ? <><Check className="w-3 h-3 text-emerald-400" /> Copiado</> : <><Copy className="w-3 h-3" /> Copiar</>}
+                </button>
+              </div>
+              <button onClick={handleGenerateToken} disabled={generatingToken}
+                className="text-xs text-phm-gray hover:text-amber-400 transition-colors">
+                {generatingToken ? 'Generando...' : 'Regenerar enlace (invalida el anterior)'}
+              </button>
+            </div>
+          ) : (
+            <button onClick={handleGenerateToken} disabled={generatingToken}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors disabled:opacity-50">
+              <Link2 className="w-4 h-4" />
+              {generatingToken ? 'Generando...' : 'Generar enlace del portal'}
+            </button>
+          )}
+        </PremiumCard>
+      )}
+
+      {/* Acciones rápidas — solo para admins */}
+      {canAdmin && (
+        <div className="flex gap-3 flex-wrap">
+          <Link href={`/ingresos?clienteId=${client.id}&create=1`}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors">
+            + Registrar ingreso
+          </Link>
+          <Link href={`/ingresos?clienteId=${client.id}`}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-all">
+            Ver todos los ingresos <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Ingresos del cliente */}
       {canVerIngresos && (
@@ -371,6 +446,15 @@ export default function ClienteDetailPage() {
         isLoading={deleting}
         title="¿Eliminar cliente?"
         description={`Se eliminará "${client.name}" junto con todos sus planes y contenidos. Esta acción no se puede deshacer.`}
+      />
+
+      <Modal
+        isOpen={showUnassign}
+        onClose={() => setShowUnassign(false)}
+        onConfirm={handleUnassignService}
+        isLoading={unassigning}
+        title="¿Desasignar servicio?"
+        description={`Se quitará el servicio de "${client.name}". Los planes y contenidos históricos se conservarán. Esta acción no crea ni elimina trabajo.`}
       />
     </div>
   )

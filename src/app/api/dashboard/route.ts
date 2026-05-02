@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canViewFinancials } from '@/lib/permissions'
 
 // Valores válidos del enum ContentStatus en la base de datos
 const PENDING_STATUSES = ['PENDING', 'EDITING', 'APPROVED', 'PENDIENTE', 'EN_PROCESO']
@@ -79,13 +80,16 @@ export async function GET(request: NextRequest) {
   // Últimos 6 planes para la tabla del dashboard
   const recentPlans = allPlans.slice(0, 6)
 
-  const now = new Date()
-  const mesStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const ingresosMesData = await prisma.ingreso.findMany({
-    where: { fechaIngreso: { gte: mesStart }, estadoPago: { not: 'PENDIENTE' } },
-    select: { montoPagado: true },
-  })
-  const ingresosMes = ingresosMesData.reduce((s, i) => s + (i.montoPagado || 0), 0)
+  const financialData: Record<string, number> = {}
+  if (canViewFinancials(user.role)) {
+    const now = new Date()
+    const mesStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const ingresosMesData = await prisma.ingreso.findMany({
+      where: { fechaIngreso: { gte: mesStart }, estadoPago: { not: 'PENDIENTE' } },
+      select: { montoPagado: true },
+    })
+    financialData.ingresosMes = ingresosMesData.reduce((s, i) => s + (i.montoPagado || 0), 0)
+  }
 
   return NextResponse.json({
     activeClients,
@@ -96,7 +100,7 @@ export async function GET(request: NextRequest) {
     avgCompliance,
     recentPlans,
     recentProjects,
-    ingresosMes,
     totalContents,
+    ...financialData,
   })
 }

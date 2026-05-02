@@ -57,6 +57,11 @@ export function canRead(_role: string) {
   return true
 }
 
+// Información financiera (ingresos, precios, abonos, pagos): solo SUPER_ADMIN y ADMIN
+export function canViewFinancials(role: string) {
+  return ['SUPER_ADMIN', 'ADMIN'].includes(role)
+}
+
 // Ingresos: solo SUPER_ADMIN y ADMIN
 export function canViewIngresos(role: string) {
   return ['SUPER_ADMIN', 'ADMIN'].includes(role)

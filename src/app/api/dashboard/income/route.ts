@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canViewFinancials } from '@/lib/permissions'
 
 type Range = 'last_7_days' | 'last_28_days' | 'last_90_days' | 'this_month' | 'previous_month' | 'this_year' | 'all_time' | 'custom'
 type GroupBy = 'day' | 'week' | 'month'
@@ -159,6 +160,7 @@ function fmtDate(d: Date) {
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canViewFinancials(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const range = (searchParams.get('range') ?? 'this_month') as Range

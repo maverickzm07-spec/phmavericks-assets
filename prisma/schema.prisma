@@ -30,22 +30,23 @@ enum Role {
 }
 
 model Client {
-  id             String          @id @default(cuid())
-  name           String
-  business       String
-  contact        String?
-  whatsapp       String?
-  email          String?
-  status         ClientStatus    @default(ACTIVE)
-  notes          String?
-  servicePlanId  String?
-  servicePlan    ServicePlan?    @relation(fields: [servicePlanId], references: [id])
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  monthlyPlans   MonthlyPlan[]
-  contents       Content[]
-  ingresos       Ingreso[]
-  projects       ClientProject[]
+  id                String          @id @default(cuid())
+  name              String
+  business          String
+  contact           String?
+  whatsapp          String?
+  email             String?
+  status            ClientStatus    @default(ACTIVE)
+  notes             String?
+  servicePlanId     String?
+  servicePlan       ServicePlan?    @relation(fields: [servicePlanId], references: [id])
+  clientPortalToken String?         @unique
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  monthlyPlans      MonthlyPlan[]
+  contents          Content[]
+  ingresos          Ingreso[]
+  projects          ClientProject[]
 }
 
 enum ServicePlanType {
@@ -282,6 +283,24 @@ model GoogleToken {
   refreshToken String
   expiresAt    DateTime
   updatedAt    DateTime @updatedAt
+}
+
+// ── Audit Log ────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  userEmail  String
+  action     String
+  entity     String
+  entityId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 // ── Módulo Calendario ─────────────────────────────────────────
