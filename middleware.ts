@@ -6,7 +6,7 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'phm-default-secret-change-in-production-2026'
 )
 
-const publicPaths = ['/login', '/api/auth/login']
+const publicPaths = ['/login', '/api/auth/login', '/entrega/', '/api/public/', '/cliente/']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

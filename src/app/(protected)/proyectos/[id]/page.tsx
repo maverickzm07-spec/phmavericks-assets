@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 import { ClientProject } from '@/types'
 import PremiumCard from '@/components/ui/PremiumCard'
 import ProgressBar from '@/components/ui/ProgressBar'
+import DeliveryAccessCard from '@/components/ui/DeliveryAccessCard'
 import { getStatusLabel, getProjectStatusColor, getFormatoLabel, getContentTypeLabel, getContentStatusColor, getModalidadLabel } from '@/lib/utils'
 
 const ESTADOS_PROYECTO = ['PENDIENTE','EN_PROCESO','EN_EDICION','APROBADO','ENTREGADO','COMPLETADO','ATRASADO']
@@ -21,6 +22,13 @@ export default function ProyectoDetailPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editEstado, setEditEstado] = useState('')
+  const [canAdmin, setCanAdmin] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/auth/me').then((r) => r.ok ? r.json() : null)
+      .then((u) => { if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) setCanAdmin(true) })
+      .catch(() => {})
+  }, [])
 
   const fetchProject = () => {
     fetch(`/api/proyectos/${id}`)
@@ -146,6 +154,19 @@ export default function ProyectoDetailPage() {
           <ProgressBar value={pct} size="md" />
         </div>
       </PremiumCard>
+
+      {/* Link privado de entrega */}
+      {canAdmin && (
+        <PremiumCard padding="md">
+          <h2 className="font-semibold text-white mb-4">Link privado de entrega</h2>
+          <DeliveryAccessCard
+            clientId={project.clientId}
+            entityType="PROJECT"
+            entityId={project.id}
+            existing={(project as any).deliveryAccesses?.[0] ?? null}
+          />
+        </PremiumCard>
+      )}
 
       {/* Entregables */}
       <PremiumCard padding="none">

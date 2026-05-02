@@ -31,6 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         orderBy: { createdAt: 'asc' },
         include: { client: { select: { id: true, name: true } } },
       },
+      deliveryAccesses: { orderBy: { createdAt: 'desc' }, take: 1 },
     },
   })
 

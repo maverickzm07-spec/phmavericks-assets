@@ -8,6 +8,7 @@ import { planStatusBadge, paymentStatusBadge, contentStatusBadge, contentTypeBad
 import ProgressBar from '@/components/ui/ProgressBar'
 import Modal from '@/components/ui/Modal'
 import PremiumCard from '@/components/ui/PremiumCard'
+import DeliveryAccessCard from '@/components/ui/DeliveryAccessCard'
 import { getMonthName, calculateCompliance, formatCurrency, MONTHS } from '@/lib/utils'
 
 export default function PlanDetailPage() {
@@ -24,9 +25,16 @@ export default function PlanDetailPage() {
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState<any>({})
+  const [canAdmin, setCanAdmin] = useState(false)
 
   const currentYear = new Date().getFullYear()
   const years = [currentYear - 1, currentYear, currentYear + 1]
+
+  useEffect(() => {
+    fetch('/api/auth/me').then((r) => r.ok ? r.json() : null)
+      .then((u) => { if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) setCanAdmin(true) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -40,6 +48,7 @@ export default function PlanDetailPage() {
         reelsCount: planData.reelsCount, carouselsCount: planData.carouselsCount,
         flyersCount: planData.flyersCount, monthlyPrice: planData.monthlyPrice,
         paymentStatus: planData.paymentStatus, planStatus: planData.planStatus,
+        deliveryLink: planData.deliveryLink || '',
         observations: planData.observations || '',
       })
     }).catch(console.error).finally(() => setLoading(false))
@@ -194,6 +203,13 @@ export default function PlanDetailPage() {
           </div>
 
           <div>
+            <label className={labelCls}>Link de entrega (carpeta Drive)</label>
+            <input name="deliveryLink" type="url" value={form.deliveryLink} onChange={handleChange}
+              placeholder="https://drive.google.com/..."
+              className={inputCls} />
+          </div>
+
+          <div>
             <label className={labelCls}>Observaciones</label>
             <textarea name="observations" value={form.observations} onChange={handleChange} rows={3}
               className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
@@ -207,6 +223,19 @@ export default function PlanDetailPage() {
           </button>
         </form>
       </PremiumCard>
+
+      {/* Link privado de entrega */}
+      {canAdmin && (
+        <PremiumCard padding="md">
+          <h2 className="font-semibold text-white mb-4">Link privado de entrega</h2>
+          <DeliveryAccessCard
+            clientId={plan.clientId}
+            entityType="MONTHLY_PLAN"
+            entityId={id}
+            existing={plan.deliveryAccesses?.[0] ?? null}
+          />
+        </PremiumCard>
+      )}
 
       {/* Contenidos del plan */}
       {plan.contents?.length > 0 && (

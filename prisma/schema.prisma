@@ -47,6 +47,7 @@ model Client {
   contents          Content[]
   ingresos          Ingreso[]
   projects          ClientProject[]
+  deliveryAccesses  DeliveryAccess[]
 }
 
 enum ServicePlanType {
@@ -105,11 +106,13 @@ model MonthlyPlan {
   monthlyPrice   Float           @default(0)
   paymentStatus  PaymentStatus   @default(PENDING)
   planStatus     PlanStatus      @default(IN_PROGRESS)
+  deliveryLink   String?
   observations   String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  contents       Content[]
-  projects       ClientProject[]
+  contents         Content[]
+  projects         ClientProject[]
+  deliveryAccesses DeliveryAccess[]
 }
 
 enum PaymentStatus {
@@ -148,9 +151,10 @@ model ClientProject {
   linkEntrega   String?
   fechaEntrega  DateTime?
   observaciones String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  contents      Content[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  contents         Content[]
+  deliveryAccesses DeliveryAccess[]
 }
 
 model Content {
@@ -283,6 +287,33 @@ model GoogleToken {
   refreshToken String
   expiresAt    DateTime
   updatedAt    DateTime @updatedAt
+}
+
+// ── Delivery Access (links privados de entrega) ──────────────
+
+enum DeliveryAccessType {
+  PROJECT
+  MONTHLY_PLAN
+  CLIENT_GENERAL
+}
+
+model DeliveryAccess {
+  id             String             @id @default(cuid())
+  token          String             @unique
+  clientId       String
+  client         Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        ClientProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  monthlyPlanId  String?
+  monthlyPlan    MonthlyPlan?       @relation(fields: [monthlyPlanId], references: [id], onDelete: SetNull)
+  type           DeliveryAccessType
+  isActive       Boolean            @default(true)
+  createdById    String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([token])
+  @@index([clientId])
 }
 
 // ── Audit Log ────────────────────────────────────────────────

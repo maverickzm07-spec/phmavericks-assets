@@ -13,6 +13,7 @@ const planSchema = z.object({
   monthlyPrice: z.number().min(0),
   paymentStatus: z.enum(['PENDING', 'PARTIAL', 'PAID']),
   planStatus: z.enum(['IN_PROGRESS', 'COMPLETED', 'DELAYED']),
+  deliveryLink: z.string().optional().nullable(),
   observations: z.string().optional(),
 })
 
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     include: {
       client: true,
       contents: { orderBy: [{ type: 'asc' }, { createdAt: 'asc' }] },
+      deliveryAccesses: { orderBy: { createdAt: 'desc' }, take: 1 },
     },
   })
 
@@ -52,6 +54,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         monthlyPrice: data.monthlyPrice,
         paymentStatus: data.paymentStatus,
         planStatus: data.planStatus,
+        deliveryLink: data.deliveryLink ?? null,
         observations: data.observations || null,
       },
       include: { client: true },
