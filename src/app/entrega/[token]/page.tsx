@@ -5,30 +5,14 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import {
   CheckCircle2, Clock, AlertTriangle, ExternalLink,
-  Copy, Check, AlertCircle,
+  Copy, Check, AlertCircle, Folder, FileText,
 } from 'lucide-react'
+import { getGoogleDriveEmbedInfo } from '@/lib/driveEmbed'
 
 // ─── Configuración central ────────────────────────────────────────────────────
 
 const PHM_WHATSAPP = process.env.NEXT_PUBLIC_PHM_WHATSAPP_NUMBER ?? '593XXXXXXXXX'
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getGoogleDrivePreviewUrl(url: string): string | null {
-  if (!url) return null
-  try {
-    const driveFile = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
-    if (driveFile) return `https://drive.google.com/file/d/${driveFile[1]}/preview`
-
-    const docs = url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([a-zA-Z0-9_-]+)/)
-    if (docs) return `https://docs.google.com/${docs[1]}/d/${docs[2]}/preview`
-
-    return null
-  } catch {
-    return null
-  }
-}
 
 function buildWhatsappUrl(clientName: string, subject: string): string {
   const msg = encodeURIComponent(
@@ -134,7 +118,7 @@ export default function EntregaTokenPage() {
   const { client, monthlyPlan, project } = data
 
   const deliveryLink  = monthlyPlan?.deliveryLink || project?.linkEntrega || null
-  const previewUrl    = deliveryLink ? getGoogleDrivePreviewUrl(deliveryLink) : null
+  const embedInfo     = deliveryLink ? getGoogleDriveEmbedInfo(deliveryLink) : { type: null, embedUrl: null }
   const statusCfg     = monthlyPlan
     ? (PLAN_STATUS[monthlyPlan.planStatus] ?? PLAN_STATUS['IN_PROGRESS'])
     : (PROJECT_STATUS[project?.estado]    ?? PROJECT_STATUS['PENDIENTE'])
@@ -279,29 +263,45 @@ export default function EntregaTokenPage() {
               </div>
 
               {/* Vista previa Google Drive */}
-              {previewUrl && !previewFailed && (
-                <div>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-2 mt-1">
-                    Vista previa
-                  </p>
-                  <div className="rounded-xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
+              {embedInfo.embedUrl && !previewFailed && (
+                <div className="mt-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Vista previa</p>
+                    <span className="flex items-center gap-1 text-[10px] text-zinc-600">
+                      {embedInfo.type === 'folder'
+                        ? <><Folder className="w-3 h-3" /> Carpeta de Drive</>
+                        : <><FileText className="w-3 h-3" /> Archivo de Drive</>
+                      }
+                    </span>
+                  </div>
+                  <div className="rounded-xl overflow-hidden border border-zinc-700/50 bg-zinc-800/50">
                     <iframe
-                      src={previewUrl}
+                      src={embedInfo.embedUrl}
                       title="Vista previa de entrega"
                       className="w-full"
-                      style={{ height: 420, border: 'none' }}
+                      style={{
+                        height: embedInfo.type === 'folder' ? 560 : 480,
+                        border: 'none',
+                      }}
                       allow="autoplay"
                       onError={() => setPreviewFailed(true)}
                     />
                   </div>
+                  <p className="text-[10px] text-zinc-700 text-center mt-1.5">
+                    La vista previa requiere que el archivo tenga acceso público activado en Drive.
+                  </p>
                 </div>
               )}
 
-              {((previewUrl && previewFailed) || !previewUrl) && (
+              {embedInfo.embedUrl && previewFailed && (
                 <p className="text-xs text-zinc-600 text-center pt-1">
-                  {previewFailed
-                    ? 'La vista previa no está disponible para este enlace.'
-                    : 'La vista previa no está disponible para este tipo de enlace.'}
+                  La vista previa no está disponible para este enlace.
+                </p>
+              )}
+
+              {!embedInfo.embedUrl && (
+                <p className="text-xs text-zinc-600 text-center pt-1">
+                  La vista previa no está disponible para este tipo de enlace.
                 </p>
               )}
             </div>

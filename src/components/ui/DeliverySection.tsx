@@ -1,19 +1,9 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { ExternalLink, Copy, Check, Save, Loader2, Link2 } from 'lucide-react'
+import { ExternalLink, Copy, Check, Save, Loader2, Link2, Folder, FileText } from 'lucide-react'
 import DeliveryAccessCard from './DeliveryAccessCard'
-
-function getGoogleDrivePreviewUrl(url: string): string | null {
-  if (!url) return null
-  try {
-    const driveFile = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/)
-    if (driveFile) return `https://drive.google.com/file/d/${driveFile[1]}/preview`
-    const docs = url.match(/docs\.google\.com\/(document|spreadsheets|presentation)\/d\/([a-zA-Z0-9_-]+)/)
-    if (docs) return `https://docs.google.com/${docs[1]}/d/${docs[2]}/preview`
-    return null
-  } catch { return null }
-}
+import { getGoogleDriveEmbedInfo } from '@/lib/driveEmbed'
 
 interface Props {
   initialLink: string | null
@@ -37,7 +27,7 @@ export default function DeliverySection({
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const okTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const previewUrl = saved ? getGoogleDrivePreviewUrl(saved) : null
+  const embedInfo  = saved ? getGoogleDriveEmbedInfo(saved) : { type: null, embedUrl: null }
   const isDirty    = link !== saved
 
   async function handleSave() {
@@ -125,29 +115,40 @@ export default function DeliverySection({
       )}
 
       {/* Vista previa Google Drive */}
-      {previewUrl && !previewFailed && (
+      {embedInfo.embedUrl && !previewFailed && (
         <div>
-          <p className="text-xs text-phm-gray-soft mb-2">Vista previa</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-xs text-phm-gray-soft">Vista previa</p>
+            <span className="flex items-center gap-1 text-xs text-phm-gray-soft/60">
+              {embedInfo.type === 'folder'
+                ? <><Folder className="w-3 h-3" /> Carpeta</>
+                : <><FileText className="w-3 h-3" /> Archivo</>
+              }
+            </span>
+          </div>
           <div className="rounded-xl overflow-hidden border border-phm-border-soft bg-phm-surface">
             <iframe
-              src={previewUrl}
-              title="Vista previa de entrega"
+              src={embedInfo.embedUrl}
+              title="Vista previa"
               className="w-full"
-              style={{ height: 360, border: 'none' }}
+              style={{ height: embedInfo.type === 'folder' ? 520 : 360, border: 'none' }}
               allow="autoplay"
               onError={() => setPreviewFailed(true)}
             />
           </div>
+          <p className="text-[11px] text-phm-gray-soft/50 mt-1">
+            Requiere acceso público activado en Drive.
+          </p>
         </div>
       )}
 
-      {previewUrl && previewFailed && (
+      {embedInfo.embedUrl && previewFailed && (
         <p className="text-xs text-phm-gray-soft italic">
           La vista previa no está disponible para este enlace.
         </p>
       )}
 
-      {saved && !previewUrl && (
+      {saved && !embedInfo.embedUrl && (
         <p className="text-xs text-phm-gray-soft italic">
           La vista previa no está disponible para este tipo de enlace.
         </p>
