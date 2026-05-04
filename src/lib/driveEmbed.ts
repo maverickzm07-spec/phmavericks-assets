@@ -11,7 +11,7 @@ export function getGoogleDriveEmbedInfo(url: string): DriveEmbedInfo {
     if (folder) {
       return {
         type: 'folder',
-        embedUrl: `https://drive.google.com/embeddedfolderview?id=${folder[1]}#list`,
+        embedUrl: `https://drive.google.com/embeddedfolderview?id=${folder[1]}#grid`,
       }
     }
 

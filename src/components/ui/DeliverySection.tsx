@@ -133,7 +133,7 @@ export default function DeliverySection({
               src={embedInfo.embedUrl}
               title="Vista previa"
               className="w-full"
-              style={{ height: embedInfo.type === 'folder' ? 520 : 360, border: 'none' }}
+              style={{ height: embedInfo.type === 'folder' ? 600 : 360, border: 'none' }}
               allow="autoplay"
               onError={() => setPreviewFailed(true)}
             />

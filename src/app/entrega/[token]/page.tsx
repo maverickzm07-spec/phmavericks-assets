@@ -280,7 +280,7 @@ export default function EntregaTokenPage() {
                       title="Vista previa de entrega"
                       className="w-full"
                       style={{
-                        height: embedInfo.type === 'folder' ? 560 : 480,
+                        height: embedInfo.type === 'folder' ? 620 : 480,
                         border: 'none',
                       }}
                       allow="autoplay"
