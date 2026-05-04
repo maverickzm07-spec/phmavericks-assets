@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ExternalLink, Copy, Check, Save, Loader2, Link2, Folder, FileText } from 'lucide-react'
 import DeliveryAccessCard from './DeliveryAccessCard'
 import { getGoogleDriveEmbedInfo } from '@/lib/driveEmbed'
@@ -27,8 +27,10 @@ export default function DeliverySection({
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const okTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const embedInfo  = saved ? getGoogleDriveEmbedInfo(saved) : { type: null, embedUrl: null }
+  const embedInfo  = link ? getGoogleDriveEmbedInfo(link) : { type: null, embedUrl: null }
   const isDirty    = link !== saved
+
+  useEffect(() => { setPreviewFailed(false) }, [embedInfo.embedUrl])
 
   async function handleSave() {
     setSaving(true)

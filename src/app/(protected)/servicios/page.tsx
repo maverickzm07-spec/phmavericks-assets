@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Sparkles, X, UserPlus } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
@@ -43,6 +43,13 @@ const TABS = [
   { key: 'IA', label: 'IA' }, { key: 'FOTOGRAFIA', label: 'Fotografía' },
   { key: 'PERSONALIZADO', label: 'Personalizados' },
 ]
+
+const ModalWrapper = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+    {children}
+  </div>
+)
 
 const EMPTY_FORM = {
   nombre: '', tipo: 'PERSONALIZADO' as PlanType, modalidad: 'MENSUAL' as Modalidad,
@@ -167,13 +174,6 @@ export default function ServiciosPage() {
   }
 
   const filtered = showInactive ? plans : plans.filter((p) => p.activo)
-
-  const ModalWrapper = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-      {children}
-    </div>
-  )
 
   return (
     <div className="space-y-6">

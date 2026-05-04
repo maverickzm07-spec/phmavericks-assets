@@ -6,8 +6,8 @@ export interface DriveEmbedInfo {
 export function getGoogleDriveEmbedInfo(url: string): DriveEmbedInfo {
   if (!url) return { type: null, embedUrl: null }
   try {
-    // Carpeta: drive.google.com/drive/folders/FOLDER_ID
-    const folder = url.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/)
+    // Carpeta: drive.google.com/drive/folders/FOLDER_ID (soporta /u/0/, /u/1/, etc.)
+    const folder = url.match(/drive\.google\.com\/drive(?:\/u\/\d+)?\/folders\/([a-zA-Z0-9_-]+)/)
     if (folder) {
       return {
         type: 'folder',
