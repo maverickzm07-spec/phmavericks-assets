@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Link2, Copy, Check, RefreshCw, EyeOff, Eye, Loader2 } from 'lucide-react'
+import { Link2, Copy, Check, RefreshCw, EyeOff, Eye, Loader2, ExternalLink } from 'lucide-react'
 
 interface DeliveryAccess {
   id: string
   token: string
+  publicSlug?: string | null
   isActive: boolean
   type: string
 }
@@ -23,7 +24,12 @@ export default function DeliveryAccessCard({ clientId, entityType, entityId, exi
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const deliveryUrl = access ? `${window.location.origin}/entrega/${access.token}` : ''
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://app.phmavericks.com'
+  const deliveryUrl = access
+    ? access.publicSlug
+      ? `${origin}/e/${access.publicSlug}`
+      : `${origin}/entrega/${access.token}`
+    : ''
 
   async function generate() {
     setLoading(true)
@@ -92,13 +98,31 @@ export default function DeliveryAccessCard({ clientId, entityType, entityId, exi
         </button>
       ) : (
         <div className="space-y-3">
+          {/* URL visible */}
           <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${access.isActive ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-900 border-zinc-700/50 opacity-60'}`}>
-            <p className="flex-1 text-xs text-zinc-400 truncate font-mono">{deliveryUrl}</p>
-            <button onClick={copyLink} disabled={!access.isActive}
-              className="shrink-0 text-zinc-500 hover:text-white transition-colors disabled:opacity-40">
-              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-            </button>
+            <p className="flex-1 text-xs text-zinc-300 truncate font-mono">{deliveryUrl}</p>
+            <div className="flex items-center gap-1 shrink-0">
+              <a href={deliveryUrl} target="_blank" rel="noopener noreferrer"
+                className={`text-zinc-500 hover:text-white transition-colors ${!access.isActive ? 'pointer-events-none opacity-40' : ''}`}>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+              <button onClick={copyLink} disabled={!access.isActive}
+                className="text-zinc-500 hover:text-white transition-colors disabled:opacity-40">
+                {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
+
+          {/* Badge slug vs token */}
+          {access.publicSlug ? (
+            <p className="text-[10px] text-zinc-600">
+              Link corto activo · <span className="text-zinc-500 font-mono">/e/{access.publicSlug}</span>
+            </p>
+          ) : (
+            <p className="text-[10px] text-amber-600">
+              Link largo · regenera para obtener URL corta
+            </p>
+          )}
 
           {!access.isActive && (
             <p className="text-xs text-red-400">Link desactivado — el cliente no puede acceder.</p>

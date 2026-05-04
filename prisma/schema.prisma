@@ -300,6 +300,7 @@ enum DeliveryAccessType {
 model DeliveryAccess {
   id             String             @id @default(cuid())
   token          String             @unique
+  publicSlug     String?            @unique
   clientId       String
   client         Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
   projectId      String?
@@ -313,6 +314,7 @@ model DeliveryAccess {
   updatedAt      DateTime           @updatedAt
 
   @@index([token])
+  @@index([publicSlug])
   @@index([clientId])
 }
 
