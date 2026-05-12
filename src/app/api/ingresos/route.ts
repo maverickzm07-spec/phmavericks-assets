@@ -6,6 +6,8 @@ import { z } from 'zod'
 
 const createSchema = z.object({
   clienteId: z.string().optional().nullable(),
+  projectId: z.string().optional().nullable(),
+  monthlyPlanId: z.string().optional().nullable(),
   tipoServicio: z.enum(['FOTOGRAFIA', 'REELS', 'VIDEOS_HORIZONTALES', 'IMAGENES_FLYERS', 'PLAN_MENSUAL', 'PERSONALIZADO']),
   descripcion: z.string().optional(),
   monto: z.number().positive(),
@@ -62,6 +64,8 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         cliente: { select: { id: true, name: true, business: true } },
+        project: { select: { id: true, nombre: true } },
+        monthlyPlan: { select: { id: true, month: true, year: true } },
         creadoPorUser: { select: { name: true } },
         abonos: { orderBy: { fechaAbono: 'desc' }, take: 1 },
         _count: { select: { abonos: true } },
@@ -124,6 +128,8 @@ export async function POST(request: NextRequest) {
     const ingreso = await prisma.ingreso.create({
       data: {
         clienteId: data.clienteId || null,
+        projectId: data.projectId || null,
+        monthlyPlanId: data.monthlyPlanId || null,
         tipoServicio: data.tipoServicio,
         descripcion: data.descripcion || null,
         monto: data.monto,
@@ -134,7 +140,11 @@ export async function POST(request: NextRequest) {
         observaciones: data.observaciones || null,
         creadoPor: user.userId,
       },
-      include: { cliente: { select: { id: true, name: true, business: true } } },
+      include: {
+        cliente: { select: { id: true, name: true, business: true } },
+        project: { select: { id: true, nombre: true } },
+        monthlyPlan: { select: { id: true, month: true, year: true } },
+      },
     })
 
     // Si se abonó algo al crear, registrar como primer abono

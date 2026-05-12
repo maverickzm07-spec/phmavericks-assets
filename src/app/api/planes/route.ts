@@ -15,6 +15,12 @@ const planSchema = z.object({
   paymentStatus: z.enum(['PENDING', 'PARTIAL', 'PAID']).default('PENDING'),
   planStatus: z.enum(['IN_PROGRESS', 'COMPLETED', 'DELAYED']).default('IN_PROGRESS'),
   observations: z.string().optional(),
+  precioBase: z.number().min(0).optional().nullable(),
+  precioFinal: z.number().min(0).optional().nullable(),
+  abono: z.number().min(0).optional().nullable(),
+  metodoPago: z.enum(['EFECTIVO', 'TRANSFERENCIA', 'DEPOSITO', 'TARJETA', 'OTRO']).optional().nullable(),
+  fechaPago: z.string().optional().nullable(),
+  observacionPago: z.string().optional().nullable(),
 })
 
 export async function GET(request: NextRequest) {
@@ -37,12 +43,30 @@ export async function GET(request: NextRequest) {
     include: {
       client: true,
       contents: true,
+      ingresos: { select: { id: true, monto: true, montoPagado: true, estadoPago: true, metodoPago: true, fechaIngreso: true } },
       _count: { select: { contents: true } },
     },
     orderBy: [{ year: 'desc' }, { month: 'desc' }],
   })
 
-  return NextResponse.json(plans)
+  const plansConCalc = plans.map(p => {
+    const totalPagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
+    const precioRef = p.precioFinal ?? p.monthlyPrice
+    const saldoPendiente = precioRef > 0 ? Math.max(0, precioRef - totalPagado) : null
+    const estadoEconomico = precioRef <= 0 ? 'SIN_PRECIO'
+      : totalPagado <= 0 ? 'SIN_PAGO'
+      : totalPagado >= precioRef ? 'PAGADO'
+      : 'ABONADO'
+    return { ...p, totalPagado, saldoPendiente, estadoEconomico }
+  })
+
+  return NextResponse.json(plansConCalc)
+}
+
+function calcEstadoPlan(monto: number, pagado: number): 'PAGADO' | 'PARCIAL' | 'PENDIENTE' {
+  if (pagado <= 0) return 'PENDIENTE'
+  if (pagado >= monto) return 'PAGADO'
+  return 'PARCIAL'
 }
 
 export async function POST(request: NextRequest) {
@@ -64,6 +88,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const precioFinalReal = data.precioFinal ?? data.precioBase ?? null
+
     const plan = await prisma.monthlyPlan.create({
       data: {
         clientId: data.clientId,
@@ -76,11 +102,59 @@ export async function POST(request: NextRequest) {
         paymentStatus: data.paymentStatus,
         planStatus: data.planStatus,
         observations: data.observations || null,
+        precioBase: data.precioBase ?? null,
+        precioFinal: precioFinalReal,
       },
       include: { client: true },
     })
 
-    return NextResponse.json(plan, { status: 201 })
+    // Crear ingreso si se registró abono o pago al crear el plan
+    const abonoMonto = data.abono && data.abono > 0 && precioFinalReal ? Math.min(data.abono, precioFinalReal) : 0
+
+    if (abonoMonto > 0 && precioFinalReal) {
+      const estadoPago = calcEstadoPlan(precioFinalReal, abonoMonto)
+      const fechaPago = data.fechaPago ? new Date(data.fechaPago) : new Date()
+      const nombreMes = new Date(data.year, data.month - 1).toLocaleString('es', { month: 'long' })
+
+      const ingreso = await prisma.ingreso.create({
+        data: {
+          clienteId: data.clientId,
+          monthlyPlanId: plan.id,
+          tipoServicio: 'PLAN_MENSUAL',
+          descripcion: `Pago plan mensual — ${nombreMes} ${data.year}`,
+          monto: precioFinalReal,
+          montoPagado: abonoMonto,
+          estadoPago,
+          metodoPago: data.metodoPago || null,
+          fechaIngreso: fechaPago,
+          observaciones: data.observacionPago || null,
+          creadoPor: user.userId,
+        },
+      })
+
+      if (data.metodoPago) {
+        await prisma.abono.create({
+          data: {
+            ingresoId: ingreso.id,
+            monto: abonoMonto,
+            metodoPago: data.metodoPago,
+            fechaAbono: fechaPago,
+            observacion: data.observacionPago || null,
+            creadoPor: user.userId,
+          },
+        })
+      }
+    }
+
+    const planFinal = await prisma.monthlyPlan.findUnique({
+      where: { id: plan.id },
+      include: {
+        client: true,
+        ingresos: { select: { id: true, monto: true, montoPagado: true, estadoPago: true } },
+      },
+    })
+
+    return NextResponse.json(planFinal, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
