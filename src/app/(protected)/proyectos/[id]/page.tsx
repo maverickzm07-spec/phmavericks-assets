@@ -183,6 +183,68 @@ export default function ProyectoDetailPage() {
         )}
       </PremiumCard>
 
+      {/* Estado Económico */}
+      {(() => {
+        const p = project as any
+        const ingresos: any[] = p.ingresos ?? []
+        const totalPagado: number = p.totalPagado ?? ingresos.reduce((s: number, i: any) => s + i.montoPagado, 0)
+        const saldo: number | null = p.saldoPendiente ?? null
+        const estadoEc: string = p.estadoEconomico ?? 'SIN_PRECIO'
+
+        const badgeEc = {
+          SIN_PRECIO: 'bg-phm-surface text-phm-gray-soft border border-phm-border-soft',
+          SIN_PAGO:   'bg-red-950/60 text-red-300 border border-red-900/40',
+          ABONADO:    'bg-yellow-950/60 text-yellow-300 border border-yellow-900/40',
+          PAGADO:     'bg-emerald-950/60 text-emerald-300 border border-emerald-900/40',
+        }[estadoEc] ?? 'bg-phm-surface text-phm-gray-soft'
+
+        const labelEc = { SIN_PRECIO: 'Sin precio', SIN_PAGO: 'Sin pago', ABONADO: 'Abonado', PAGADO: 'Pagado completo' }[estadoEc] ?? estadoEc
+
+        const fmt = (v: number) => `$${v.toLocaleString('es-CO', { minimumFractionDigits: 0 })}`
+
+        return (
+          <PremiumCard padding="md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-white">Estado Económico</h2>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${badgeEc}`}>{labelEc}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-phm-surface border border-phm-border-soft rounded-lg p-3 text-center">
+                <p className="text-xs text-phm-gray-soft mb-1">Precio base</p>
+                <p className="text-base font-bold text-phm-gray">{p.precioBase != null ? fmt(p.precioBase) : '—'}</p>
+              </div>
+              <div className="bg-phm-surface border border-phm-border-soft rounded-lg p-3 text-center">
+                <p className="text-xs text-phm-gray-soft mb-1">Precio final</p>
+                <p className="text-base font-bold text-phm-gold">{p.precioFinal != null ? fmt(p.precioFinal) : '—'}</p>
+              </div>
+              <div className="bg-phm-surface border border-phm-border-soft rounded-lg p-3 text-center">
+                <p className="text-xs text-phm-gray-soft mb-1">Total pagado</p>
+                <p className="text-base font-bold text-emerald-400">{fmt(totalPagado)}</p>
+              </div>
+            </div>
+            {saldo != null && (
+              <div className="mt-3 flex items-center justify-between px-3 py-2 rounded-lg bg-phm-surface border border-phm-border-soft">
+                <span className="text-xs text-phm-gray-soft">Saldo pendiente</span>
+                <span className={`text-sm font-semibold ${saldo > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                  {saldo > 0 ? fmt(saldo) : 'Sin saldo'}
+                </span>
+              </div>
+            )}
+            {ingresos.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-phm-border-soft space-y-2">
+                <p className="text-xs font-medium text-phm-gray-soft uppercase tracking-wide">Pagos registrados</p>
+                {ingresos.map((i: any) => (
+                  <div key={i.id} className="flex items-center justify-between text-xs text-phm-gray">
+                    <span>{new Date(i.fechaIngreso).toLocaleDateString('es-CO')} {i.metodoPago ? `· ${i.metodoPago}` : ''}</span>
+                    <span className="font-medium text-white">{fmt(i.montoPagado)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </PremiumCard>
+        )
+      })()}
+
       {/* Entrega del cliente */}
       <PremiumCard padding="md">
         <h2 className="font-semibold text-white mb-5">Entrega del cliente</h2>

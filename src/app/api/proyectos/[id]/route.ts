@@ -27,6 +27,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       client: { select: { id: true, name: true, business: true } },
       service: { select: { id: true, nombre: true, tipo: true, modalidad: true, precio: true } },
       monthlyPlan: { select: { id: true, month: true, year: true } },
+      ingresos: {
+        include: { abonos: { orderBy: { fechaAbono: 'asc' } } },
+        orderBy: { fechaIngreso: 'asc' },
+      },
       contents: {
         orderBy: { createdAt: 'asc' },
         include: { client: { select: { id: true, name: true } } },
@@ -36,7 +40,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   })
 
   if (!project) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
-  return NextResponse.json(project)
+
+  const totalPagado = project.ingresos.reduce((s, i) => s + i.montoPagado, 0)
+  const saldoPendiente = project.precioFinal != null ? Math.max(0, project.precioFinal - totalPagado) : null
+  const estadoEconomico = project.precioFinal == null ? 'SIN_PRECIO'
+    : totalPagado <= 0 ? 'SIN_PAGO'
+    : totalPagado >= project.precioFinal ? 'PAGADO'
+    : 'ABONADO'
+
+  return NextResponse.json({ ...project, totalPagado, saldoPendiente, estadoEconomico })
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
