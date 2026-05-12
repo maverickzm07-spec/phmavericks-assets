@@ -13,6 +13,8 @@ const updateSchema = z.object({
   linkEntrega: z.string().url().optional().or(z.literal('')),
   fechaEntrega: z.string().nullable().optional(),
   observaciones: z.string().optional(),
+  precioBase: z.number().min(0).optional().nullable(),
+  precioFinal: z.number().min(0).optional().nullable(),
 })
 
 const DONE_STATUSES = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']

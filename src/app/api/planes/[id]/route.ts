@@ -15,6 +15,8 @@ const planSchema = z.object({
   planStatus: z.enum(['IN_PROGRESS', 'COMPLETED', 'DELAYED']),
   deliveryLink: z.string().optional().nullable(),
   observations: z.string().optional(),
+  precioBase: z.number().min(0).optional().nullable(),
+  precioFinal: z.number().min(0).optional().nullable(),
 })
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -65,6 +67,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         carouselsCount: data.carouselsCount,
         flyersCount: data.flyersCount,
         monthlyPrice: data.monthlyPrice,
+        precioBase: data.precioBase ?? undefined,
+        precioFinal: data.precioFinal ?? undefined,
         paymentStatus: data.paymentStatus,
         planStatus: data.planStatus,
         deliveryLink: data.deliveryLink ?? null,
