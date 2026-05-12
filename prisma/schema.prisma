@@ -103,15 +103,22 @@ model MonthlyPlan {
   reelsCount     Int             @default(0)
   carouselsCount Int             @default(0)
   flyersCount    Int             @default(0)
+  // LEGACY: usar precioFinal como fuente de verdad; mantener por compatibilidad con registros anteriores
   monthlyPrice   Float           @default(0)
+  // LEGACY: el estado real se calcula desde los Ingreso asociados; mantener por compatibilidad
   paymentStatus  PaymentStatus   @default(PENDING)
   planStatus     PlanStatus      @default(IN_PROGRESS)
   deliveryLink   String?
   observations   String?
+  // Precio base copiado del ServicePlan al momento de crear el plan
+  precioBase     Float?
+  // Precio final acordado con el cliente (editable sobre el precio base)
+  precioFinal    Float?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   contents         Content[]
   projects         ClientProject[]
+  ingresos         Ingreso[]
   deliveryAccesses DeliveryAccess[]
 }
 
@@ -151,9 +158,14 @@ model ClientProject {
   linkEntrega   String?
   fechaEntrega  DateTime?
   observaciones String?
+  // Precio base copiado del ServicePlan al momento de crear el proyecto
+  precioBase    Float?
+  // Precio final acordado con el cliente (editable sobre el precio base)
+  precioFinal   Float?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   contents         Content[]
+  ingresos         Ingreso[]
   deliveryAccesses DeliveryAccess[]
 }
 
@@ -237,21 +249,26 @@ enum MetodoPago {
 }
 
 model Ingreso {
-  id            String       @id @default(cuid())
+  id            String         @id @default(cuid())
   clienteId     String?
-  cliente       Client?      @relation(fields: [clienteId], references: [id])
+  cliente       Client?        @relation(fields: [clienteId], references: [id])
+  // Vínculo al origen operativo (nullable para mantener ingresos legacy sin relación)
+  projectId     String?
+  project       ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  monthlyPlanId String?
+  monthlyPlan   MonthlyPlan?   @relation(fields: [monthlyPlanId], references: [id], onDelete: SetNull)
   tipoServicio  TipoServicio
   descripcion   String?
   monto         Float
-  montoPagado   Float        @default(0)
-  estadoPago    EstadoPago   @default(PENDIENTE)
+  montoPagado   Float          @default(0)
+  estadoPago    EstadoPago     @default(PENDIENTE)
   metodoPago    MetodoPago?
-  fechaIngreso  DateTime     @default(now())
+  fechaIngreso  DateTime       @default(now())
   observaciones String?
   creadoPor     String
-  creadoPorUser User         @relation("IngresosCreados", fields: [creadoPor], references: [id])
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  creadoPorUser User           @relation("IngresosCreados", fields: [creadoPor], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   abonos        Abono[]
 }
 
