@@ -39,6 +39,7 @@ export default function ContenidosPage() {
   const [filters, setFilters] = useState({ clientId: '', type: '', formato: '', status: '', modalidad: '', month: '', year: '' })
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const currentYear = new Date().getFullYear()
   const years = [currentYear - 1, currentYear, currentYear + 1]
@@ -63,10 +64,18 @@ export default function ContenidosPage() {
   const handleDelete = async () => {
     if (!deleteId) return
     setDeleting(true)
+    setDeleteError('')
     try {
-      await fetch(`/api/contenidos/${deleteId}`, { method: 'DELETE' })
-      setContents((prev) => prev.filter((c) => c.id !== deleteId))
-      setDeleteId(null)
+      const res = await fetch(`/api/contenidos/${deleteId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setContents((prev) => prev.filter((c) => c.id !== deleteId))
+        setDeleteId(null)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setDeleteError(data.error || 'Error al eliminar')
+      }
+    } catch {
+      setDeleteError('Error al eliminar')
     } finally {
       setDeleting(false)
     }
@@ -213,7 +222,7 @@ export default function ContenidosPage() {
                         <Link href={`/contenidos/${c.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
                           Editar <ArrowUpRight className="w-3 h-3" />
                         </Link>
-                        <button onClick={() => setDeleteId(c.id)} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
+                        <button onClick={() => { setDeleteError(''); setDeleteId(c.id) }} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
                           Eliminar
                         </button>
                       </div>
@@ -268,7 +277,7 @@ export default function ContenidosPage() {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {contentStatusBadge(c.status)}
                         <Link href={`/contenidos/${c.id}`} className="text-xs text-phm-gray hover:text-phm-gold px-2 py-1 bg-phm-surface border border-phm-border-soft rounded transition-colors">Editar</Link>
-                        <button onClick={() => setDeleteId(c.id)} className="text-xs text-red-400 hover:text-red-300 px-2 py-1 bg-red-950/20 border border-red-900/40 rounded transition-colors">×</button>
+                        <button onClick={() => { setDeleteError(''); setDeleteId(c.id) }} className="text-xs text-red-400 hover:text-red-300 px-2 py-1 bg-red-950/20 border border-red-900/40 rounded transition-colors">×</button>
                       </div>
                     </div>
                   ))}
@@ -281,11 +290,12 @@ export default function ContenidosPage() {
 
       <Modal
         isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={handleDelete}
+        onClose={() => { setDeleteId(null); setDeleteError('') }}
+        onConfirm={deleteError ? () => { setDeleteId(null); setDeleteError('') } : handleDelete}
         isLoading={deleting}
         title="¿Eliminar contenido?"
-        description={`Se eliminará "${deletingContent?.title}". Esta acción no se puede deshacer.`}
+        description={deleteError ? deleteError : `Se eliminará "${deletingContent?.title}". Esta acción no se puede deshacer.`}
+        confirmLabel={deleteError ? 'Cerrar' : 'Eliminar'}
       />
     </div>
   )

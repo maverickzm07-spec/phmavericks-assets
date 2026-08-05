@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canWriteMonthlyPlans, canDeleteData, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
 import { z } from 'zod'
 
 const planSchema = z.object({
@@ -46,12 +47,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     : totalPagado >= precioRef ? 'PAGADO'
     : 'ABONADO'
 
-  return NextResponse.json({ ...plan, totalPagado, saldoPendiente, estadoEconomico })
+  const enriched = { ...plan, totalPagado, saldoPendiente, estadoEconomico }
+  return NextResponse.json(canViewFinancials(user.role) ? enriched : stripFinancialFields(enriched))
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canWriteMonthlyPlans(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   try {
     const body = await request.json()
@@ -89,6 +92,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canDeleteData(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   await prisma.monthlyPlan.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })

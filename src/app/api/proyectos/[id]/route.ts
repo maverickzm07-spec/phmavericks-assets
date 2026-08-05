@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
-import { canWriteContents, canDeleteData } from '@/lib/permissions'
+import { canWriteContents, canDeleteData, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
 import { z } from 'zod'
 
 const updateSchema = z.object({
@@ -50,7 +50,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     : totalPagado >= project.precioFinal ? 'PAGADO'
     : 'ABONADO'
 
-  return NextResponse.json({ ...project, totalPagado, saldoPendiente, estadoEconomico })
+  const enriched = { ...project, totalPagado, saldoPendiente, estadoEconomico }
+  return NextResponse.json(canViewFinancials(user.role) ? enriched : stripFinancialFields(enriched))
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {

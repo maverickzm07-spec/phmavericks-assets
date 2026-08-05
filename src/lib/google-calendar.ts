@@ -4,7 +4,7 @@ import { TYPE_LABELS_ES } from './calendar-constants'
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const CALENDAR_API = 'https://www.googleapis.com/calendar/v3'
-const TIMEZONE = 'America/Mexico_City'
+const TIMEZONE = 'America/Guayaquil'
 
 export interface GoogleEvent {
   id: string
@@ -44,7 +44,7 @@ export function buildDescription(
   return parts.length > 0 ? parts.join('\n') : undefined
 }
 
-export function getAuthUrl(): string {
+export function getAuthUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
@@ -52,6 +52,7 @@ export function getAuthUrl(): string {
     scope: 'https://www.googleapis.com/auth/calendar',
     access_type: 'offline',
     prompt: 'consent',
+    state,
   })
   return `${AUTH_URL}?${params.toString()}`
 }

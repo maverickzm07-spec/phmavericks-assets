@@ -7,11 +7,13 @@ interface ModalProps {
   title: string
   description: string
   confirmLabel?: string
+  loadingLabel?: string
   isLoading?: boolean
 }
 
-export default function Modal({ isOpen, onClose, onConfirm, title, description, confirmLabel = 'Eliminar', isLoading = false }: ModalProps) {
+export default function Modal({ isOpen, onClose, onConfirm, title, description, confirmLabel = 'Eliminar', loadingLabel, isLoading = false }: ModalProps) {
   if (!isOpen) return null
+  const loadingText = loadingLabel ?? (confirmLabel === 'Eliminar' ? 'Eliminando...' : 'Procesando...')
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
@@ -32,7 +34,7 @@ export default function Modal({ isOpen, onClose, onConfirm, title, description, 
             Cancelar
           </button>
           <button onClick={onConfirm} disabled={isLoading} className="px-4 py-2 text-sm font-medium text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-all disabled:opacity-50">
-            {isLoading ? 'Eliminando...' : confirmLabel}
+            {isLoading ? loadingText : confirmLabel}
           </button>
         </div>
       </div>

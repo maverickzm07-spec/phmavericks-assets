@@ -8,6 +8,7 @@ import {
   Copy, Check, AlertCircle, Folder, FileText,
 } from 'lucide-react'
 import { getGoogleDriveEmbedInfo } from '@/lib/driveEmbed'
+import { formatCurrency } from '@/lib/utils'
 
 const PHM_WHATSAPP = process.env.NEXT_PUBLIC_PHM_WHATSAPP_NUMBER ?? '593XXXXXXXXX'
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
@@ -15,10 +16,6 @@ const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto
 function buildWhatsappUrl(clientName: string, subject: string): string {
   const msg = encodeURIComponent(`Hola, soy ${clientName}. Tengo una consulta sobre mi entrega: ${subject}.`)
   return `https://wa.me/${PHM_WHATSAPP}?text=${msg}`
-}
-
-function formatCOP(amount: number): string {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
 }
 
 interface StatusCfg { label: string; color: string; bg: string; border: string; icon: 'check' | 'clock' | 'alert' | 'progress' }
@@ -160,7 +157,7 @@ export default function EntregaSlugPage() {
               <div>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-0.5">Fecha de entrega</p>
                 <p className="font-semibold text-white text-sm">
-                  {new Date(project.fechaEntrega).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  {new Date(project.fechaEntrega).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}
                 </p>
               </div>
             )}
@@ -265,9 +262,9 @@ export default function EntregaSlugPage() {
 
             <div className="grid grid-cols-3 gap-2.5">
               {[
-                { label: 'Total',     value: formatCOP(monthlyPlan.monthlyPrice), cls: 'text-white' },
-                { label: 'Abonado',   value: isPaid ? formatCOP(monthlyPlan.monthlyPrice) : isPending ? formatCOP(0) : '—', cls: isPaid ? 'text-emerald-400' : 'text-zinc-300' },
-                { label: 'Pendiente', value: isPaid ? formatCOP(0) : isPending ? formatCOP(monthlyPlan.monthlyPrice) : '—', cls: isPending ? 'text-red-400' : isPaid ? 'text-emerald-400' : 'text-yellow-400' },
+                { label: 'Total',     value: formatCurrency(monthlyPlan.monthlyPrice ?? 0), cls: 'text-white' },
+                { label: 'Abonado',   value: formatCurrency(monthlyPlan.montoPagado ?? 0), cls: (monthlyPlan.montoPagado ?? 0) > 0 ? 'text-emerald-400' : 'text-zinc-300' },
+                { label: 'Pendiente', value: formatCurrency(monthlyPlan.saldoPendiente ?? 0), cls: (monthlyPlan.saldoPendiente ?? 0) > 0 ? (isPaid ? 'text-emerald-400' : 'text-yellow-400') : 'text-emerald-400' },
               ].map(({ label, value, cls }) => (
                 <div key={label} className="bg-zinc-900/70 rounded-xl p-3 text-center">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">{label}</p>

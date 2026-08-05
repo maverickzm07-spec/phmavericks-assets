@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canViewFinancials, stripFinancialFields } from '@/lib/permissions'
 import { calculateCompliance } from '@/lib/utils'
 
 export async function GET(request: NextRequest, { params }: { params: { planId: string } }) {
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: { planId: 
     : 'No hay suficientes datos para generar una recomendación este mes.'
 
   return NextResponse.json({
-    plan,
+    plan: canViewFinancials(user.role) ? plan : stripFinancialFields(plan),
     compliance,
     reels,
     carousels,

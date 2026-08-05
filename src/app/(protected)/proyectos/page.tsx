@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Plus, Sparkles, ArrowUpRight } from 'lucide-react'
 import { ClientProject } from '@/types'
 import { getProjectStatusColor, getStatusLabel, getModalidadLabel } from '@/lib/utils'
+import Modal from '@/components/ui/Modal'
 import PremiumCard from '@/components/ui/PremiumCard'
 
 const ESTADOS = ['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO', 'ENTREGADO', 'COMPLETADO', 'ATRASADO']
@@ -16,7 +17,9 @@ export default function ProyectosPage() {
   const [filterClient, setFilterClient] = useState('')
   const [filterModalidad, setFilterModalidad] = useState('')
   const [filterEstado, setFilterEstado] = useState('')
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const fetchProjects = () => {
     const params = new URLSearchParams()
@@ -36,13 +39,27 @@ export default function ProyectosPage() {
 
   useEffect(() => { setLoading(true); fetchProjects() }, [filterClient, filterModalidad, filterEstado])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este proyecto? Los contenidos asociados quedarán sin proyecto.')) return
-    setDeleting(id)
-    await fetch(`/api/proyectos/${id}`, { method: 'DELETE' })
-    fetchProjects()
-    setDeleting(null)
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      const res = await fetch(`/api/proyectos/${deleteId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setProjects((prev) => prev.filter((p) => p.id !== deleteId))
+        setDeleteId(null)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setDeleteError(data.error || 'Error al eliminar')
+      }
+    } catch {
+      setDeleteError('Error al eliminar')
+    } finally {
+      setDeleting(false)
+    }
   }
+
+  const deletingProject = projects.find((p) => p.id === deleteId)
 
   const pending = projects.filter((p) => ['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO'].includes(p.estado)).length
   const done = projects.filter((p) => ['ENTREGADO', 'COMPLETADO'].includes(p.estado)).length
@@ -153,7 +170,7 @@ export default function ProyectosPage() {
                     <Link href={`/proyectos/${p.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
                       Ver <ArrowUpRight className="w-3 h-3" />
                     </Link>
-                    <button onClick={() => handleDelete(p.id)} disabled={deleting === p.id}
+                    <button onClick={() => { setDeleteError(''); setDeleteId(p.id) }} disabled={deleting && deleteId === p.id}
                       className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40 disabled:opacity-50">
                       Eliminar
                     </button>
@@ -202,6 +219,16 @@ export default function ProyectosPage() {
           })}
         </div>
       )}
+
+      <Modal
+        isOpen={!!deleteId}
+        onClose={() => { setDeleteId(null); setDeleteError('') }}
+        onConfirm={deleteError ? () => { setDeleteId(null); setDeleteError('') } : handleDelete}
+        isLoading={deleting}
+        title="¿Eliminar proyecto?"
+        description={deleteError ? deleteError : `Se eliminará el proyecto "${deletingProject?.nombre}". Los contenidos asociados quedarán sin proyecto.`}
+        confirmLabel={deleteError ? 'Cerrar' : 'Eliminar'}
+      />
     </div>
   )
 }

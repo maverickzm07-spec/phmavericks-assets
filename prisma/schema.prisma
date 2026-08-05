@@ -120,6 +120,8 @@ model MonthlyPlan {
   projects         ClientProject[]
   ingresos         Ingreso[]
   deliveryAccesses DeliveryAccess[]
+
+  @@unique([clientId, month, year])
 }
 
 enum PaymentStatus {

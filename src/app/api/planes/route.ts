@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
-import { canWriteMonthlyPlans } from '@/lib/permissions'
+import { canWriteMonthlyPlans, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 const planSchema = z.object({
@@ -49,6 +50,8 @@ export async function GET(request: NextRequest) {
     orderBy: [{ year: 'desc' }, { month: 'desc' }],
   })
 
+  const showFinancials = canViewFinancials(user.role)
+
   const plansConCalc = plans.map(p => {
     const totalPagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
     const precioRef = p.precioFinal ?? p.monthlyPrice
@@ -57,7 +60,8 @@ export async function GET(request: NextRequest) {
       : totalPagado <= 0 ? 'SIN_PAGO'
       : totalPagado >= precioRef ? 'PAGADO'
       : 'ABONADO'
-    return { ...p, totalPagado, saldoPendiente, estadoEconomico }
+    const enriched = { ...p, totalPagado, saldoPendiente, estadoEconomico }
+    return showFinancials ? enriched : stripFinancialFields(enriched)
   })
 
   return NextResponse.json(plansConCalc)
@@ -158,6 +162,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
+    }
+    // Colisión del constraint único (clientId, month, year) por carrera
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'Ya existe un plan para este cliente en ese mes/año' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }

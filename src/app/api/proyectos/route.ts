@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
-import { canWriteContents } from '@/lib/permissions'
+import { canWriteContents, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
 import { z } from 'zod'
 
 const VALID_CONTENT_TYPES = ['REEL', 'CAROUSEL', 'FLYER', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA', 'VIDEO', 'OTRO'] as const
@@ -58,6 +58,8 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: 'desc' },
   })
 
+  const showFinancials = canViewFinancials(user.role)
+
   const projectsConCalc = projects.map(p => {
     const totalPagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
     const saldoPendiente = p.precioFinal != null ? Math.max(0, p.precioFinal - totalPagado) : null
@@ -65,7 +67,8 @@ export async function GET(request: NextRequest) {
       : totalPagado <= 0 ? 'SIN_PAGO'
       : totalPagado >= p.precioFinal ? 'PAGADO'
       : 'ABONADO'
-    return { ...p, totalPagado, saldoPendiente, estadoEconomico }
+    const enriched = { ...p, totalPagado, saldoPendiente, estadoEconomico }
+    return showFinancials ? enriched : stripFinancialFields(enriched)
   })
 
   return NextResponse.json(projectsConCalc)

@@ -18,6 +18,7 @@ export default function PlanesPage() {
   const [filters, setFilters] = useState({ clientId: '', month: '', year: '', planStatus: '' })
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const currentYear = new Date().getFullYear()
   const years = [currentYear - 1, currentYear, currentYear + 1]
@@ -40,9 +41,12 @@ export default function PlanesPage() {
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v) })
     setLoading(true)
     fetch(`/api/planes?${params}`)
-      .then((r) => r.json())
-      .then(setPlans)
-      .catch(console.error)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setPlans(Array.isArray(d) ? d : []))
+      .catch((error) => {
+        console.error(error)
+        setPlans([])
+      })
       .finally(() => setLoading(false))
   }, [filters])
 
@@ -53,10 +57,18 @@ export default function PlanesPage() {
   const handleDelete = async () => {
     if (!deleteId) return
     setDeleting(true)
+    setDeleteError('')
     try {
-      await fetch(`/api/planes/${deleteId}`, { method: 'DELETE' })
-      setPlans((prev) => prev.filter((p) => p.id !== deleteId))
-      setDeleteId(null)
+      const res = await fetch(`/api/planes/${deleteId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setPlans((prev) => prev.filter((p) => p.id !== deleteId))
+        setDeleteId(null)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setDeleteError(data.error || 'Error al eliminar')
+      }
+    } catch {
+      setDeleteError('Error al eliminar')
     } finally {
       setDeleting(false)
     }
@@ -175,7 +187,7 @@ export default function PlanesPage() {
                           <Link href={`/planes/${plan.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
                             Editar <ArrowUpRight className="w-3 h-3" />
                           </Link>
-                          <button onClick={() => setDeleteId(plan.id)} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
+                          <button onClick={() => { setDeleteError(''); setDeleteId(plan.id) }} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
                             Eliminar
                           </button>
                         </div>
@@ -191,11 +203,12 @@ export default function PlanesPage() {
 
       <Modal
         isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={handleDelete}
+        onClose={() => { setDeleteId(null); setDeleteError('') }}
+        onConfirm={deleteError ? () => { setDeleteId(null); setDeleteError('') } : handleDelete}
         isLoading={deleting}
         title="¿Eliminar plan?"
-        description={`Se eliminará el plan de "${deletingPlan?.client?.name}" (${deletingPlan ? getMonthName(deletingPlan.month) : ''} ${deletingPlan?.year || ''}) y todos sus contenidos.`}
+        description={deleteError ? deleteError : `Se eliminará el plan de "${deletingPlan?.client?.name}" (${deletingPlan ? getMonthName(deletingPlan.month) : ''} ${deletingPlan?.year || ''}) y todos sus contenidos.`}
+        confirmLabel={deleteError ? 'Cerrar' : 'Eliminar'}
       />
     </div>
   )

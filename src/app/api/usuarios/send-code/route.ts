@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { sendVerificationCode } from '@/lib/email'
 import { canManageUsers } from '@/lib/permissions'
+import { rateLimit } from '@/lib/rateLimit'
+import { randomInt } from 'crypto'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -11,7 +13,8 @@ const schema = z.object({
 })
 
 function generateCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  // Código de 6 dígitos criptográficamente seguro
+  return randomInt(100000, 1000000).toString()
 }
 
 export async function POST(request: NextRequest) {
@@ -22,6 +25,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, name } = schema.parse(body)
+
+    // Límite anti-spam de correos: 5 códigos por email destino cada 10 minutos
+    const rl = rateLimit(`send-code:${email.toLowerCase()}`, 5, 10 * 60 * 1000)
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: `Demasiados envíos a este correo. Espera ${Math.ceil(rl.retryAfter / 60)} minuto(s).` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+      )
+    }
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {

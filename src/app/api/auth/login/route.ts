@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createToken } from '@/lib/auth'
+import { rateLimit, resetRateLimit, getClientIp } from '@/lib/rateLimit'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
@@ -13,6 +14,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, password } = loginSchema.parse(body)
+
+    // Límite de intentos: 5 por IP+email cada 10 minutos (anti fuerza bruta)
+    const ip = getClientIp(request)
+    const rlKey = `login:${ip}:${email.toLowerCase()}`
+    const rl = rateLimit(rlKey, 5, 10 * 60 * 1000)
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: `Demasiados intentos. Vuelve a intentar en ${Math.ceil(rl.retryAfter / 60)} minuto(s).` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+      )
+    }
 
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) {
@@ -27,6 +39,9 @@ export async function POST(request: NextRequest) {
     if (!valid) {
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
     }
+
+    // Login correcto: liberar el contador de intentos de esta IP+email
+    resetRateLimit(rlKey)
 
     const token = await createToken({
       userId: user.id,

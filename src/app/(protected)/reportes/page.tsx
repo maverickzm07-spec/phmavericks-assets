@@ -35,9 +35,12 @@ export default function ReportesPage() {
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v) })
     setLoading(true)
     fetch(`/api/planes?${params}`)
-      .then((r) => r.json())
-      .then(setPlans)
-      .catch(console.error)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setPlans(Array.isArray(d) ? d : []))
+      .catch((error) => {
+        console.error(error)
+        setPlans([])
+      })
       .finally(() => setLoading(false))
   }, [filters])
 

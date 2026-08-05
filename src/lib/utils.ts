@@ -7,12 +7,15 @@ export function getMonthName(month: number): string {
   return MONTHS[month - 1] || 'Desconocido'
 }
 
+// Moneda única de todo el sistema. PHMavericks opera en Ecuador (USD).
+// Mostrar centavos solo cuando el monto los tenga (0 → "$150", 150.5 → "$150.50").
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-MX', {
+  return new Intl.NumberFormat('es-EC', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'USD',
     minimumFractionDigits: 0,
-  }).format(amount)
+    maximumFractionDigits: 2,
+  }).format(amount ?? 0)
 }
 
 export function formatNumber(num: number): string {
@@ -60,8 +63,9 @@ export function calculateCompliance(
   const totalContracted = plan.reelsCount + plan.carouselsCount + plan.flyersCount
   const totalDelivered = reelsDelivered + carouselsDelivered + flyersDelivered
 
+  // Tope a 100%: entregar más piezas de las contratadas no debe superar el 100%
   const compliancePercentage =
-    totalContracted > 0 ? Math.round((totalDelivered / totalContracted) * 100) : 0
+    totalContracted > 0 ? Math.min(100, Math.round((totalDelivered / totalContracted) * 100)) : 0
 
   return {
     reelsDelivered,

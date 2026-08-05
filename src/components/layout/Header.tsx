@@ -2,8 +2,9 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Menu, Search, Bell, ChevronRight, Calendar, User, Folder, FileText, CalendarDays, Loader2 } from 'lucide-react'
+import { Menu, Search, ChevronRight, Calendar, User, Folder, FileText, CalendarDays, Loader2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import NotificationsBell from '@/components/ui/NotificationsBell'
 
 const breadcrumbs: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -56,6 +57,10 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const [searching, setSearching] = useState(false)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const mobileInputRef = useRef<HTMLInputElement>(null)
+
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [online, setOnline] = useState(true)
 
   useEffect(() => {
     const fmt = () => {
@@ -126,12 +131,63 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     return () => document.removeEventListener('keydown', handler)
   }, [results])
 
+  // Estado de conexión real (se inicializa en el efecto para evitar hydration mismatch)
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine)
+    update()
+    window.addEventListener('online', update)
+    window.addEventListener('offline', update)
+    return () => {
+      window.removeEventListener('online', update)
+      window.removeEventListener('offline', update)
+    }
+  }, [])
+
+  // Al abrir la búsqueda móvil, enfocar su input
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      const t = setTimeout(() => mobileInputRef.current?.focus(), 50)
+      return () => clearTimeout(t)
+    }
+  }, [mobileSearchOpen])
+
   const handleSelect = (href: string) => {
     setIsOpen(false)
+    setMobileSearchOpen(false)
     setQuery('')
     setResults([])
     router.push(href)
   }
+
+  // Lista de resultados reutilizable (desktop + overlay móvil)
+  const renderResultsList = () => (
+    <ul className="py-1.5 max-h-72 overflow-y-auto">
+      {results.map((r) => {
+        const Icon = TYPE_ICON[r.type] ?? Search
+        return (
+          <li key={r.id + r.type}>
+            <button
+              onClick={() => handleSelect(r.href)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left group"
+            >
+              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-phm-surface border border-phm-border-soft flex-shrink-0 group-hover:border-phm-gold/30">
+                <Icon className="w-3.5 h-3.5 text-phm-gray-soft" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate leading-tight">{r.title}</p>
+                {r.subtitle && (
+                  <p className="text-xs text-phm-gray-soft truncate leading-tight">{r.subtitle}</p>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-phm-gray-soft bg-phm-surface border border-phm-border-soft px-1.5 py-0.5 rounded flex-shrink-0">
+                {TYPE_LABEL[r.type]}
+              </span>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
 
   const getTitle = () => {
     if (breadcrumbs[pathname]) return breadcrumbs[pathname]
@@ -205,32 +261,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               {results.length === 0 ? (
                 <p className="text-sm text-phm-gray-soft text-center py-4 px-4">Sin resultados para &ldquo;{query}&rdquo;</p>
               ) : (
-                <ul className="py-1.5 max-h-72 overflow-y-auto">
-                  {results.map((r) => {
-                    const Icon = TYPE_ICON[r.type] ?? Search
-                    return (
-                      <li key={r.id + r.type}>
-                        <button
-                          onClick={() => handleSelect(r.href)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left group"
-                        >
-                          <div className="w-7 h-7 rounded-md flex items-center justify-center bg-phm-surface border border-phm-border-soft flex-shrink-0 group-hover:border-phm-gold/30">
-                            <Icon className="w-3.5 h-3.5 text-phm-gray-soft" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-white truncate leading-tight">{r.title}</p>
-                            {r.subtitle && (
-                              <p className="text-xs text-phm-gray-soft truncate leading-tight">{r.subtitle}</p>
-                            )}
-                          </div>
-                          <span className="text-[10px] font-medium text-phm-gray-soft bg-phm-surface border border-phm-border-soft px-1.5 py-0.5 rounded flex-shrink-0">
-                            {TYPE_LABEL[r.type]}
-                          </span>
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
+                renderResultsList()
               )}
             </div>
           )}
@@ -238,6 +269,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
         {/* Search icon — mobile */}
         <button
+          onClick={() => setMobileSearchOpen(true)}
           className="lg:hidden text-phm-gray hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
           aria-label="Buscar"
         >
@@ -249,22 +281,74 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <span className="tabular-nums">{now || '—'}</span>
         </button>
 
-        <button
-          className="relative text-phm-gray hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
-          aria-label="Notificaciones"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-phm-charcoal animate-pulse" />
-        </button>
+        <NotificationsBell />
 
         <div className="hidden md:flex items-center gap-2 ml-1">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            {online && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${online ? 'bg-emerald-400' : 'bg-red-500'}`}
+            ></span>
           </span>
-          <span className="text-[11px] uppercase tracking-wider text-phm-gray-soft">Online</span>
+          <span
+            className={`text-[11px] uppercase tracking-wider ${online ? 'text-phm-gray-soft' : 'text-red-400'}`}
+          >
+            {online ? 'Online' : 'Sin conexión'}
+          </span>
         </div>
       </div>
+
+      {/* Overlay de búsqueda — móvil */}
+      {mobileSearchOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileSearchOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute top-0 left-0 right-0 bg-phm-charcoal border-b border-phm-border-soft p-4 shadow-2xl">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 h-10 rounded-lg bg-phm-surface border border-phm-border-soft focus-within:border-phm-gold/50 flex-1 min-w-0">
+                {searching ? (
+                  <Loader2 className="w-4 h-4 text-phm-gray-soft animate-spin flex-shrink-0" />
+                ) : (
+                  <Search className="w-4 h-4 text-phm-gray-soft flex-shrink-0" />
+                )}
+                <input
+                  ref={mobileInputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setMobileSearchOpen(false) }}
+                  placeholder="Buscar..."
+                  className="bg-transparent outline-none text-sm text-white placeholder:text-phm-gray-soft flex-1 min-w-0"
+                />
+              </div>
+              <button
+                onClick={() => setMobileSearchOpen(false)}
+                className="text-phm-gray hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 flex-shrink-0"
+                aria-label="Cerrar búsqueda"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {query.trim().length >= 2 && (
+              <div className="mt-2 bg-phm-charcoal border border-phm-border-soft rounded-xl overflow-hidden">
+                {results.length === 0 ? (
+                  <p className="text-sm text-phm-gray-soft text-center py-4 px-4">
+                    {searching ? 'Buscando...' : <>Sin resultados para &ldquo;{query}&rdquo;</>}
+                  </p>
+                ) : (
+                  renderResultsList()
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   )
 }

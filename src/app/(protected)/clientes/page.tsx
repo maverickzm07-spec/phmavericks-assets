@@ -16,11 +16,13 @@ export default function ClientesPage() {
   const [status, setStatus] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const fetchClients = () => {
     const params = new URLSearchParams()
     if (search) params.set('search', search)
     if (status) params.set('status', status)
+    setLoading(true)
     fetch(`/api/clientes?${params}`)
       .then(async (r) => {
         const data = await r.json()
@@ -34,15 +36,26 @@ export default function ClientesPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetchClients() }, [search, status])
+  useEffect(() => {
+    const timer = setTimeout(() => { fetchClients() }, 300)
+    return () => clearTimeout(timer)
+  }, [search, status])
 
   const handleDelete = async () => {
     if (!deleteId) return
     setDeleting(true)
+    setDeleteError('')
     try {
-      await fetch(`/api/clientes/${deleteId}`, { method: 'DELETE' })
-      setClients((prev) => prev.filter((c) => c.id !== deleteId))
-      setDeleteId(null)
+      const res = await fetch(`/api/clientes/${deleteId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setClients((prev) => prev.filter((c) => c.id !== deleteId))
+        setDeleteId(null)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setDeleteError(data.error || 'Error al eliminar')
+      }
+    } catch {
+      setDeleteError('Error al eliminar')
     } finally {
       setDeleting(false)
     }
@@ -158,7 +171,7 @@ export default function ClientesPage() {
                         <Link href={`/clientes/${client.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
                           Ver <ArrowUpRight className="w-3 h-3" />
                         </Link>
-                        <button onClick={() => setDeleteId(client.id)} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
+                        <button onClick={() => { setDeleteError(''); setDeleteId(client.id) }} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">
                           Eliminar
                         </button>
                       </div>
@@ -173,11 +186,12 @@ export default function ClientesPage() {
 
       <Modal
         isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        onConfirm={handleDelete}
+        onClose={() => { setDeleteId(null); setDeleteError('') }}
+        onConfirm={deleteError ? () => { setDeleteId(null); setDeleteError('') } : handleDelete}
         isLoading={deleting}
         title="¿Eliminar cliente?"
-        description={`Se eliminará "${deletingClient?.name}" y todos sus planes y contenidos. Esta acción no se puede deshacer.`}
+        description={deleteError ? deleteError : `Se eliminará "${deletingClient?.name}" y todos sus planes y contenidos. Esta acción no se puede deshacer.`}
+        confirmLabel={deleteError ? 'Cerrar' : 'Eliminar'}
       />
     </div>
   )
