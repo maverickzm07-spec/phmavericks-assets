@@ -24,6 +24,17 @@ export async function GET(request: NextRequest) {
   const year = searchParams.get('year')
   const month = searchParams.get('month')
   const date = searchParams.get('date')
+  const upcoming = searchParams.get('upcoming')
+
+  // Próximas fechas reservadas (para el dashboard): eventos futuros no cancelados
+  if (upcoming) {
+    const events = await prisma.calendarEvent.findMany({
+      where: { startDateTime: { gte: new Date() }, status: { not: 'CANCELADO' } },
+      orderBy: { startDateTime: 'asc' },
+      take: Math.min(parseInt(upcoming) || 6, 20),
+    })
+    return NextResponse.json(events)
+  }
 
   let where = {}
 

@@ -13,9 +13,12 @@ import {
   Sparkles,
   AlertCircle,
   Info,
+  CalendarClock,
+  MapPin,
 } from 'lucide-react'
 import { DashboardStats } from '@/types'
 import { getMonthName, calculateCompliance, formatCurrency } from '@/lib/utils'
+import { TYPE_LABELS_ES } from '@/lib/calendar-constants'
 import ProgressBar from '@/components/ui/ProgressBar'
 import { planStatusBadge, paymentStatusBadge } from '@/components/ui/Badge'
 import PremiumCard from '@/components/ui/PremiumCard'
@@ -54,6 +57,9 @@ export default function DashboardPage() {
 
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loadingAlerts, setLoadingAlerts] = useState(false)
+
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
 
   const fetchIncome = useCallback(async (range: string, opts?: { startDate?: string; endDate?: string }) => {
     setLoadingIncome(true)
@@ -113,6 +119,16 @@ export default function DashboardPage() {
         })
       })
       .finally(() => setLoading(false))
+  }, [])
+
+  // Próximas fechas reservadas (eventos del calendario)
+  useEffect(() => {
+    setLoadingEvents(true)
+    fetch('/api/calendario?upcoming=6')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setUpcomingEvents(Array.isArray(d) ? d : []))
+      .catch(() => setUpcomingEvents([]))
+      .finally(() => setLoadingEvents(false))
   }, [])
 
   const showFinancials = ['SUPER_ADMIN', 'ADMIN'].includes(userRole)
@@ -258,6 +274,62 @@ export default function DashboardPage() {
           )}
         </PremiumCard>
       )}
+
+      {/* Próximas fechas reservadas — todas las actividades agendadas */}
+      <PremiumCard padding="none">
+        <div className="flex items-center justify-between p-5 border-b border-phm-border-soft">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="w-4 h-4 text-phm-gold" />
+            <div>
+              <h2 className="font-semibold text-white tracking-wide">Próximas fechas reservadas</h2>
+              <p className="text-xs text-phm-gray-soft mt-0.5">Grabaciones, sesiones, reuniones, entregas y demás actividades agendadas</p>
+            </div>
+          </div>
+          <Link href="/calendario" className="inline-flex items-center gap-1.5 text-sm font-medium text-phm-gold hover:text-phm-gold-bright transition-colors">
+            Ver calendario <ArrowUpRight className="w-4 h-4" />
+          </Link>
+        </div>
+        {loadingEvents ? (
+          <div className="p-5 space-y-2">
+            {[1, 2, 3].map((i) => <div key={i} className="h-14 skeleton-shimmer rounded-lg" />)}
+          </div>
+        ) : upcomingEvents.length === 0 ? (
+          <div className="text-center py-12 text-phm-gray-soft text-sm">
+            No hay fechas reservadas próximas.{' '}
+            <Link href="/calendario" className="text-phm-gold hover:text-phm-gold-bright underline">Agendar una actividad</Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-phm-border-soft">
+            {upcomingEvents.map((ev: any) => {
+              const start = new Date(ev.startDateTime)
+              const dia = start.toLocaleDateString('es-EC', { day: '2-digit' })
+              const mes = start.toLocaleDateString('es-EC', { month: 'short' }).replace(/\./g, '').toUpperCase()
+              const hora = start.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
+              const fechaLarga = start.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' })
+              return (
+                <div key={ev.id} className="flex items-center gap-4 px-5 py-3.5">
+                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-phm-surface border border-phm-border-soft flex-shrink-0">
+                    <span className="text-base font-bold text-white leading-none">{dia}</span>
+                    <span className="text-[10px] font-semibold text-phm-gold mt-0.5">{mes}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{ev.title}</p>
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-xs text-phm-gray-soft">
+                      <span className="capitalize">{fechaLarga}</span>
+                      <span>· {hora}</span>
+                      {ev.clientName && <span className="truncate">· {ev.clientName}</span>}
+                      {ev.location && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.location}</span>}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-phm-gold/10 text-phm-gold border border-phm-gold/25 flex-shrink-0">
+                    {TYPE_LABELS_ES[ev.type] || ev.type}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </PremiumCard>
 
       {/* Gráficos — Estado de planes (todos los roles) + Pagos (solo admins) */}
       <div className={`grid grid-cols-1 gap-4 ${showFinancials ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-md'}`}>
