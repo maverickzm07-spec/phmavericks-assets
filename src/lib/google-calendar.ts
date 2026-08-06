@@ -6,6 +6,25 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const CALENDAR_API = 'https://www.googleapis.com/calendar/v3'
 const TIMEZONE = 'America/Guayaquil'
 
+// Llama a la API de Google Calendar reintentando ante límites de tasa (Rate Limit Exceeded).
+// Google limita las peticiones por segundo; ante 429/403 de rate-limit espera y reintenta
+// con backoff exponencial. Otros errores se devuelven tal cual para que el caller los maneje.
+async function googleApiCall(url: string, options: RequestInit): Promise<Response> {
+  const MAX_RETRIES = 4
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, options)
+    if (res.status !== 429 && res.status !== 403) return res
+    const bodyText = await res.text()
+    const isRateLimit = /rate limit|ratelimitexceeded|userratelimitexceeded|quota/i.test(bodyText)
+    if (!isRateLimit || attempt >= MAX_RETRIES) {
+      // Reconstituye la respuesta (el body ya se consumió) para que el caller pueda leerla
+      return new Response(bodyText, { status: res.status, statusText: res.statusText, headers: res.headers })
+    }
+    const delayMs = Math.min(1000 * 2 ** attempt, 16000) + Math.floor(Math.random() * 500)
+    await new Promise((r) => setTimeout(r, delayMs))
+  }
+}
+
 export interface GoogleEvent {
   id: string
   summary?: string
@@ -127,7 +146,7 @@ interface GCalEventPayload {
 }
 
 export async function createGoogleEvent(accessToken: string, ev: GCalEventPayload) {
-  const res = await fetch(`${CALENDAR_API}/calendars/primary/events`, {
+  const res = await googleApiCall(`${CALENDAR_API}/calendars/primary/events`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -144,7 +163,7 @@ export async function createGoogleEvent(accessToken: string, ev: GCalEventPayloa
 }
 
 export async function updateGoogleEvent(accessToken: string, googleEventId: string, ev: GCalEventPayload) {
-  const res = await fetch(`${CALENDAR_API}/calendars/primary/events/${googleEventId}`, {
+  const res = await googleApiCall(`${CALENDAR_API}/calendars/primary/events/${googleEventId}`, {
     method: 'PUT',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -162,7 +181,7 @@ export async function updateGoogleEvent(accessToken: string, googleEventId: stri
 }
 
 export async function deleteGoogleEvent(accessToken: string, googleEventId: string): Promise<void> {
-  const res = await fetch(`${CALENDAR_API}/calendars/primary/events/${googleEventId}`, {
+  const res = await googleApiCall(`${CALENDAR_API}/calendars/primary/events/${googleEventId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   })
@@ -187,7 +206,7 @@ export async function listGoogleEvents(accessToken: string, timeMin: Date, timeM
       ...(pageToken ? { pageToken } : {}),
     })
 
-    const res = await fetch(`${CALENDAR_API}/calendars/primary/events?${params}`, {
+    const res = await googleApiCall(`${CALENDAR_API}/calendars/primary/events?${params}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
     const data = await res.json()

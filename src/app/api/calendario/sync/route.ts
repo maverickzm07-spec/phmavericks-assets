@@ -123,6 +123,8 @@ export async function POST(request: NextRequest) {
         }).catch(() => {})
       }
     }
+    // Pequeño respiro entre envíos para no exceder el límite de tasa de Google
+    await new Promise((r) => setTimeout(r, 120))
   }
 
   // ── 2. Google → PHM ──────────────────────────────────────────
