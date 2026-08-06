@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUpRight, Plus, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Plus, X, Check } from 'lucide-react'
 import { planStatusBadge, paymentStatusBadge, contentStatusBadge, contentTypeBadge } from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
 import Modal from '@/components/ui/Modal'
@@ -48,7 +48,7 @@ export default function PlanDetailPage() {
   const [precioFinalEdit, setPrecioFinalEdit] = useState('')
   const [guardandoPrecio, setGuardandoPrecio] = useState(false)
 
-  const fmt = (v: number) => `$${v.toLocaleString('es-CO', { minimumFractionDigits: 0 })}`
+  const fmt = (v: number | null | undefined) => `$${(v ?? 0).toLocaleString('es-CO', { minimumFractionDigits: 0 })}`
   const METODOS_PAGO = ['EFECTIVO','TRANSFERENCIA','DEPOSITO','TARJETA','OTRO']
 
   const syncEconomico = (data: any) => {
@@ -115,6 +115,29 @@ export default function PlanDetailPage() {
         setTimeout(() => setSuccess(''), 3000)
       } else {
         const data = await res.json(); setError(data.error || 'Error al actualizar')
+      }
+    } catch { setError('Error de conexión') }
+    finally { setSaving(false) }
+  }
+
+  // Cambia solo el estado del plan (marcar completado / reabrir) sin abrir el formulario de edición
+  const cambiarEstadoPlan = async (nuevoEstado: 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED') => {
+    setSaving(true); setError(''); setSuccess('')
+    try {
+      const res = await fetch(`/api/planes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, planStatus: nuevoEstado }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setPlan((prev: any) => ({ ...prev, ...updated }))
+        setForm((prev: any) => ({ ...prev, planStatus: nuevoEstado }))
+        setSuccess(nuevoEstado === 'COMPLETED' ? 'Plan marcado como completado ✓' : 'Estado del plan actualizado')
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'No se pudo cambiar el estado (¿tienes permisos de administrador?)')
       }
     } catch { setError('Error de conexión') }
     finally { setSaving(false) }
@@ -247,10 +270,31 @@ export default function PlanDetailPage() {
           ))}
         </div>
         <ProgressBar value={compliance.compliancePercentage} size="md" />
+
+        {canAdmin && (
+          <div className="mt-4 pt-4 border-t border-phm-border-soft flex items-center justify-between gap-3">
+            <span className="text-xs text-phm-gray-soft">
+              {plan.planStatus === 'COMPLETED'
+                ? `Completado en ${getMonthName(plan.month)} ${plan.year}`
+                : 'Marca el plan cuando termines el trabajo del mes'}
+            </span>
+            {plan.planStatus === 'COMPLETED' ? (
+              <button onClick={() => cambiarEstadoPlan('IN_PROGRESS')} disabled={saving}
+                className="px-4 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-all disabled:opacity-50 whitespace-nowrap">
+                Reabrir plan
+              </button>
+            ) : (
+              <button onClick={() => cambiarEstadoPlan('COMPLETED')} disabled={saving}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-600 rounded-lg transition-all disabled:opacity-50 whitespace-nowrap">
+                <Check className="w-4 h-4" /> {saving ? 'Guardando...' : 'Marcar como completado'}
+              </button>
+            )}
+          </div>
+        )}
       </PremiumCard>
 
-      {/* Estado Económico */}
-      {(() => {
+      {/* Estado Económico (solo roles con acceso financiero; evita el crash por precios ocultos) */}
+      {canAdmin && (() => {
         const ingresos: any[] = plan.ingresos ?? []
         const badgeEc = ({
           SIN_PRECIO: 'bg-phm-surface text-phm-gray-soft border border-phm-border-soft',

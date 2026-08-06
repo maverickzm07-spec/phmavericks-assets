@@ -9,7 +9,6 @@ import {
   Package,
   CalendarRange,
   FolderKanban,
-  Film,
   FileBarChart2,
   DollarSign,
   UsersRound,
@@ -27,7 +26,8 @@ const navItems = [
   { href: '/servicios', label: 'Servicios', icon: Package },
   { href: '/planes', label: 'Planes Mensuales', icon: CalendarRange },
   { href: '/proyectos', label: 'Proyectos', icon: FolderKanban },
-  { href: '/contenidos', label: 'Contenidos', icon: Film },
+  // Contenidos oculto del menú a pedido (el módulo sigue funcionando por dentro: planes, reportes y proyectos lo usan)
+  // { href: '/contenidos', label: 'Contenidos', icon: Film },
   { href: '/reportes', label: 'Reportes', icon: FileBarChart2 },
   { href: '/ingresos', label: 'Ingresos', icon: DollarSign },
   { href: '/usuarios', label: 'Equipo', icon: UsersRound },
