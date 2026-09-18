@@ -1,40 +1,28 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  Users,
-  Clock,
-  CheckCircle2,
-  CalendarCheck,
-  AlertTriangle,
-  Activity,
-  ArrowUpRight,
-  Sparkles,
   AlertCircle,
-  Info,
+  ArrowUpRight,
   CalendarClock,
-  MapPin,
+  CheckCircle2,
+  Clock3,
+  FolderKanban,
+  Plus,
+  Users,
 } from 'lucide-react'
 import { DashboardStats } from '@/types'
-import { getMonthName, calculateCompliance, formatCurrency } from '@/lib/utils'
+import { calculateCompliance, formatCurrency, getMonthName } from '@/lib/utils'
 import { TYPE_LABELS_ES } from '@/lib/calendar-constants'
-import ProgressBar from '@/components/ui/ProgressBar'
-import { planStatusBadge, paymentStatusBadge } from '@/components/ui/Badge'
 import PremiumCard from '@/components/ui/PremiumCard'
-import KPICard from '@/components/ui/KPICard'
-import DashboardHero from '@/components/ui/DashboardHero'
-import ChartCard from '@/components/ui/ChartCard'
-import Donut from '@/components/ui/Donut'
+import ProgressBar from '@/components/ui/ProgressBar'
+import DashboardFinancialSummary from '@/components/ui/DashboardFinancialSummary'
 
 interface IncomeData {
   total: number
-  previousTotal: number
   percentChange: number | null
   series: { label: string; value: number }[]
-  label: string
-  rangeStart: string
-  rangeEnd: string
 }
 
 interface Alert {
@@ -45,377 +33,257 @@ interface Alert {
   href: string
 }
 
+interface Project {
+  id: string
+  nombre: string
+  estado: string
+  client?: { name: string }
+  fechaEntrega?: string | null
+  saldoPendiente?: number | null
+}
+
+const ACTIVE_PROJECT_STATES = ['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO']
+const IN_PROGRESS_STATES = ['EN_PROCESO', 'EN_EDICION']
+
+function initials(name = '') {
+  return name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'PH'
+}
+
+function formatEventDate(value: string) {
+  const date = new Date(value)
+  return {
+    day: date.toLocaleDateString('es-EC', { day: '2-digit' }),
+    month: date.toLocaleDateString('es-EC', { month: 'short' }).replace('.', '').toUpperCase(),
+    time: date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }),
+  }
+}
+
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    PENDIENTE: 'Pendiente',
+    EN_PROCESO: 'En proceso',
+    EN_EDICION: 'En edición',
+    APROBADO: 'Aprobado',
+    ATRASADO: 'Atrasado',
+  }
+  return labels[status] || status
+}
+
+function statusClass(status: string) {
+  if (status === 'ATRASADO') return 'bg-red-950/50 text-red-300 border-red-900/60'
+  if (IN_PROGRESS_STATES.includes(status)) return 'bg-amber-950/45 text-amber-300 border-amber-900/60'
+  return 'bg-white/[0.05] text-phm-gray border-white/[0.08]'
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-20 w-72 skeleton-shimmer rounded-xl" />
+      <div className="h-40 w-full skeleton-shimmer rounded-xl" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-32 skeleton-shimmer rounded-xl" />)}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[1.65fr_1fr]">
+        <div className="h-72 skeleton-shimmer rounded-xl" />
+        <div className="h-72 skeleton-shimmer rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [projects, setProjects] = useState<Project[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
+  const [incomeData, setIncomeData] = useState<IncomeData | null>(null)
   const [userRole, setUserRole] = useState('')
   const [userName, setUserName] = useState('')
-
   const [incomeRange, setIncomeRange] = useState('this_month')
-  const [incomeData, setIncomeData] = useState<IncomeData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [loadingIncome, setLoadingIncome] = useState(false)
+  const [loadError, setLoadError] = useState<'auth' | 'unknown' | null>(null)
 
-  const [alerts, setAlerts] = useState<Alert[]>([])
-  const [loadingAlerts, setLoadingAlerts] = useState(false)
+  const showFinancials = ['SUPER_ADMIN', 'ADMIN'].includes(userRole)
 
-  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
-  const [loadingEvents, setLoadingEvents] = useState(true)
-
-  const fetchIncome = useCallback(async (range: string, opts?: { startDate?: string; endDate?: string }) => {
+  const fetchIncome = useCallback(async (range: string) => {
     setLoadingIncome(true)
     try {
-      const params = new URLSearchParams({ range })
-      if (opts?.startDate) params.set('startDate', opts.startDate)
-      if (opts?.endDate) params.set('endDate', opts.endDate)
-      const res = await fetch(`/api/dashboard/income?${params}`)
-      if (res.ok) setIncomeData(await res.json())
-    } catch { /* silent */ }
-    finally { setLoadingIncome(false) }
+      const response = await fetch(`/api/dashboard/income?range=${range}`)
+      if (response.ok) setIncomeData(await response.json())
+    } finally {
+      setLoadingIncome(false)
+    }
   }, [])
 
   useEffect(() => {
     fetch('/api/auth/me')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d) { setUserRole(d.role); setUserName(d.name || '') }
+      .then((response) => response.ok ? response.json() : null)
+      .then((user) => {
+        if (user) {
+          setUserRole(user.role || '')
+          setUserName(user.name || '')
+        }
       })
       .catch(() => {})
-  }, [])
 
-  useEffect(() => {
-    if (!userRole) return
-    if (['SUPER_ADMIN', 'ADMIN'].includes(userRole)) fetchIncome(incomeRange)
-    // Fetch alerts for all roles
-    setLoadingAlerts(true)
-    fetch('/api/dashboard/alerts')
-      .then((r) => r.ok ? r.json() : [])
-      .then(setAlerts)
-      .catch(() => setAlerts([]))
-      .finally(() => setLoadingAlerts(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userRole])
-
-  useEffect(() => {
-    fetch('/api/dashboard')
-      .then((r) => {
-        if (!r.ok) throw new Error('Dashboard fetch failed: ' + r.status)
-        return r.json()
+    Promise.all([
+      fetch('/api/dashboard').then((response) => {
+        if (response.status === 401) {
+          setLoadError('auth')
+          return null
+        }
+        if (!response.ok) throw new Error('Dashboard fetch failed')
+        return response.json()
+      }),
+      fetch('/api/proyectos').then((response) => response.ok ? response.json() : []),
+      fetch('/api/calendario?upcoming=6').then((response) => response.ok ? response.json() : []),
+    ])
+      .then(([dashboard, projectData, eventData]) => {
+        if (dashboard) {
+          setStats({
+            activeClients: dashboard.activeClients ?? 0,
+            pendingContents: dashboard.pendingContents ?? 0,
+            completedContents: dashboard.completedContents ?? 0,
+            completedPlans: dashboard.completedPlans ?? 0,
+            delayedPlans: dashboard.delayedPlans ?? 0,
+            avgCompliance: dashboard.avgCompliance ?? 0,
+            recentPlans: Array.isArray(dashboard.recentPlans) ? dashboard.recentPlans : [],
+          })
+        }
+        setProjects(Array.isArray(projectData) ? projectData : [])
+        setUpcomingEvents(Array.isArray(eventData) ? eventData : [])
       })
-      .then((data) => {
-        setStats({
-          activeClients: data?.activeClients ?? 0,
-          pendingContents: data?.pendingContents ?? 0,
-          completedContents: data?.completedContents ?? 0,
-          completedPlans: data?.completedPlans ?? 0,
-          delayedPlans: data?.delayedPlans ?? 0,
-          avgCompliance: data?.avgCompliance ?? 0,
-          recentPlans: Array.isArray(data?.recentPlans) ? data.recentPlans : [],
-        })
-      })
-      .catch(() => {
-        setStats({
-          activeClients: 0, pendingContents: 0, completedContents: 0,
-          completedPlans: 0, delayedPlans: 0, avgCompliance: 0, recentPlans: [],
-        })
-      })
+      .catch(() => setLoadError('unknown'))
       .finally(() => setLoading(false))
   }, [])
 
-  // Próximas fechas reservadas (eventos del calendario)
   useEffect(() => {
-    setLoadingEvents(true)
-    fetch('/api/calendario?upcoming=6')
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => setUpcomingEvents(Array.isArray(d) ? d : []))
-      .catch(() => setUpcomingEvents([]))
-      .finally(() => setLoadingEvents(false))
-  }, [])
+    if (showFinancials) fetchIncome(incomeRange)
+  }, [fetchIncome, incomeRange, showFinancials])
 
-  const showFinancials = ['SUPER_ADMIN', 'ADMIN'].includes(userRole)
+  useEffect(() => {
+    if (!userRole) return
+    fetch('/api/dashboard/alerts')
+      .then((response) => response.ok ? response.json() : [])
+      .then((data) => setAlerts(Array.isArray(data) ? data : []))
+      .catch(() => setAlerts([]))
+  }, [userRole])
 
-  const planStatusDonut = useMemo(() => {
-    if (!stats) return []
-    const inProgress = (stats.recentPlans ?? []).filter((p: any) => p.planStatus === 'IN_PROGRESS').length
-    return [
-      { label: 'En Proceso', value: inProgress, color: '#C9A84C' },
-      { label: 'Completados', value: stats.completedPlans, color: '#22C55E' },
-      { label: 'Atrasados', value: stats.delayedPlans, color: '#E50914' },
-    ]
-  }, [stats])
+  const activeProjects = useMemo(() => projects.filter((project) => ACTIVE_PROJECT_STATES.includes(project.estado)), [projects])
+  const inProgressProjects = useMemo(() => projects.filter((project) => IN_PROGRESS_STATES.includes(project.estado)).length, [projects])
+  const attentionItems = alerts.slice(0, 4)
+  const plans = (stats?.recentPlans || []).slice(0, 4)
+  const greetingName = userName ? userName.split(' ')[0] : 'Admin'
 
-  const paymentDonut = useMemo(() => {
-    if (!stats) return []
-    const counts = { paid: 0, partial: 0, pending: 0 }
-    ;(stats.recentPlans ?? []).forEach((p: any) => {
-      if (p.paymentStatus === 'PAID') counts.paid++
-      else if (p.paymentStatus === 'PARTIAL') counts.partial++
-      else if (p.paymentStatus === 'PENDING') counts.pending++
-    })
-    return [
-      { label: 'Pagados', value: counts.paid, color: '#22C55E' },
-      { label: 'Parciales', value: counts.partial, color: '#F59E0B' },
-      { label: 'Pendientes', value: counts.pending, color: '#E50914' },
-    ]
-  }, [stats])
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-12 w-64 skeleton-shimmer rounded-lg" />
-        <div className="h-40 w-full skeleton-shimmer rounded-2xl" />
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-36 skeleton-shimmer rounded-2xl" />
-          ))}
-        </div>
-        <div className="h-72 w-full skeleton-shimmer rounded-2xl" />
-      </div>
-    )
-  }
-
+  if (loading) return <DashboardSkeleton />
   if (!stats) {
     return (
       <PremiumCard padding="lg" className="text-center">
-        <p className="text-phm-gray">No se pudo cargar el dashboard. Intenta actualizar la página.</p>
+        <p className="text-lg font-semibold text-white">
+          {loadError === 'auth' ? 'Tu sesión no está activa' : 'No se pudo cargar el dashboard'}
+        </p>
+        <p className="mt-2 text-sm text-phm-gray-soft">
+          {loadError === 'auth' ? 'Inicia sesión para consultar tus indicadores y actividades.' : 'Intenta actualizar la página.'}
+        </p>
+        {loadError === 'auth' && (
+          <Link href="/login" className="mt-5 inline-flex items-center rounded-lg bg-phm-red px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-phm-red-hover">
+            Iniciar sesión
+          </Link>
+        )}
       </PremiumCard>
     )
   }
 
-  const greeting = userName ? '¡Bienvenido, ' + userName.split(' ')[0] + '!' : '¡Bienvenido!'
-
-  const alertIcon = (type: Alert['type']) => {
-    if (type === 'danger') return <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-    return <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-  }
-
-  const alertBorder = (type: Alert['type']) => {
-    if (type === 'danger') return 'border-l-2 border-red-700 bg-red-950/20'
-    if (type === 'warning') return 'border-l-2 border-amber-700 bg-amber-950/10'
-    return 'border-l-2 border-blue-700 bg-blue-950/10'
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Encabezado */}
-      <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
-          <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">{greeting}</span>
+    <div className="mx-auto max-w-[1480px] space-y-6">
+      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-medium text-phm-gold">Buen día, {greetingName} <span aria-hidden>👋</span></p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-white md:text-4xl">Dashboard</h1>
+          <p className="mt-1 text-sm text-phm-gray-soft">Resumen general de PHMavericks.</p>
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-white mt-1 tracking-tight">Dashboard</h1>
-        <p className="text-phm-gray-soft text-sm mt-1">
-          Resumen general de tu agencia <span className="text-phm-gold font-medium">PHMavericks</span>.
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={incomeRange}
+            onChange={(event) => setIncomeRange(event.target.value)}
+            className="h-9 rounded-lg border border-white/[0.09] bg-white/[0.035] px-3 text-xs font-medium text-phm-gray outline-none transition-colors focus:border-phm-gold/50"
+            aria-label="Periodo del dashboard"
+          >
+            <option value="this_month">Este mes</option>
+            <option value="previous_month">Mes anterior</option>
+            <option value="this_year">Este año</option>
+            <option value="all_time">Histórico</option>
+          </select>
+          <Link href="/proyectos/nuevo" className="inline-flex h-9 items-center gap-2 rounded-lg bg-phm-red px-3 text-xs font-semibold text-white transition-colors hover:bg-phm-red-hover">
+            <Plus className="h-3.5 w-3.5" /> Nuevo proyecto
+          </Link>
+        </div>
       </header>
 
-      {/* Hero de ingresos — solo SUPER_ADMIN y ADMIN */}
-      {showFinancials && (
-        <DashboardHero
-          amount={incomeData?.total ?? 0}
-          changePct={incomeData?.percentChange ?? null}
-          series={incomeData?.series}
-          rangeStart={incomeData?.rangeStart}
-          rangeEnd={incomeData?.rangeEnd}
-          selectedRange={incomeRange}
-          onRangeChange={(range, opts) => {
-            setIncomeRange(range)
-            fetchIncome(range, opts)
-          }}
-          loading={loadingIncome}
-        />
-      )}
+      <DashboardFinancialSummary
+        income={showFinancials ? incomeData?.total ?? null : null}
+        incomeChange={showFinancials ? incomeData?.percentChange ?? null : null}
+        incomeSeries={incomeData?.series?.map((item) => item.value) || []}
+        activeProjects={activeProjects.length}
+        showFinancials={showFinancials}
+        loading={loadingIncome}
+      />
 
-      {/* KPIs operativos — todos los roles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <KPICard icon={Users} value={stats.activeClients} title="Clientes Activos" subtitle="Con plan o proyecto activo" tone="red" href="/clientes" ctaLabel="Ver clientes" />
-        <KPICard icon={Clock} value={stats.pendingContents} title="Entregables por atender" subtitle="Dentro de planes y proyectos" tone="amber" href="/proyectos" ctaLabel="Ver operación" />
-        <KPICard icon={CheckCircle2} value={stats.completedContents} title="Entregables cerrados" subtitle="Listos para reportar o entregar" tone="green" href="/reportes" ctaLabel="Ver reportes" />
-        <KPICard icon={CalendarCheck} value={stats.completedPlans} title="Trabajos Completados" subtitle="Planes y proyectos completados" tone="blue" href="/planes" ctaLabel="Ver planes" />
-        <KPICard icon={AlertTriangle} value={stats.delayedPlans} title="Trabajos Atrasados" subtitle="Planes y proyectos atrasados" tone="danger" href="/planes" ctaLabel="Ver atrasados" />
-        <KPICard icon={Activity} value={stats.avgCompliance + '%'} title="Cumplimiento Promedio" subtitle="Planes y proyectos" tone="purple" progress={stats.avgCompliance} href="/reportes" ctaLabel="Ver detalle" />
-      </div>
-
-      {/* Bloque "Necesita atención" — alertas reales */}
-      {(loadingAlerts || alerts.length > 0) && (
-        <PremiumCard padding="none">
-          <div className="flex items-center justify-between p-5 border-b border-phm-border-soft">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-phm-gold" />
-              <div>
-                <h2 className="font-semibold text-white tracking-wide">Necesita atención</h2>
-                <p className="text-xs text-phm-gray-soft mt-0.5">Elementos que requieren acción hoy</p>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Indicadores operativos">
+        {[
+          { label: 'Clientes activos', value: stats.activeClients, icon: Users, tone: 'text-phm-red-bright', href: '/clientes' },
+          { label: 'Pendientes', value: stats.pendingContents, icon: Clock3, tone: 'text-amber-400', href: '/proyectos' },
+          { label: 'En proceso', value: inProgressProjects, icon: FolderKanban, tone: 'text-phm-gold', href: '/proyectos?estado=EN_PROCESO' },
+          { label: 'Entregados', value: stats.completedContents, icon: CheckCircle2, tone: 'text-emerald-400', href: '/reportes' },
+        ].map(({ label, value, icon: Icon, tone, href }) => (
+          <Link key={label} href={href} className="group">
+            <PremiumCard hover padding="md" className="relative h-full overflow-hidden">
+              <div className="absolute right-0 top-0 h-full w-0.5 bg-current opacity-50" style={{ color: 'currentColor' }} />
+              <div className="flex items-center justify-between">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.045] ring-1 ring-white/[0.08] ${tone}`}><Icon className="h-4 w-4" strokeWidth={1.8} /></div>
+                <ArrowUpRight className="h-4 w-4 text-phm-gray-soft transition-colors group-hover:text-phm-gold" />
               </div>
-            </div>
-            {alerts.length > 0 && (
-              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-phm-red/20 text-red-400 border border-red-900/40">
-                {alerts.length} alerta{alerts.length !== 1 ? 's' : ''}
-              </span>
-            )}
+              <p className="mt-5 text-2xl font-semibold tracking-tight text-white">{value}</p>
+              <p className="mt-1 text-sm text-phm-gray">{label}</p>
+            </PremiumCard>
+          </Link>
+        ))}
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.65fr_1fr]">
+        <PremiumCard padding="none">
+          <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
+            <div className="flex items-center gap-2.5"><AlertCircle className="h-4 w-4 text-phm-red-bright" /><div><h2 className="text-sm font-semibold text-white">Requieren atención</h2><p className="mt-0.5 text-xs text-phm-gray-soft">Acciones que pueden bloquear la operación</p></div></div>
+            <Link href="/reportes" className="text-xs font-medium text-phm-gold hover:text-phm-gold-bright">Ver todo</Link>
           </div>
-          {loadingAlerts ? (
-            <div className="p-5 space-y-2">
-              {[1, 2].map((i) => <div key={i} className="h-12 skeleton-shimmer rounded-lg" />)}
-            </div>
+          {attentionItems.length === 0 ? (
+            <div className="px-5 py-12 text-center text-sm text-phm-gray-soft">No hay alertas pendientes.</div>
           ) : (
-            <div className="divide-y divide-phm-border-soft">
-              {alerts.map((alert) => (
-                <Link key={alert.id} href={alert.href}
-                  className="flex items-start gap-3 px-5 py-3.5 hover:bg-white/[0.03] transition-colors group">
-                  {alertIcon(alert.type)}
-                  <div className={`flex-1 pl-2 ${alertBorder(alert.type)} rounded-r-md px-3 py-1.5`}>
-                    <p className="text-sm font-medium text-white leading-tight">{alert.title}</p>
-                    <p className="text-xs text-phm-gray-soft mt-0.5 leading-relaxed">{alert.message}</p>
-                  </div>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-phm-gray-soft group-hover:text-phm-gold transition-colors flex-shrink-0 mt-1" />
+            <div className="divide-y divide-white/[0.06]">
+              {attentionItems.map((alert) => (
+                <Link key={alert.id} href={alert.href} className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-white/[0.025]">
+                  <span className={`h-2 w-2 flex-shrink-0 rounded-full ${alert.type === 'danger' ? 'bg-phm-red-bright' : alert.type === 'warning' ? 'bg-amber-400' : 'bg-blue-400'}`} />
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-white">{alert.title}</p><p className="mt-0.5 truncate text-xs text-phm-gray-soft">{alert.message}</p></div>
+                  <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-phm-gray-soft transition-colors group-hover:text-phm-gold" />
                 </Link>
               ))}
             </div>
           )}
         </PremiumCard>
-      )}
 
-      {/* Próximas fechas reservadas — todas las actividades agendadas */}
+        <PremiumCard padding="none">
+          <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4"><div className="flex items-center gap-2.5"><CalendarClock className="h-4 w-4 text-phm-gold" /><div><h2 className="text-sm font-semibold text-white">Próximas fechas</h2><p className="mt-0.5 text-xs text-phm-gray-soft">Agenda inmediata</p></div></div><Link href="/calendario" className="text-xs font-medium text-phm-gold hover:text-phm-gold-bright">Ver calendario</Link></div>
+          {upcomingEvents.length === 0 ? <div className="px-5 py-12 text-center text-sm text-phm-gray-soft">No hay fechas próximas.</div> : <div className="divide-y divide-white/[0.06]">{upcomingEvents.slice(0, 4).map((event: any) => { const date = formatEventDate(event.startDateTime); return <div key={event.id} className="flex items-center gap-3 px-5 py-3.5"><div className="flex h-11 w-11 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-white/[0.045] ring-1 ring-white/[0.08]"><span className="text-sm font-semibold text-white">{date.day}</span><span className="text-[9px] font-bold text-phm-gold">{date.month}</span></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-white">{event.title}</p><p className="mt-0.5 truncate text-xs text-phm-gray-soft">{date.time}{event.clientName ? ` · ${event.clientName}` : ''}</p></div><span className="hidden text-[10px] text-phm-gray-soft sm:block">{TYPE_LABELS_ES[event.type] || event.type}</span></div> })}</div>}
+        </PremiumCard>
+      </section>
+
       <PremiumCard padding="none">
-        <div className="flex items-center justify-between p-5 border-b border-phm-border-soft">
-          <div className="flex items-center gap-2">
-            <CalendarClock className="w-4 h-4 text-phm-gold" />
-            <div>
-              <h2 className="font-semibold text-white tracking-wide">Próximas fechas reservadas</h2>
-              <p className="text-xs text-phm-gray-soft mt-0.5">Grabaciones, sesiones, reuniones, entregas y demás actividades agendadas</p>
-            </div>
-          </div>
-          <Link href="/calendario" className="inline-flex items-center gap-1.5 text-sm font-medium text-phm-gold hover:text-phm-gold-bright transition-colors">
-            Ver calendario <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        </div>
-        {loadingEvents ? (
-          <div className="p-5 space-y-2">
-            {[1, 2, 3].map((i) => <div key={i} className="h-14 skeleton-shimmer rounded-lg" />)}
-          </div>
-        ) : upcomingEvents.length === 0 ? (
-          <div className="text-center py-12 text-phm-gray-soft text-sm">
-            No hay fechas reservadas próximas.{' '}
-            <Link href="/calendario" className="text-phm-gold hover:text-phm-gold-bright underline">Agendar una actividad</Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-phm-border-soft">
-            {upcomingEvents.map((ev: any) => {
-              const start = new Date(ev.startDateTime)
-              const dia = start.toLocaleDateString('es-EC', { day: '2-digit' })
-              const mes = start.toLocaleDateString('es-EC', { month: 'short' }).replace(/\./g, '').toUpperCase()
-              const hora = start.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
-              const fechaLarga = start.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' })
-              return (
-                <div key={ev.id} className="flex items-center gap-4 px-5 py-3.5">
-                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-phm-surface border border-phm-border-soft flex-shrink-0">
-                    <span className="text-base font-bold text-white leading-none">{dia}</span>
-                    <span className="text-[10px] font-semibold text-phm-gold mt-0.5">{mes}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">{ev.title}</p>
-                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-xs text-phm-gray-soft">
-                      <span className="capitalize">{fechaLarga}</span>
-                      <span>· {hora}</span>
-                      {ev.clientName && <span className="truncate">· {ev.clientName}</span>}
-                      {ev.location && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.location}</span>}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-phm-gold/10 text-phm-gold border border-phm-gold/25 flex-shrink-0">
-                    {TYPE_LABELS_ES[ev.type] || ev.type}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
+        <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4"><div><h2 className="text-sm font-semibold text-white">Planes mensuales activos</h2><p className="mt-0.5 text-xs text-phm-gray-soft">Seguimiento de los últimos ciclos registrados</p></div><Link href="/planes" className="inline-flex items-center gap-1 text-xs font-medium text-phm-gold hover:text-phm-gold-bright">Ver todos <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>
+        {plans.length === 0 ? <div className="px-5 py-12 text-center text-sm text-phm-gray-soft">No hay planes mensuales registrados.</div> : <div className="divide-y divide-white/[0.06]">{plans.map((plan: any) => { const compliance = calculateCompliance(plan, plan.contents || []); return <div key={plan.id} className="grid items-center gap-3 px-5 py-3.5 md:grid-cols-[1.4fr_1fr_1.2fr_auto_auto]"><div className="flex min-w-0 items-center gap-3"><div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-phm-red/20 text-[10px] font-bold text-phm-red-bright ring-1 ring-phm-red/30">{initials(plan.client?.name)}</div><p className="truncate text-sm font-medium text-white">{plan.client?.name || 'Sin cliente'}</p></div><p className="text-xs text-phm-gray">{getMonthName(plan.month)} {plan.year}</p><div className="min-w-0"><ProgressBar value={compliance.compliancePercentage} size="sm" /><span className="mt-1 block text-[10px] text-phm-gray-soft">{compliance.totalDelivered} / {compliance.totalContracted} entregables</span></div><span className="text-xs text-phm-gray">{plan.paymentStatus === 'PAID' ? 'Pagado' : plan.paymentStatus === 'PARTIAL' ? 'Parcial' : 'Pendiente'}</span><Link href={`/planes/${plan.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray transition-colors hover:text-phm-gold">Ver plan <ArrowUpRight className="h-3 w-3" /></Link></div> })}</div>}
       </PremiumCard>
 
-      {/* Gráficos — Estado de planes (todos los roles) + Pagos (solo admins) */}
-      <div className={`grid grid-cols-1 gap-4 ${showFinancials ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-md'}`}>
-        <ChartCard title="Estado de planes y proyectos" subtitle="Distribución actual" height={240}>
-          <Donut data={planStatusDonut} centerValue={planStatusDonut.reduce((s, x) => s + x.value, 0)} centerLabel="Planes" />
-        </ChartCard>
-        {showFinancials && (
-          <ChartCard title="Estado de pagos" subtitle="Sobre planes recientes" height={240}>
-            <Donut data={paymentDonut} centerValue={paymentDonut.reduce((s, x) => s + x.value, 0)} centerLabel="Planes" />
-          </ChartCard>
-        )}
-      </div>
-
-      {/* Tabla Planes Recientes */}
-      <PremiumCard padding="none">
-        <div className="flex items-center justify-between p-5 border-b border-phm-border-soft">
-          <div>
-            <h2 className="font-semibold text-white tracking-wide">Planes Recientes</h2>
-            <p className="text-xs text-phm-gray-soft mt-0.5">Últimos planes mensuales registrados</p>
-          </div>
-          <Link href="/planes" className="inline-flex items-center gap-1.5 text-sm font-medium text-phm-gold hover:text-phm-gold-bright transition-colors">
-            Ver todos <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="border-b border-phm-border-soft bg-white/[0.015]">
-                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Cliente</th>
-                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Período</th>
-                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Estado</th>
-                {showFinancials && <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Pago</th>}
-                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3 min-w-[160px]">Cumplimiento</th>
-                {showFinancials && <th className="text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Precio</th>}
-                <th className="text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-phm-border-soft">
-              {(stats.recentPlans ?? []).map((plan: any) => {
-                const compliance = calculateCompliance(plan, plan.contents || [])
-                return (
-                  <tr key={plan.id} className="row-hover">
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-phm-red to-phm-red-mid text-white text-[11px] font-bold shadow-glow-red">
-                          {(plan.client?.name || '?').split(' ').map((s: string) => s[0]).join('').slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-white leading-tight">{plan.client?.name}</p>
-                          <p className="text-xs text-phm-gray-soft">{plan.client?.business}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-phm-gray">
-                      {getMonthName(plan.month)} {plan.year}
-                    </td>
-                    <td className="px-5 py-3.5">{planStatusBadge(plan.planStatus)}</td>
-                    {showFinancials && <td className="px-5 py-3.5">{paymentStatusBadge(plan.paymentStatus)}</td>}
-                    <td className="px-5 py-3.5">
-                      <ProgressBar value={compliance.compliancePercentage} size="sm" />
-                    </td>
-                    {showFinancials && (
-                      <td className="px-5 py-3.5 text-right text-sm font-semibold text-white tabular-nums">
-                        {formatCurrency(plan.monthlyPrice)}
-                      </td>
-                    )}
-                    <td className="px-5 py-3.5 text-right">
-                      <Link href={'/planes/' + plan.id} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
-                        Ver <ArrowUpRight className="w-3 h-3" />
-                      </Link>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          {stats.recentPlans.length === 0 && (
-            <div className="text-center py-12 text-phm-gray-soft text-sm">
-              No hay planes creados todavía.{' '}
-              <Link href="/planes/nuevo" className="text-phm-gold hover:text-phm-gold-bright underline">
-                Crear uno
-              </Link>
-            </div>
-          )}
-        </div>
-      </PremiumCard>
+      <div className="flex justify-end"><Link href="/reportes" className="inline-flex items-center gap-1.5 text-xs text-phm-gray-soft transition-colors hover:text-phm-gold"><span className="h-1.5 w-1.5 rounded-full bg-phm-gold" /> Ver actividad reciente <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>
     </div>
   )
 }

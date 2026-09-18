@@ -15,7 +15,6 @@ import {
   CalendarDays,
   X,
   LogOut,
-  Sparkles,
 } from 'lucide-react'
 import { NAV_ROLES, ROLE_LABELS } from '@/lib/permissions'
 import BrandLogo from '@/components/ui/BrandLogo'
@@ -106,16 +105,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
       <div className="relative px-5 pt-6 pb-5 border-b border-phm-border-soft">
         <Link href="/dashboard" className="block group" onClick={onClose}>
-          <div className="relative rounded-xl overflow-hidden bg-black/60 ring-1 ring-phm-border-soft p-2.5 transition-all group-hover:ring-phm-gold/40">
+          <div className="px-1 transition-opacity group-hover:opacity-90">
             <BrandLogo priority />
-            <div
-              aria-hidden
-              className="absolute inset-x-6 top-0 h-px"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(229, 9, 20, 0.6), transparent)',
-                boxShadow: '0 0 8px rgba(229,9,20,0.5)',
-              }}
-            />
           </div>
         </Link>
       </div>
@@ -146,13 +137,6 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           )
         })}
 
-        <div className="mt-6 mx-1 px-3 py-3 border-l border-phm-gold/50">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-phm-gold" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-premium">PHMAVERICKS</p>
-          </div>
-          <p className="text-[11px] leading-snug text-phm-gray italic">Excelencia en cada entrega.</p>
-        </div>
       </nav>
 
       <div className="relative p-3 border-t border-phm-border-soft">
