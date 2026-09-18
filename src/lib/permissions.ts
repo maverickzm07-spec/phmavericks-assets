@@ -70,6 +70,11 @@ export function canRead(_role: string) {
   return true
 }
 
+// Información financiera (ingresos, precios, abonos, pagos): solo SUPER_ADMIN y ADMIN
+export function canViewFinancials(role: string) {
+  return ['SUPER_ADMIN', 'ADMIN'].includes(role)
+}
+
 // Ingresos: solo SUPER_ADMIN y ADMIN
 export function canViewIngresos(role: string) {
   return ['SUPER_ADMIN', 'ADMIN'].includes(role)
@@ -83,14 +88,38 @@ export function canDeleteIngresos(role: string) {
   return role === 'SUPER_ADMIN'
 }
 
+// Campos económicos que no deben exponerse a roles sin permiso financiero
+const FINANCIAL_KEYS = [
+  'ingresos', 'precioBase', 'precioFinal', 'monthlyPrice',
+  'totalPagado', 'saldoPendiente', 'estadoEconomico', 'abono',
+] as const
+
+// Elimina los campos financieros de un objeto (y de la relación `service` anidada).
+// Úsese en los GET cuando `!canViewFinancials(role)` para evitar fugas de precios/montos.
+export function stripFinancialFields<T extends Record<string, any>>(obj: T): T {
+  const clone: Record<string, any> = { ...obj }
+  for (const k of FINANCIAL_KEYS) delete clone[k]
+  if (clone.service && typeof clone.service === 'object') {
+    const { precio, ...restService } = clone.service
+    clone.service = restService
+  }
+  if (clone.servicePlan && typeof clone.servicePlan === 'object') {
+    const { precio, ...restPlan } = clone.servicePlan
+    clone.servicePlan = restPlan
+  }
+  return clone as T
+}
+
 // Ítems del menú lateral por rol
 export const NAV_ROLES: Record<string, string[]> = {
   '/dashboard':  ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
   '/clientes':   ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
   '/servicios':  ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'SOLO_LECTURA'],
   '/planes':     ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
+  '/proyectos':  ['SUPER_ADMIN', 'ADMIN', 'PRODUCCION', 'SOLO_LECTURA'],
   '/contenidos': ['SUPER_ADMIN', 'ADMIN', 'PRODUCCION', 'SOLO_LECTURA'],
   '/reportes':   ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'SOLO_LECTURA'],
   '/ingresos':   ['SUPER_ADMIN', 'ADMIN'],
   '/usuarios':   ['SUPER_ADMIN'],
+  '/calendario': ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
 }

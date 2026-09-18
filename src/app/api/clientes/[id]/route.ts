@@ -12,7 +12,6 @@ const clientSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(['ACTIVE', 'PAUSED', 'FINISHED']).optional(),
   notes: z.string().optional(),
-  servicePlanId: z.string().optional().nullable(),
 })
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -26,7 +25,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         include: { _count: { select: { contents: true } } },
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
       },
-      servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true, cantidadReels: true, cantidadVideosHorizontales: true, cantidadFotos: true, cantidadImagenesFlyers: true } },
+      servicePlan: {
+        select: {
+          id: true, nombre: true, tipo: true, precio: true, modalidad: true,
+          cantidadReels: true, cantidadVideosHorizontales: true,
+          cantidadFotos: true, cantidadImagenesFlyers: true,
+        },
+      },
       _count: { select: { monthlyPlans: true, contents: true } },
     },
   })
@@ -52,12 +57,19 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (data.email !== undefined) updateData.email = data.email || null
     if (data.status !== undefined) updateData.status = data.status
     if (data.notes !== undefined) updateData.notes = data.notes || null
-    if ('servicePlanId' in data) updateData.servicePlanId = data.servicePlanId || null
 
     const client = await prisma.client.update({
       where: { id: params.id },
       data: updateData,
-      include: { servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true, cantidadReels: true, cantidadVideosHorizontales: true, cantidadFotos: true, cantidadImagenesFlyers: true } } },
+      include: {
+        servicePlan: {
+          select: {
+            id: true, nombre: true, tipo: true, precio: true, modalidad: true,
+            cantidadReels: true, cantidadVideosHorizontales: true,
+            cantidadFotos: true, cantidadImagenesFlyers: true,
+          },
+        },
+      },
     })
 
     return NextResponse.json(client)

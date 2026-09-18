@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'phm-default-secret-change-in-production-2026'
-)
+const RAW_SECRET = process.env.JWT_SECRET
+if (!RAW_SECRET || RAW_SECRET.length < 32) {
+  throw new Error(
+    'JWT_SECRET no está configurado o es demasiado corto (mínimo 32 caracteres). ' +
+    'Define una cadena aleatoria larga en las variables de entorno antes de arrancar la aplicación.'
+  )
+}
+const SECRET = new TextEncoder().encode(RAW_SECRET)
 
-const publicPaths = ['/login', '/api/auth/login']
+const publicPaths = ['/login', '/api/auth/login', '/entrega/', '/api/public/', '/cliente/']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

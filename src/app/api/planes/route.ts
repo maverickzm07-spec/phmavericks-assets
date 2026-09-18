@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
-import { canWriteMonthlyPlans } from '@/lib/permissions'
+import { canWriteMonthlyPlans, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
+import { ensureCurrentMonthlyPlans } from '@/lib/monthlyPlanUtils'
 
 const planSchema = z.object({
   clientId: z.string().min(1),
@@ -15,11 +17,25 @@ const planSchema = z.object({
   paymentStatus: z.enum(['PENDING', 'PARTIAL', 'PAID']).default('PENDING'),
   planStatus: z.enum(['IN_PROGRESS', 'COMPLETED', 'DELAYED']).default('IN_PROGRESS'),
   observations: z.string().optional(),
+  precioBase: z.number().min(0).optional().nullable(),
+  precioFinal: z.number().min(0).optional().nullable(),
+  abono: z.number().min(0).optional().nullable(),
+  metodoPago: z.enum(['EFECTIVO', 'TRANSFERENCIA', 'DEPOSITO', 'TARJETA', 'OTRO']).optional().nullable(),
+  fechaPago: z.string().optional().nullable(),
+  observacionPago: z.string().optional().nullable(),
 })
 
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
+  // Renovación mensual automática: crea el ciclo del mes actual para clientes
+  // activos con servicio mensual. Es idempotente y no modifica meses históricos.
+  try {
+    await ensureCurrentMonthlyPlans()
+  } catch (error) {
+    console.error('[GET /api/planes] Error asegurando renovación mensual', error)
+  }
 
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
@@ -37,12 +53,33 @@ export async function GET(request: NextRequest) {
     include: {
       client: true,
       contents: true,
+      ingresos: { select: { id: true, monto: true, montoPagado: true, estadoPago: true, metodoPago: true, fechaIngreso: true } },
       _count: { select: { contents: true } },
     },
     orderBy: [{ year: 'desc' }, { month: 'desc' }],
   })
 
-  return NextResponse.json(plans)
+  const showFinancials = canViewFinancials(user.role)
+
+  const plansConCalc = plans.map(p => {
+    const totalPagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
+    const precioRef = p.precioFinal ?? p.monthlyPrice
+    const saldoPendiente = precioRef > 0 ? Math.max(0, precioRef - totalPagado) : null
+    const estadoEconomico = precioRef <= 0 ? 'SIN_PRECIO'
+      : totalPagado <= 0 ? 'SIN_PAGO'
+      : totalPagado >= precioRef ? 'PAGADO'
+      : 'ABONADO'
+    const enriched = { ...p, totalPagado, saldoPendiente, estadoEconomico }
+    return showFinancials ? enriched : stripFinancialFields(enriched)
+  })
+
+  return NextResponse.json(plansConCalc)
+}
+
+function calcEstadoPlan(monto: number, pagado: number): 'PAGADO' | 'PARCIAL' | 'PENDIENTE' {
+  if (pagado <= 0) return 'PENDIENTE'
+  if (pagado >= monto) return 'PAGADO'
+  return 'PARCIAL'
 }
 
 export async function POST(request: NextRequest) {
@@ -53,6 +90,18 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = planSchema.parse(body)
+
+    const existingPlan = await prisma.monthlyPlan.findFirst({
+      where: { clientId: data.clientId, month: data.month, year: data.year },
+    })
+    if (existingPlan) {
+      return NextResponse.json(
+        { error: `Ya existe un plan para este cliente en ${data.month}/${data.year}`, existingId: existingPlan.id },
+        { status: 409 }
+      )
+    }
+
+    const precioFinalReal = data.precioFinal ?? data.precioBase ?? null
 
     const plan = await prisma.monthlyPlan.create({
       data: {
@@ -66,21 +115,66 @@ export async function POST(request: NextRequest) {
         paymentStatus: data.paymentStatus,
         planStatus: data.planStatus,
         observations: data.observations || null,
+        precioBase: data.precioBase ?? null,
+        precioFinal: precioFinalReal,
       },
       include: { client: true },
     })
 
-    type CT = 'REEL' | 'FOTO' | 'IMAGEN_FLYER'
-    const entregables: { clientId: string; planId: string; type: CT; title: string; status: 'PENDIENTE'; requierePublicacion: boolean }[] = []
-    for (let i = 1; i <= data.reelsCount; i++) entregables.push({ clientId: data.clientId, planId: plan.id, type: 'REEL', title: `Reel ${i}`, status: 'PENDIENTE', requierePublicacion: true })
-    for (let i = 1; i <= data.carouselsCount; i++) entregables.push({ clientId: data.clientId, planId: plan.id, type: 'FOTO', title: `Foto ${i}`, status: 'PENDIENTE', requierePublicacion: false })
-    for (let i = 1; i <= data.flyersCount; i++) entregables.push({ clientId: data.clientId, planId: plan.id, type: 'IMAGEN_FLYER', title: `Imagen/Flyer ${i}`, status: 'PENDIENTE', requierePublicacion: false })
-    if (entregables.length > 0) await prisma.content.createMany({ data: entregables })
+    // Crear ingreso si se registró abono o pago al crear el plan
+    const abonoMonto = data.abono && data.abono > 0 && precioFinalReal ? Math.min(data.abono, precioFinalReal) : 0
 
-    return NextResponse.json({ ...plan, _contenidosGenerados: entregables.length }, { status: 201 })
+    if (abonoMonto > 0 && precioFinalReal) {
+      const estadoPago = calcEstadoPlan(precioFinalReal, abonoMonto)
+      const fechaPago = data.fechaPago ? new Date(data.fechaPago) : new Date()
+      const nombreMes = new Date(data.year, data.month - 1).toLocaleString('es', { month: 'long' })
+
+      const ingreso = await prisma.ingreso.create({
+        data: {
+          clienteId: data.clientId,
+          monthlyPlanId: plan.id,
+          tipoServicio: 'PLAN_MENSUAL',
+          descripcion: `Pago plan mensual — ${nombreMes} ${data.year}`,
+          monto: precioFinalReal,
+          montoPagado: abonoMonto,
+          estadoPago,
+          metodoPago: data.metodoPago || null,
+          fechaIngreso: fechaPago,
+          observaciones: data.observacionPago || null,
+          creadoPor: user.userId,
+        },
+      })
+
+      if (data.metodoPago) {
+        await prisma.abono.create({
+          data: {
+            ingresoId: ingreso.id,
+            monto: abonoMonto,
+            metodoPago: data.metodoPago,
+            fechaAbono: fechaPago,
+            observacion: data.observacionPago || null,
+            creadoPor: user.userId,
+          },
+        })
+      }
+    }
+
+    const planFinal = await prisma.monthlyPlan.findUnique({
+      where: { id: plan.id },
+      include: {
+        client: true,
+        ingresos: { select: { id: true, monto: true, montoPagado: true, estadoPago: true } },
+      },
+    })
+
+    return NextResponse.json(planFinal, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
+    }
+    // Colisión del constraint único (clientId, month, year) por carrera
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ error: 'Ya existe un plan para este cliente en ese mes/año' }, { status: 409 })
     }
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }

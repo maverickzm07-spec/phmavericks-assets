@@ -6,6 +6,8 @@ import { z } from 'zod'
 
 const createSchema = z.object({
   clienteId: z.string().optional().nullable(),
+  projectId: z.string().optional().nullable(),
+  monthlyPlanId: z.string().optional().nullable(),
   tipoServicio: z.enum(['FOTOGRAFIA', 'REELS', 'VIDEOS_HORIZONTALES', 'IMAGENES_FLYERS', 'PLAN_MENSUAL', 'PERSONALIZADO']),
   descripcion: z.string().optional(),
   monto: z.number().positive(),
@@ -57,11 +59,13 @@ export async function GET(request: NextRequest) {
     where.fechaIngreso = { gte: startOf(periodo as any) }
   }
 
-  const [ingresos, allIngresos] = await Promise.all([
+  const [ingresos, allIngresos, proyectosCartera, planesCartera] = await Promise.all([
     prisma.ingreso.findMany({
       where,
       include: {
         cliente: { select: { id: true, name: true, business: true } },
+        project: { select: { id: true, nombre: true } },
+        monthlyPlan: { select: { id: true, month: true, year: true } },
         creadoPorUser: { select: { name: true } },
         abonos: { orderBy: { fechaAbono: 'desc' }, take: 1 },
         _count: { select: { abonos: true } },
@@ -71,7 +75,39 @@ export async function GET(request: NextRequest) {
     prisma.ingreso.findMany({
       select: { estadoPago: true, monto: true, montoPagado: true, fechaIngreso: true, clienteId: true },
     }),
+    // Deuda real de proyectos: precioFinal - lo cobrado vía sus Ingreso (que el puente marca PAGADO)
+    prisma.clientProject.findMany({
+      where: { precioFinal: { gt: 0 } },
+      select: { clientId: true, precioFinal: true, ingresos: { select: { montoPagado: true } } },
+    }),
+    // Deuda real de planes mensuales: precioFinal/monthlyPrice - lo cobrado vía sus Ingreso
+    prisma.monthlyPlan.findMany({
+      select: { clientId: true, precioFinal: true, monthlyPrice: true, ingresos: { select: { montoPagado: true } } },
+    }),
   ])
+
+  // La cartera por cobrar de proyectos/planes no vive en el saldo del Ingreso
+  // (el puente crea un Ingreso PAGADO por cada pago), sino en precioRef - Σ montoPagado.
+  const deudoresExtra = new Set<string>()
+  const saldoProyecto = (p: { clientId: string; precioFinal: number | null; ingresos: { montoPagado: number }[] }) => {
+    const ref = p.precioFinal ?? 0
+    if (ref <= 0) return 0
+    const pagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
+    const saldo = Math.max(0, ref - pagado)
+    if (saldo > 0 && p.clientId) deudoresExtra.add(p.clientId)
+    return saldo
+  }
+  const saldoPlan = (p: { clientId: string; precioFinal: number | null; monthlyPrice: number; ingresos: { montoPagado: number }[] }) => {
+    const ref = p.precioFinal ?? p.monthlyPrice ?? 0
+    if (ref <= 0) return 0
+    const pagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
+    const saldo = Math.max(0, ref - pagado)
+    if (saldo > 0 && p.clientId) deudoresExtra.add(p.clientId)
+    return saldo
+  }
+  const deudaProyectos = proyectosCartera.reduce((s, p) => s + saldoProyecto(p), 0)
+  const deudaPlanes = planesCartera.reduce((s, p) => s + saldoPlan(p), 0)
+  const pendientePuente = Math.round((deudaProyectos + deudaPlanes) * 100) / 100
 
   const cobrado = (i: any) => i.estadoPago !== 'PENDIENTE' ? (i.montoPagado || 0) : 0
   const hoyStart = startOf('hoy')
@@ -79,11 +115,15 @@ export async function GET(request: NextRequest) {
   const mesStart = startOf('mes')
   const anioStart = startOf('anio')
 
-  const clientesConDeuda = new Set(
-    allIngresos
-      .filter(i => i.estadoPago !== 'PAGADO' && i.clienteId)
-      .map(i => i.clienteId)
-  ).size
+  const clientesDeudores = new Set<string>(deudoresExtra)
+  allIngresos
+    .filter(i => i.estadoPago !== 'PAGADO' && i.clienteId)
+    .forEach(i => clientesDeudores.add(i.clienteId as string))
+
+  // Pendiente propio de Ingresos sueltos (no vinculados al puente proyecto/plan)
+  const pendienteIngresos = allIngresos
+    .filter(i => i.estadoPago !== 'PAGADO')
+    .reduce((s, i) => s + (i.monto - (i.montoPagado || 0)), 0)
 
   const totales = {
     hoy: allIngresos.filter(i => new Date(i.fechaIngreso) >= hoyStart).reduce((s, i) => s + cobrado(i), 0),
@@ -91,10 +131,10 @@ export async function GET(request: NextRequest) {
     mes: allIngresos.filter(i => new Date(i.fechaIngreso) >= mesStart).reduce((s, i) => s + cobrado(i), 0),
     anio: allIngresos.filter(i => new Date(i.fechaIngreso) >= anioStart).reduce((s, i) => s + cobrado(i), 0),
     total: allIngresos.reduce((s, i) => s + cobrado(i), 0),
-    pendiente: allIngresos.filter(i => i.estadoPago !== 'PAGADO').reduce((s, i) => s + (i.monto - (i.montoPagado || 0)), 0),
+    pendiente: Math.round((pendienteIngresos + pendientePuente) * 100) / 100,
     pagosCompletos: allIngresos.filter(i => i.estadoPago === 'PAGADO').length,
     pagosParcialesCount: allIngresos.filter(i => i.estadoPago === 'PARCIAL').length,
-    clientesConDeuda,
+    clientesConDeuda: clientesDeudores.size,
   }
 
   const ingresosConCalc = ingresos.map(i => ({
@@ -124,6 +164,8 @@ export async function POST(request: NextRequest) {
     const ingreso = await prisma.ingreso.create({
       data: {
         clienteId: data.clienteId || null,
+        projectId: data.projectId || null,
+        monthlyPlanId: data.monthlyPlanId || null,
         tipoServicio: data.tipoServicio,
         descripcion: data.descripcion || null,
         monto: data.monto,
@@ -134,7 +176,11 @@ export async function POST(request: NextRequest) {
         observaciones: data.observaciones || null,
         creadoPor: user.userId,
       },
-      include: { cliente: { select: { id: true, name: true, business: true } } },
+      include: {
+        cliente: { select: { id: true, name: true, business: true } },
+        project: { select: { id: true, nombre: true } },
+        monthlyPlan: { select: { id: true, month: true, year: true } },
+      },
     })
 
     // Si se abonó algo al crear, registrar como primer abono

@@ -30,21 +30,24 @@ enum Role {
 }
 
 model Client {
-  id             String       @id @default(cuid())
-  name           String
-  business       String
-  contact        String?
-  whatsapp       String?
-  email          String?
-  status         ClientStatus @default(ACTIVE)
-  notes          String?
-  servicePlanId  String?
-  servicePlan    ServicePlan? @relation(fields: [servicePlanId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  monthlyPlans   MonthlyPlan[]
-  contents       Content[]
-  ingresos       Ingreso[]
+  id                String          @id @default(cuid())
+  name              String
+  business          String
+  contact           String?
+  whatsapp          String?
+  email             String?
+  status            ClientStatus    @default(ACTIVE)
+  notes             String?
+  servicePlanId     String?
+  servicePlan       ServicePlan?    @relation(fields: [servicePlanId], references: [id])
+  clientPortalToken String?         @unique
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  monthlyPlans      MonthlyPlan[]
+  contents          Content[]
+  ingresos          Ingreso[]
+  projects          ClientProject[]
+  deliveryAccesses  DeliveryAccess[]
 }
 
 enum ServicePlanType {
@@ -54,11 +57,17 @@ enum ServicePlanType {
   PERSONALIZADO
 }
 
+enum Modalidad {
+  MENSUAL
+  OCASIONAL
+}
+
 model ServicePlan {
-  id                String          @id @default(cuid())
-  nombre            String
-  tipo              ServicePlanType
-  precio            Float
+  id                         String          @id @default(cuid())
+  nombre                     String
+  tipo                       ServicePlanType
+  modalidad                  Modalidad       @default(MENSUAL)
+  precio                     Float
   cantidadReels              Int             @default(0)
   cantidadVideosHorizontales Int             @default(0)
   cantidadFotos              Int             @default(0)
@@ -66,13 +75,15 @@ model ServicePlan {
   jornadasGrabacion          Int             @default(0)
   duracion                   String?
   vestuarios                 Int             @default(0)
-  descripcion       String?
-  caracteristicas   String[]
-  esDefault         Boolean         @default(false)
-  activo            Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  clients           Client[]
+  descripcion                String?
+  caracteristicas            String[]
+  esDefault                  Boolean         @default(false)
+  activo                     Boolean         @default(true)
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+  clients                    Client[]
+  projects                   ClientProject[]
+  monthlyPlans               MonthlyPlan[]
 }
 
 enum ClientStatus {
@@ -82,21 +93,35 @@ enum ClientStatus {
 }
 
 model MonthlyPlan {
-  id             String        @id @default(cuid())
+  id             String          @id @default(cuid())
   clientId       String
-  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client         Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  servicePlanId  String?
+  servicePlan    ServicePlan?    @relation(fields: [servicePlanId], references: [id], onDelete: SetNull)
   month          Int
   year           Int
-  reelsCount     Int           @default(0)
-  carouselsCount Int           @default(0)
-  flyersCount    Int           @default(0)
-  monthlyPrice   Float         @default(0)
-  paymentStatus  PaymentStatus @default(PENDING)
-  planStatus     PlanStatus    @default(IN_PROGRESS)
+  reelsCount     Int             @default(0)
+  carouselsCount Int             @default(0)
+  flyersCount    Int             @default(0)
+  // LEGACY: usar precioFinal como fuente de verdad; mantener por compatibilidad con registros anteriores
+  monthlyPrice   Float           @default(0)
+  // LEGACY: el estado real se calcula desde los Ingreso asociados; mantener por compatibilidad
+  paymentStatus  PaymentStatus   @default(PENDING)
+  planStatus     PlanStatus      @default(IN_PROGRESS)
+  deliveryLink   String?
   observations   String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  contents       Content[]
+  // Precio base copiado del ServicePlan al momento de crear el plan
+  precioBase     Float?
+  // Precio final acordado con el cliente (editable sobre el precio base)
+  precioFinal    Float?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  contents         Content[]
+  projects         ClientProject[]
+  ingresos         Ingreso[]
+  deliveryAccesses DeliveryAccess[]
+
+  @@unique([clientId, month, year])
 }
 
 enum PaymentStatus {
@@ -111,46 +136,100 @@ enum PlanStatus {
   DELAYED
 }
 
+enum ProjectStatus {
+  PENDIENTE
+  EN_PROCESO
+  EN_EDICION
+  APROBADO
+  ENTREGADO
+  COMPLETADO
+  ATRASADO
+}
+
+model ClientProject {
+  id            String        @id @default(cuid())
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  serviceId     String?
+  service       ServicePlan?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  monthlyPlanId String?
+  monthlyPlan   MonthlyPlan?  @relation(fields: [monthlyPlanId], references: [id], onDelete: SetNull)
+  nombre        String
+  modalidad     Modalidad     @default(OCASIONAL)
+  estado        ProjectStatus @default(PENDIENTE)
+  linkEntrega   String?
+  fechaEntrega  DateTime?
+  observaciones String?
+  // Precio base copiado del ServicePlan al momento de crear el proyecto
+  precioBase    Float?
+  // Precio final acordado con el cliente (editable sobre el precio base)
+  precioFinal   Float?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  contents         Content[]
+  ingresos         Ingreso[]
+  deliveryAccesses DeliveryAccess[]
+}
+
 model Content {
-  id                          String        @id @default(cuid())
-  clientId                    String
-  client                      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  planId                      String?
-  plan                        MonthlyPlan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
-  type                        ContentType
-  title                       String
-  status                      ContentStatus @default(PENDIENTE)
+  id            String         @id @default(cuid())
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId        String?
+  plan          MonthlyPlan?   @relation(fields: [planId], references: [id], onDelete: SetNull)
+  projectId     String?
+  project       ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  type          ContentType
+  formato       ContentFormat?
+  title         String
+  status        ContentStatus  @default(PENDING)
   requierePublicacion         Boolean       @default(false)
-  driveLink                   String?
-  publishedLink               String?
-  publishedAt                 DateTime?
-  fechaEntrega                DateTime?
-  fechaPublicacion            DateTime?
-  views                       Int           @default(0)
-  likes                       Int           @default(0)
-  comments                    Int           @default(0)
-  shares                      Int           @default(0)
-  saves                       Int           @default(0)
-  reach                       Int           @default(0)
-  impressions                 Int           @default(0)
-  observations                String?
+  driveLink     String?
+  publishedLink String?
+  publishedAt   DateTime?
+  fechaEntrega   DateTime?
+  fechaPublicacion DateTime?
+  views         Int            @default(0)
+  likes         Int            @default(0)
+  comments      Int            @default(0)
+  shares        Int            @default(0)
+  saves         Int            @default(0)
+  reach          Int            @default(0)
+  impressions    Int            @default(0)
+  observations  String?
   ultimaActualizacionMetricas DateTime?
-  fuenteMetricas              String?
-  estadoSincronizacion        SyncStatus    @default(MANUAL)
-  errorSincronizacion         String?
-  createdAt                   DateTime      @default(now())
-  updatedAt                   DateTime      @updatedAt
+  fuenteMetricas String?
+  estadoSincronizacion SyncStatus @default(MANUAL)
+  errorSincronizacion String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 enum ContentType {
   REEL
+  CAROUSEL
+  FLYER
   VIDEO_HORIZONTAL
   FOTO
   IMAGEN_FLYER
   EXTRA
+  VIDEO
+  OTRO
+}
+
+enum ContentFormat {
+  VERTICAL_9_16
+  HORIZONTAL_16_9
+  CUADRADO_1_1
+  NO_APLICA
 }
 
 enum ContentStatus {
+  PENDING
+  EDITING
+  APPROVED
+  PUBLISHED
+  COMPLETED
   PENDIENTE
   EN_PROCESO
   ENTREGADO
@@ -161,6 +240,8 @@ enum SyncStatus {
   MANUAL
   PENDIENTE
   ACTUALIZADO
+  PENDING
+  SYNCED
   ERROR
 }
 
@@ -188,21 +269,26 @@ enum MetodoPago {
 }
 
 model Ingreso {
-  id            String       @id @default(cuid())
+  id            String         @id @default(cuid())
   clienteId     String?
-  cliente       Client?      @relation(fields: [clienteId], references: [id])
+  cliente       Client?        @relation(fields: [clienteId], references: [id])
+  // Vínculo al origen operativo (nullable para mantener ingresos legacy sin relación)
+  projectId     String?
+  project       ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  monthlyPlanId String?
+  monthlyPlan   MonthlyPlan?   @relation(fields: [monthlyPlanId], references: [id], onDelete: SetNull)
   tipoServicio  TipoServicio
   descripcion   String?
   monto         Float
-  montoPagado   Float        @default(0)
-  estadoPago    EstadoPago   @default(PENDIENTE)
+  montoPagado   Float          @default(0)
+  estadoPago    EstadoPago     @default(PENDIENTE)
   metodoPago    MetodoPago?
-  fechaIngreso  DateTime     @default(now())
+  fechaIngreso  DateTime       @default(now())
   observaciones String?
   creadoPor     String
-  creadoPorUser User         @relation("IngresosCreados", fields: [creadoPor], references: [id])
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  creadoPorUser User           @relation("IngresosCreados", fields: [creadoPor], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   abonos        Abono[]
 }
 
@@ -228,4 +314,102 @@ model VerificationCode {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+// ── Google Calendar Token (singleton) ────────────────────────
+
+model GoogleToken {
+  id           String   @id @default("singleton")
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  updatedAt    DateTime @updatedAt
+}
+
+// ── Delivery Access (links privados de entrega) ──────────────
+
+enum DeliveryAccessType {
+  PROJECT
+  MONTHLY_PLAN
+  CLIENT_GENERAL
+}
+
+model DeliveryAccess {
+  id             String             @id @default(cuid())
+  token          String             @unique
+  publicSlug     String?            @unique
+  clientId       String
+  client         Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        ClientProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  monthlyPlanId  String?
+  monthlyPlan    MonthlyPlan?       @relation(fields: [monthlyPlanId], references: [id], onDelete: SetNull)
+  type           DeliveryAccessType
+  isActive       Boolean            @default(true)
+  createdById    String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([token])
+  @@index([publicSlug])
+  @@index([clientId])
+}
+
+// ── Audit Log ────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  userEmail  String
+  action     String
+  entity     String
+  entityId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ── Módulo Calendario ─────────────────────────────────────────
+
+enum EventType {
+  GRABACION
+  SESION_FOTOGRAFICA
+  REUNION
+  ENTREGA
+  EDICION
+  EVENTO
+  OTRO
+}
+
+enum EventStatus {
+  AGENDADO
+  REALIZADO
+  CANCELADO
+}
+
+enum EventSource {
+  PHM
+  GOOGLE
+}
+
+model CalendarEvent {
+  id            String      @id @default(cuid())
+  title         String
+  type          EventType   @default(OTRO)
+  startDateTime DateTime
+  endDateTime   DateTime
+  location      String?
+  notes         String?
+  clientId      String?
+  clientName    String?
+  status        EventStatus @default(AGENDADO)
+  googleEventId String?
+  source        EventSource @default(PHM)
+  syncStatus    SyncStatus  @default(PENDING)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }

@@ -12,7 +12,6 @@ const clientSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(['ACTIVE', 'PAUSED', 'FINISHED']).default('ACTIVE'),
   notes: z.string().optional(),
-  servicePlanId: z.string().optional().nullable(),
 })
 
 export async function GET(request: NextRequest) {
@@ -61,7 +60,6 @@ export async function POST(request: NextRequest) {
         email: data.email || null,
         status: data.status,
         notes: data.notes || null,
-        servicePlanId: data.servicePlanId || null,
       },
       include: { servicePlan: { select: { id: true, nombre: true, tipo: true, precio: true } } },
     })

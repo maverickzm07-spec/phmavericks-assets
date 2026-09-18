@@ -1,228 +1,405 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
+import {
+  Users,
+  Clock,
+  CheckCircle2,
+  CalendarCheck,
+  AlertTriangle,
+  Activity,
+  ArrowUpRight,
+  Sparkles,
+  AlertCircle,
+  Info,
+  CalendarClock,
+  MapPin,
+} from 'lucide-react'
 import { DashboardStats } from '@/types'
-import { getMonthName, calculateCompliance, formatCurrency, formatNumber } from '@/lib/utils'
+import { getMonthName, calculateCompliance, formatCurrency } from '@/lib/utils'
+import { TYPE_LABELS_ES } from '@/lib/calendar-constants'
 import ProgressBar from '@/components/ui/ProgressBar'
 import { planStatusBadge, paymentStatusBadge } from '@/components/ui/Badge'
+import PremiumCard from '@/components/ui/PremiumCard'
+import KPICard from '@/components/ui/KPICard'
+import DashboardHero from '@/components/ui/DashboardHero'
+import ChartCard from '@/components/ui/ChartCard'
+import Donut from '@/components/ui/Donut'
 
-function MetricCard({ title, value, sub, icon, color }: {
+interface IncomeData {
+  total: number
+  previousTotal: number
+  percentChange: number | null
+  series: { label: string; value: number }[]
+  label: string
+  rangeStart: string
+  rangeEnd: string
+}
+
+interface Alert {
+  id: string
+  type: 'danger' | 'warning' | 'info'
   title: string
-  value: string | number
-  sub?: string
-  icon: React.ReactNode
-  color: string
-}) {
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <div className="flex items-start justify-between mb-4">
-        <div
-          className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
-          style={{ backgroundColor: color }}
-        >
-          {icon}
-        </div>
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-zinc-50">{value}</p>
-        <p className="text-sm font-medium text-zinc-400 mt-0.5">{title}</p>
-        {sub && <p className="text-xs text-zinc-600 mt-1">{sub}</p>}
-      </div>
-    </div>
-  )
+  message: string
+  href: string
 }
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState('')
+  const [userName, setUserName] = useState('')
+
+  const [incomeRange, setIncomeRange] = useState('this_month')
+  const [incomeData, setIncomeData] = useState<IncomeData | null>(null)
+  const [loadingIncome, setLoadingIncome] = useState(false)
+
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [loadingAlerts, setLoadingAlerts] = useState(false)
+
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
+
+  const fetchIncome = useCallback(async (range: string, opts?: { startDate?: string; endDate?: string }) => {
+    setLoadingIncome(true)
+    try {
+      const params = new URLSearchParams({ range })
+      if (opts?.startDate) params.set('startDate', opts.startDate)
+      if (opts?.endDate) params.set('endDate', opts.endDate)
+      const res = await fetch(`/api/dashboard/income?${params}`)
+      if (res.ok) setIncomeData(await res.json())
+    } catch { /* silent */ }
+    finally { setLoadingIncome(false) }
+  }, [])
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => { if (d) setUserRole(d.role) }).catch(() => {})
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) { setUserRole(d.role); setUserName(d.name || '') }
+      })
+      .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!userRole) return
+    if (['SUPER_ADMIN', 'ADMIN'].includes(userRole)) fetchIncome(incomeRange)
+    // Fetch alerts for all roles
+    setLoadingAlerts(true)
+    fetch('/api/dashboard/alerts')
+      .then((r) => r.ok ? r.json() : [])
+      .then(setAlerts)
+      .catch(() => setAlerts([]))
+      .finally(() => setLoadingAlerts(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRole])
 
   useEffect(() => {
     fetch('/api/dashboard')
       .then((r) => {
-        if (!r.ok) throw new Error(`Dashboard fetch failed: ${r.status}`)
+        if (!r.ok) throw new Error('Dashboard fetch failed: ' + r.status)
         return r.json()
       })
       .then((data) => {
-        if (!data || !Array.isArray(data.recentPlans)) {
-          setStats({
-            activeClients: data?.activeClients ?? 0,
-            pendingContents: data?.pendingContents ?? 0,
-            inProccessContents: data?.inProccessContents ?? 0,
-            deliveredContents: data?.deliveredContents ?? 0,
-            publishedContents: data?.publishedContents ?? 0,
-            completedPlans: data?.completedPlans ?? 0,
-            delayedPlans: data?.delayedPlans ?? 0,
-            avgCompliance: data?.avgCompliance ?? 0,
-            recentPlans: Array.isArray(data?.recentPlans) ? data.recentPlans : [],
-          })
-        } else {
-          setStats(data)
-        }
-      })
-      .catch((error) => {
-        console.error(error)
         setStats({
-          activeClients: 0,
-          pendingContents: 0,
-          inProccessContents: 0,
-          deliveredContents: 0,
-          publishedContents: 0,
-          completedPlans: 0,
-          delayedPlans: 0,
-          avgCompliance: 0,
-          recentPlans: [],
+          activeClients: data?.activeClients ?? 0,
+          pendingContents: data?.pendingContents ?? 0,
+          completedContents: data?.completedContents ?? 0,
+          completedPlans: data?.completedPlans ?? 0,
+          delayedPlans: data?.delayedPlans ?? 0,
+          avgCompliance: data?.avgCompliance ?? 0,
+          recentPlans: Array.isArray(data?.recentPlans) ? data.recentPlans : [],
+        })
+      })
+      .catch(() => {
+        setStats({
+          activeClients: 0, pendingContents: 0, completedContents: 0,
+          completedPlans: 0, delayedPlans: 0, avgCompliance: 0, recentPlans: [],
         })
       })
       .finally(() => setLoading(false))
   }, [])
 
+  // Próximas fechas reservadas (eventos del calendario)
+  useEffect(() => {
+    setLoadingEvents(true)
+    fetch('/api/calendario?upcoming=6')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setUpcomingEvents(Array.isArray(d) ? d : []))
+      .catch(() => setUpcomingEvents([]))
+      .finally(() => setLoadingEvents(false))
+  }, [])
+
+  const showFinancials = ['SUPER_ADMIN', 'ADMIN'].includes(userRole)
+
+  const planStatusDonut = useMemo(() => {
+    if (!stats) return []
+    const inProgress = (stats.recentPlans ?? []).filter((p: any) => p.planStatus === 'IN_PROGRESS').length
+    return [
+      { label: 'En Proceso', value: inProgress, color: '#C9A84C' },
+      { label: 'Completados', value: stats.completedPlans, color: '#22C55E' },
+      { label: 'Atrasados', value: stats.delayedPlans, color: '#E50914' },
+    ]
+  }, [stats])
+
+  const paymentDonut = useMemo(() => {
+    if (!stats) return []
+    const counts = { paid: 0, partial: 0, pending: 0 }
+    ;(stats.recentPlans ?? []).forEach((p: any) => {
+      if (p.paymentStatus === 'PAID') counts.paid++
+      else if (p.paymentStatus === 'PARTIAL') counts.partial++
+      else if (p.paymentStatus === 'PENDING') counts.pending++
+    })
+    return [
+      { label: 'Pagados', value: counts.paid, color: '#22C55E' },
+      { label: 'Parciales', value: counts.partial, color: '#F59E0B' },
+      { label: 'Pendientes', value: counts.pending, color: '#E50914' },
+    ]
+  }, [stats])
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex items-center gap-3 text-zinc-400">
-          <svg className="w-5 h-5 animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          Cargando dashboard...
+      <div className="space-y-6">
+        <div className="h-12 w-64 skeleton-shimmer rounded-lg" />
+        <div className="h-40 w-full skeleton-shimmer rounded-2xl" />
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-36 skeleton-shimmer rounded-2xl" />
+          ))}
         </div>
+        <div className="h-72 w-full skeleton-shimmer rounded-2xl" />
       </div>
     )
   }
 
-  if (!stats) return (
-    <div className="text-zinc-400 text-center py-10">No se pudo cargar el dashboard. Intenta actualizar la página.</div>
-  )
+  if (!stats) {
+    return (
+      <PremiumCard padding="lg" className="text-center">
+        <p className="text-phm-gray">No se pudo cargar el dashboard. Intenta actualizar la página.</p>
+      </PremiumCard>
+    )
+  }
+
+  const greeting = userName ? '¡Bienvenido, ' + userName.split(' ')[0] + '!' : '¡Bienvenido!'
+
+  const alertIcon = (type: Alert['type']) => {
+    if (type === 'danger') return <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+    if (type === 'warning') return <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+    return <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+  }
+
+  const alertBorder = (type: Alert['type']) => {
+    if (type === 'danger') return 'border-l-2 border-red-700 bg-red-950/20'
+    if (type === 'warning') return 'border-l-2 border-amber-700 bg-amber-950/10'
+    return 'border-l-2 border-blue-700 bg-blue-950/10'
+  }
 
   return (
     <div className="space-y-6">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-50">Buen día, Admin 👋</h1>
-        <p className="text-zinc-500 text-sm mt-1">Resumen del estado actual del sistema PHMavericks.</p>
-      </div>
-
-      {/* Ingresos del mes - solo admin/super_admin */}
-      {['SUPER_ADMIN', 'ADMIN'].includes(userRole) && (stats as any)?.ingresosMes !== undefined && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-zinc-400 font-medium">Ingresos cobrados este mes</p>
-            <p className="text-3xl font-bold text-white mt-1">${((stats as any).ingresosMes || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#8B0000' }}>
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
+      {/* Encabezado */}
+      <header>
+        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-gold-premium">{greeting}</span>
         </div>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mt-1 tracking-tight">Dashboard</h1>
+        <p className="text-phm-gray-soft text-sm mt-1">
+          Resumen general de tu agencia <span className="text-phm-gold font-medium">PHMavericks</span>.
+        </p>
+      </header>
+
+      {/* Hero de ingresos — solo SUPER_ADMIN y ADMIN */}
+      {showFinancials && (
+        <DashboardHero
+          amount={incomeData?.total ?? 0}
+          changePct={incomeData?.percentChange ?? null}
+          series={incomeData?.series}
+          rangeStart={incomeData?.rangeStart}
+          rangeEnd={incomeData?.rangeEnd}
+          selectedRange={incomeRange}
+          onRangeChange={(range, opts) => {
+            setIncomeRange(range)
+            fetchIncome(range, opts)
+          }}
+          loading={loadingIncome}
+        />
       )}
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <MetricCard
-          title="Clientes Activos"
-          value={stats.activeClients}
-          sub="Con plan vigente"
-          color="#8B0000"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
-        />
-        <MetricCard
-          title="Pendientes"
-          value={(stats as any).pendingContents ?? 0}
-          sub="Sin iniciar"
-          color="#71717a"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-        />
-        <MetricCard
-          title="En proceso"
-          value={(stats as any).inProccessContents ?? 0}
-          sub="En producción"
-          color="#d97706"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" /></svg>}
-        />
-        <MetricCard
-          title="Entregados"
-          value={(stats as any).deliveredContents ?? 0}
-          sub="Con link de Drive"
-          color="#2563eb"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-        />
-        <MetricCard
-          title="Publicados"
-          value={(stats as any).publishedContents ?? 0}
-          sub="Con link publicado"
-          color="#7c3aed"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" /></svg>}
-        />
-        <MetricCard
-          title="Planes Completados"
-          value={stats.completedPlans}
-          color="#2563eb"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" /></svg>}
-        />
-        <MetricCard
-          title="Planes Atrasados"
-          value={stats.delayedPlans}
-          sub="Requieren atención"
-          color="#dc2626"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
-        />
-        <MetricCard
-          title="Cumplimiento Promedio"
-          value={`${stats.avgCompliance}%`}
-          sub="Todos los planes"
-          color="#7c3aed"
-          icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
-        />
+      {/* KPIs operativos — todos los roles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <KPICard icon={Users} value={stats.activeClients} title="Clientes Activos" subtitle="Con plan o proyecto activo" tone="red" href="/clientes" ctaLabel="Ver clientes" />
+        <KPICard icon={Clock} value={stats.pendingContents} title="Entregables por atender" subtitle="Dentro de planes y proyectos" tone="amber" href="/proyectos" ctaLabel="Ver operación" />
+        <KPICard icon={CheckCircle2} value={stats.completedContents} title="Entregables cerrados" subtitle="Listos para reportar o entregar" tone="green" href="/reportes" ctaLabel="Ver reportes" />
+        <KPICard icon={CalendarCheck} value={stats.completedPlans} title="Trabajos Completados" subtitle="Planes y proyectos completados" tone="blue" href="/planes" ctaLabel="Ver planes" />
+        <KPICard icon={AlertTriangle} value={stats.delayedPlans} title="Trabajos Atrasados" subtitle="Planes y proyectos atrasados" tone="danger" href="/planes" ctaLabel="Ver atrasados" />
+        <KPICard icon={Activity} value={stats.avgCompliance + '%'} title="Cumplimiento Promedio" subtitle="Planes y proyectos" tone="purple" progress={stats.avgCompliance} href="/reportes" ctaLabel="Ver detalle" />
       </div>
 
-      {/* Recent Plans */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-          <h2 className="font-semibold text-zinc-100">Planes Recientes</h2>
-          <Link href="/planes" className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors">
-            Ver todos →
+      {/* Bloque "Necesita atención" — alertas reales */}
+      {(loadingAlerts || alerts.length > 0) && (
+        <PremiumCard padding="none">
+          <div className="flex items-center justify-between p-5 border-b border-phm-border-soft">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-phm-gold" />
+              <div>
+                <h2 className="font-semibold text-white tracking-wide">Necesita atención</h2>
+                <p className="text-xs text-phm-gray-soft mt-0.5">Elementos que requieren acción hoy</p>
+              </div>
+            </div>
+            {alerts.length > 0 && (
+              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-phm-red/20 text-red-400 border border-red-900/40">
+                {alerts.length} alerta{alerts.length !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          {loadingAlerts ? (
+            <div className="p-5 space-y-2">
+              {[1, 2].map((i) => <div key={i} className="h-12 skeleton-shimmer rounded-lg" />)}
+            </div>
+          ) : (
+            <div className="divide-y divide-phm-border-soft">
+              {alerts.map((alert) => (
+                <Link key={alert.id} href={alert.href}
+                  className="flex items-start gap-3 px-5 py-3.5 hover:bg-white/[0.03] transition-colors group">
+                  {alertIcon(alert.type)}
+                  <div className={`flex-1 pl-2 ${alertBorder(alert.type)} rounded-r-md px-3 py-1.5`}>
+                    <p className="text-sm font-medium text-white leading-tight">{alert.title}</p>
+                    <p className="text-xs text-phm-gray-soft mt-0.5 leading-relaxed">{alert.message}</p>
+                  </div>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-phm-gray-soft group-hover:text-phm-gold transition-colors flex-shrink-0 mt-1" />
+                </Link>
+              ))}
+            </div>
+          )}
+        </PremiumCard>
+      )}
+
+      {/* Próximas fechas reservadas — todas las actividades agendadas */}
+      <PremiumCard padding="none">
+        <div className="flex items-center justify-between p-5 border-b border-phm-border-soft">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="w-4 h-4 text-phm-gold" />
+            <div>
+              <h2 className="font-semibold text-white tracking-wide">Próximas fechas reservadas</h2>
+              <p className="text-xs text-phm-gray-soft mt-0.5">Grabaciones, sesiones, reuniones, entregas y demás actividades agendadas</p>
+            </div>
+          </div>
+          <Link href="/calendario" className="inline-flex items-center gap-1.5 text-sm font-medium text-phm-gold hover:text-phm-gold-bright transition-colors">
+            Ver calendario <ArrowUpRight className="w-4 h-4" />
+          </Link>
+        </div>
+        {loadingEvents ? (
+          <div className="p-5 space-y-2">
+            {[1, 2, 3].map((i) => <div key={i} className="h-14 skeleton-shimmer rounded-lg" />)}
+          </div>
+        ) : upcomingEvents.length === 0 ? (
+          <div className="text-center py-12 text-phm-gray-soft text-sm">
+            No hay fechas reservadas próximas.{' '}
+            <Link href="/calendario" className="text-phm-gold hover:text-phm-gold-bright underline">Agendar una actividad</Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-phm-border-soft">
+            {upcomingEvents.map((ev: any) => {
+              const start = new Date(ev.startDateTime)
+              const dia = start.toLocaleDateString('es-EC', { day: '2-digit' })
+              const mes = start.toLocaleDateString('es-EC', { month: 'short' }).replace(/\./g, '').toUpperCase()
+              const hora = start.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
+              const fechaLarga = start.toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' })
+              return (
+                <div key={ev.id} className="flex items-center gap-4 px-5 py-3.5">
+                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-phm-surface border border-phm-border-soft flex-shrink-0">
+                    <span className="text-base font-bold text-white leading-none">{dia}</span>
+                    <span className="text-[10px] font-semibold text-phm-gold mt-0.5">{mes}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{ev.title}</p>
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-xs text-phm-gray-soft">
+                      <span className="capitalize">{fechaLarga}</span>
+                      <span>· {hora}</span>
+                      {ev.clientName && <span className="truncate">· {ev.clientName}</span>}
+                      {ev.location && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.location}</span>}
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-phm-gold/10 text-phm-gold border border-phm-gold/25 flex-shrink-0">
+                    {TYPE_LABELS_ES[ev.type] || ev.type}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </PremiumCard>
+
+      {/* Gráficos — Estado de planes (todos los roles) + Pagos (solo admins) */}
+      <div className={`grid grid-cols-1 gap-4 ${showFinancials ? 'lg:grid-cols-2' : 'lg:grid-cols-1 max-w-md'}`}>
+        <ChartCard title="Estado de planes y proyectos" subtitle="Distribución actual" height={240}>
+          <Donut data={planStatusDonut} centerValue={planStatusDonut.reduce((s, x) => s + x.value, 0)} centerLabel="Planes" />
+        </ChartCard>
+        {showFinancials && (
+          <ChartCard title="Estado de pagos" subtitle="Sobre planes recientes" height={240}>
+            <Donut data={paymentDonut} centerValue={paymentDonut.reduce((s, x) => s + x.value, 0)} centerLabel="Planes" />
+          </ChartCard>
+        )}
+      </div>
+
+      {/* Tabla Planes Recientes */}
+      <PremiumCard padding="none">
+        <div className="flex items-center justify-between p-5 border-b border-phm-border-soft">
+          <div>
+            <h2 className="font-semibold text-white tracking-wide">Planes Recientes</h2>
+            <p className="text-xs text-phm-gray-soft mt-0.5">Últimos planes mensuales registrados</p>
+          </div>
+          <Link href="/planes" className="inline-flex items-center gap-1.5 text-sm font-medium text-phm-gold hover:text-phm-gold-bright transition-colors">
+            Ver todos <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Cliente</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Período</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Estado</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Pago</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3 min-w-[140px]">Cumplimiento</th>
-                <th className="text-left text-xs font-medium text-zinc-500 px-5 py-3">Precio</th>
+              <tr className="border-b border-phm-border-soft bg-white/[0.015]">
+                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Cliente</th>
+                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Período</th>
+                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Estado</th>
+                {showFinancials && <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Pago</th>}
+                <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3 min-w-[160px]">Cumplimiento</th>
+                {showFinancials && <th className="text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Precio</th>}
+                <th className="text-right text-[11px] font-semibold uppercase tracking-wider text-phm-gray-soft px-5 py-3">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-phm-border-soft">
               {(stats.recentPlans ?? []).map((plan: any) => {
                 const compliance = calculateCompliance(plan, plan.contents || [])
                 return (
-                  <tr key={plan.id} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-5 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-zinc-200">{plan.client?.name}</p>
-                        <p className="text-xs text-zinc-500">{plan.client?.business}</p>
+                  <tr key={plan.id} className="row-hover">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-phm-red to-phm-red-mid text-white text-[11px] font-bold shadow-glow-red">
+                          {(plan.client?.name || '?').split(' ').map((s: string) => s[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-white leading-tight">{plan.client?.name}</p>
+                          <p className="text-xs text-phm-gray-soft">{plan.client?.business}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-sm text-zinc-300">
+                    <td className="px-5 py-3.5 text-sm text-phm-gray">
                       {getMonthName(plan.month)} {plan.year}
                     </td>
-                    <td className="px-5 py-3">{planStatusBadge(plan.planStatus)}</td>
-                    <td className="px-5 py-3">{paymentStatusBadge(plan.paymentStatus)}</td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3.5">{planStatusBadge(plan.planStatus)}</td>
+                    {showFinancials && <td className="px-5 py-3.5">{paymentStatusBadge(plan.paymentStatus)}</td>}
+                    <td className="px-5 py-3.5">
                       <ProgressBar value={compliance.compliancePercentage} size="sm" />
                     </td>
-                    <td className="px-5 py-3 text-sm text-zinc-300">
-                      {formatCurrency(plan.monthlyPrice)}
+                    {showFinancials && (
+                      <td className="px-5 py-3.5 text-right text-sm font-semibold text-white tabular-nums">
+                        {formatCurrency(plan.monthlyPrice)}
+                      </td>
+                    )}
+                    <td className="px-5 py-3.5 text-right">
+                      <Link href={'/planes/' + plan.id} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
+                        Ver <ArrowUpRight className="w-3 h-3" />
+                      </Link>
                     </td>
                   </tr>
                 )
@@ -230,13 +407,15 @@ export default function DashboardPage() {
             </tbody>
           </table>
           {stats.recentPlans.length === 0 && (
-            <div className="text-center py-10 text-zinc-500 text-sm">
+            <div className="text-center py-12 text-phm-gray-soft text-sm">
               No hay planes creados todavía.{' '}
-              <Link href="/planes/nuevo" className="underline hover:text-zinc-300">Crear uno</Link>
+              <Link href="/planes/nuevo" className="text-phm-gold hover:text-phm-gold-bright underline">
+                Crear uno
+              </Link>
             </div>
           )}
         </div>
-      </div>
+      </PremiumCard>
     </div>
   )
 }

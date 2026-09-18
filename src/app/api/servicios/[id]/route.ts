@@ -7,6 +7,7 @@ import { z } from 'zod'
 const updateSchema = z.object({
   nombre: z.string().min(1).optional(),
   tipo: z.enum(['CONTENIDO', 'IA', 'FOTOGRAFIA', 'PERSONALIZADO']).optional(),
+  modalidad: z.enum(['MENSUAL', 'OCASIONAL']).optional(),
   precio: z.number().positive().optional(),
   cantidadReels: z.number().int().min(0).optional(),
   cantidadVideosHorizontales: z.number().int().min(0).optional(),

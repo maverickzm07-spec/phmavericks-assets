@@ -36,46 +36,61 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   if (!canWriteIngresos(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
-  const ingreso = await prisma.ingreso.findUnique({ where: { id: params.id } })
-  if (!ingreso) return NextResponse.json({ error: 'Ingreso no encontrado' }, { status: 404 })
-
   try {
     const body = await request.json()
     const data = abonoSchema.parse(body)
 
-    const saldoActual = ingreso.monto - ingreso.montoPagado
-    const nuevoAbono = Math.min(data.monto, saldoActual + data.monto) // permitir hasta cubrir el total
+    const fechaAbono = data.fechaAbono ? new Date(`${data.fechaAbono}T12:00:00`) : new Date()
 
-    const nuevoMontoPagado = Math.min(ingreso.monto, ingreso.montoPagado + nuevoAbono)
-    const nuevoEstado = calcEstado(ingreso.monto, nuevoMontoPagado)
+    // Releer el ingreso, topar el abono al saldo real y actualizar, todo en una
+    // sola transacción para que el historial de abonos siempre cuadre con montoPagado.
+    const result = await prisma.$transaction(async (tx) => {
+      const ingreso = await tx.ingreso.findUnique({ where: { id: params.id } })
+      if (!ingreso) return { status: 404 as const, error: 'Ingreso no encontrado' }
 
-    const [abono] = await prisma.$transaction([
-      prisma.abono.create({
+      const saldoActual = Math.max(0, ingreso.monto - ingreso.montoPagado)
+      if (saldoActual <= 0) {
+        return { status: 400 as const, error: 'El ingreso ya está totalmente pagado.' }
+      }
+
+      // Tope real: el abono no puede exceder el saldo pendiente
+      const nuevoAbono = Math.min(data.monto, saldoActual)
+      const nuevoMontoPagado = ingreso.montoPagado + nuevoAbono
+      const nuevoEstado = calcEstado(ingreso.monto, nuevoMontoPagado)
+
+      const abono = await tx.abono.create({
         data: {
           ingresoId: params.id,
           monto: nuevoAbono,
           metodoPago: data.metodoPago || null,
-          fechaAbono: data.fechaAbono ? new Date(data.fechaAbono) : new Date(),
+          fechaAbono,
           observacion: data.observacion || null,
           creadoPor: user.userId,
         },
         include: { creadoPorUser: { select: { name: true } } },
-      }),
-      prisma.ingreso.update({
+      })
+
+      await tx.ingreso.update({
         where: { id: params.id },
         data: { montoPagado: nuevoMontoPagado, estadoPago: nuevoEstado },
-      }),
-    ])
+      })
 
-    return NextResponse.json({
-      abono,
-      ingreso: {
-        montoPagado: nuevoMontoPagado,
-        estadoPago: nuevoEstado,
-        saldoPendiente: Math.max(0, ingreso.monto - nuevoMontoPagado),
-        porcentajePagado: Math.min(100, Math.round((nuevoMontoPagado / ingreso.monto) * 100)),
-      },
-    }, { status: 201 })
+      return {
+        status: 201 as const,
+        abono,
+        ingreso: {
+          montoPagado: nuevoMontoPagado,
+          estadoPago: nuevoEstado,
+          saldoPendiente: Math.max(0, ingreso.monto - nuevoMontoPagado),
+          porcentajePagado: Math.min(100, Math.round((nuevoMontoPagado / ingreso.monto) * 100)),
+        },
+      }
+    })
+
+    if (result.status !== 201) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+    return NextResponse.json({ abono: result.abono, ingreso: result.ingreso }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })

@@ -1,0 +1,135 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getUserFromRequest } from '@/lib/auth'
+import { canWriteContents, canDeleteData, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
+import { z } from 'zod'
+
+const updateSchema = z.object({
+  nombre: z.string().min(1).optional(),
+  modalidad: z.enum(['MENSUAL', 'OCASIONAL']).optional(),
+  estado: z.enum(['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO', 'ENTREGADO', 'COMPLETADO', 'ATRASADO']).optional(),
+  serviceId: z.string().nullable().optional(),
+  monthlyPlanId: z.string().nullable().optional(),
+  linkEntrega: z.string().url().optional().or(z.literal('')),
+  fechaEntrega: z.string().nullable().optional(),
+  observaciones: z.string().optional(),
+  precioBase: z.number().min(0).optional().nullable(),
+  precioFinal: z.number().min(0).optional().nullable(),
+})
+
+const DONE_STATUSES = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']
+
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
+  const project = await prisma.clientProject.findUnique({
+    where: { id: params.id },
+    include: {
+      client: { select: { id: true, name: true, business: true } },
+      service: { select: { id: true, nombre: true, tipo: true, modalidad: true, precio: true } },
+      monthlyPlan: { select: { id: true, month: true, year: true } },
+      ingresos: {
+        include: { abonos: { orderBy: { fechaAbono: 'asc' } } },
+        orderBy: { fechaIngreso: 'asc' },
+      },
+      contents: {
+        orderBy: { createdAt: 'asc' },
+        include: { client: { select: { id: true, name: true } } },
+      },
+      deliveryAccesses: { orderBy: { createdAt: 'desc' }, take: 1 },
+    },
+  })
+
+  if (!project) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+
+  const totalPagado = project.ingresos.reduce((s, i) => s + i.montoPagado, 0)
+  const saldoPendiente = project.precioFinal != null ? Math.max(0, project.precioFinal - totalPagado) : null
+  const estadoEconomico = project.precioFinal == null ? 'SIN_PRECIO'
+    : totalPagado <= 0 ? 'SIN_PAGO'
+    : totalPagado >= project.precioFinal ? 'PAGADO'
+    : 'ABONADO'
+
+  const enriched = { ...project, totalPagado, saldoPendiente, estadoEconomico }
+  return NextResponse.json(canViewFinancials(user.role) ? enriched : stripFinancialFields(enriched))
+}
+
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canWriteContents(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+
+  try {
+    const body = await request.json()
+    const data = updateSchema.parse(body)
+
+    const existingProject = await prisma.clientProject.findUnique({
+      where: { id: params.id },
+      select: { id: true, clientId: true },
+    })
+    if (!existingProject) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+
+    if (data.serviceId) {
+      const service = await prisma.servicePlan.findUnique({ where: { id: data.serviceId }, select: { id: true } })
+      if (!service) return NextResponse.json({ error: 'Servicio no encontrado' }, { status: 404 })
+    }
+    if (data.monthlyPlanId) {
+      const monthlyPlan = await prisma.monthlyPlan.findUnique({
+        where: { id: data.monthlyPlanId },
+        select: { id: true, clientId: true },
+      })
+      if (!monthlyPlan) return NextResponse.json({ error: 'Plan mensual no encontrado' }, { status: 404 })
+      if (monthlyPlan.clientId !== existingProject.clientId) {
+        return NextResponse.json({ error: 'El plan mensual pertenece a otro cliente' }, { status: 400 })
+      }
+    }
+
+    const project = await prisma.clientProject.update({
+      where: { id: params.id },
+      data: {
+        ...data,
+        // Si el campo no viene en la petición, conservar el link actual.
+        // Antes `undefined || null` convertía cualquier cambio parcial (por ejemplo, estado)
+        // en `linkEntrega = null`, borrando el enlace de Drive accidentalmente.
+        linkEntrega: data.linkEntrega === undefined ? undefined : (data.linkEntrega || null),
+        fechaEntrega: data.fechaEntrega ? new Date(data.fechaEntrega) : data.fechaEntrega === null ? null : undefined,
+        serviceId: data.serviceId === undefined ? undefined : (data.serviceId || null),
+        monthlyPlanId: data.monthlyPlanId === undefined ? undefined : (data.monthlyPlanId || null),
+      },
+      include: {
+        client: { select: { id: true, name: true, business: true } },
+        service: { select: { id: true, nombre: true, tipo: true } },
+        contents: true,
+      },
+    })
+
+    // Si se marca como COMPLETADO, revisar si todos los entregables están listos
+    if (data.estado === 'COMPLETADO') {
+      const pending = project.contents.filter((c) => !DONE_STATUSES.includes(c.status))
+      if (pending.length > 0) {
+        // Actualizar entregables pendientes a ENTREGADO automáticamente
+        await prisma.content.updateMany({
+          where: { projectId: params.id, status: { notIn: DONE_STATUSES as any[] } },
+          data: { status: 'ENTREGADO' },
+        })
+      }
+    }
+
+    return NextResponse.json(project)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
+    }
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canDeleteData(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+
+  // Los contenidos del proyecto se desvinculan (SetNull en schema)
+  await prisma.clientProject.delete({ where: { id: params.id } })
+  return NextResponse.json({ success: true })
+}

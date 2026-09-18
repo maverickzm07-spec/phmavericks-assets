@@ -1,7 +1,10 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Menu, Search, ChevronRight, Calendar, User, Folder, CalendarDays, Loader2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import NotificationsBell from '@/components/ui/NotificationsBell'
 
 const breadcrumbs: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -9,19 +12,183 @@ const breadcrumbs: Record<string, string> = {
   '/clientes/nuevo': 'Nuevo Cliente',
   '/planes': 'Planes Mensuales',
   '/planes/nuevo': 'Nuevo Plan',
-  '/contenidos': 'Contenidos',
-  '/contenidos/nuevo': 'Nuevo Contenido',
   '/reportes': 'Reportes',
+  '/ingresos': 'Ingresos',
+  '/proyectos': 'Proyectos',
+  '/servicios': 'Servicios',
+  '/usuarios': 'Equipo',
+  '/calendario': 'Calendario',
+}
+
+const TYPE_ICON: Record<string, React.ElementType> = {
+  cliente: User,
+  proyecto: Folder,
+  plan: CalendarDays,
+  evento: Calendar,
+}
+
+const TYPE_LABEL: Record<string, string> = {
+  cliente: 'Cliente',
+  proyecto: 'Proyecto',
+  plan: 'Plan',
+  evento: 'Evento',
+}
+
+interface SearchResult {
+  id: string
+  type: 'cliente' | 'proyecto' | 'plan' | 'evento'
+  title: string
+  subtitle: string
+  href: string
 }
 
 export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [now, setNow] = useState<string>('')
+
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const mobileInputRef = useRef<HTMLInputElement>(null)
+
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [online, setOnline] = useState(true)
+
+  useEffect(() => {
+    const fmt = () => {
+      try {
+        const d = new Date()
+        const formatted = new Intl.DateTimeFormat('es-EC', {
+          weekday: 'short',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }).format(d)
+        setNow(formatted.replace(/\./g, '').replace(/^./, (c) => c.toUpperCase()))
+      } catch {
+        setNow(new Date().toDateString())
+      }
+    }
+    fmt()
+    const id = setInterval(fmt, 60000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Debounced search
+  useEffect(() => {
+    if (!query.trim() || query.length < 2) {
+      setResults([])
+      setIsOpen(false)
+      return
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
+        if (res.ok) {
+          const data = await res.json()
+          setResults(data)
+          setIsOpen(true)
+        }
+      } catch {
+        // silent
+      } finally {
+        setSearching(false)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  // Click outside closes dropdown
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Ctrl+K focuses search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault()
+        inputRef.current?.focus()
+        if (results.length > 0) setIsOpen(true)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [results])
+
+  // Estado de conexión real (se inicializa en el efecto para evitar hydration mismatch)
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine)
+    update()
+    window.addEventListener('online', update)
+    window.addEventListener('offline', update)
+    return () => {
+      window.removeEventListener('online', update)
+      window.removeEventListener('offline', update)
+    }
+  }, [])
+
+  // Al abrir la búsqueda móvil, enfocar su input
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      const t = setTimeout(() => mobileInputRef.current?.focus(), 50)
+      return () => clearTimeout(t)
+    }
+  }, [mobileSearchOpen])
+
+  const handleSelect = (href: string) => {
+    setIsOpen(false)
+    setMobileSearchOpen(false)
+    setQuery('')
+    setResults([])
+    router.push(href)
+  }
+
+  // Lista de resultados reutilizable (desktop + overlay móvil)
+  const renderResultsList = () => (
+    <ul className="py-1.5 max-h-72 overflow-y-auto">
+      {results.map((r) => {
+        const Icon = TYPE_ICON[r.type] ?? Search
+        return (
+          <li key={r.id + r.type}>
+            <button
+              onClick={() => handleSelect(r.href)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left group"
+            >
+              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-phm-surface border border-phm-border-soft flex-shrink-0 group-hover:border-phm-gold/30">
+                <Icon className="w-3.5 h-3.5 text-phm-gray-soft" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate leading-tight">{r.title}</p>
+                {r.subtitle && (
+                  <p className="text-xs text-phm-gray-soft truncate leading-tight">{r.subtitle}</p>
+                )}
+              </div>
+              <span className="text-[10px] font-medium text-phm-gray-soft bg-phm-surface border border-phm-border-soft px-1.5 py-0.5 rounded flex-shrink-0">
+                {TYPE_LABEL[r.type]}
+              </span>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
 
   const getTitle = () => {
     if (breadcrumbs[pathname]) return breadcrumbs[pathname]
     if (pathname.includes('/clientes/')) return 'Detalle de Cliente'
     if (pathname.includes('/planes/')) return 'Detalle de Plan'
-    if (pathname.includes('/contenidos/')) return 'Detalle de Contenido'
     if (pathname.includes('/reportes/')) return 'Reporte Mensual'
     return 'PHM Sistema'
   }
@@ -29,7 +196,6 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const getParent = () => {
     if (pathname.includes('/clientes/') && pathname !== '/clientes/nuevo') return { href: '/clientes', label: 'Clientes' }
     if (pathname.includes('/planes/') && pathname !== '/planes/nuevo') return { href: '/planes', label: 'Planes' }
-    if (pathname.includes('/contenidos/') && pathname !== '/contenidos/nuevo') return { href: '/contenidos', label: 'Contenidos' }
     if (pathname.includes('/reportes/') && pathname !== '/reportes') return { href: '/reportes', label: 'Reportes' }
     return null
   }
@@ -37,32 +203,146 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const parent = getParent()
 
   return (
-    <header className="h-16 bg-zinc-900/80 backdrop-blur border-b border-zinc-800 flex items-center px-4 md:px-6 no-print">
+    <header className="sticky top-0 z-30 h-16 glass border-b border-white/[0.07] flex items-center px-4 md:px-6 no-print">
       <button
-        className="md:hidden mr-3 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0"
+        className="md:hidden mr-3 text-phm-gray hover:text-white transition-colors flex-shrink-0 p-1.5 rounded-lg hover:bg-white/5"
         onClick={onMenuClick}
+        aria-label="Abrir menu"
       >
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <Menu className="w-5 h-5" />
       </button>
-      <div className="flex items-center gap-2 text-sm">
+
+      <div className="flex items-center gap-2 text-sm min-w-0">
         {parent && (
           <>
-            <Link href={parent.href} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+            <Link href={parent.href} className="text-phm-gray hover:text-white transition-colors truncate">
               {parent.label}
             </Link>
-            <svg className="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 text-phm-gray-soft flex-shrink-0" />
           </>
         )}
-        <span className="font-semibold text-zinc-100">{getTitle()}</span>
+        <span className="font-semibold text-white truncate">{getTitle()}</span>
       </div>
-      <div className="ml-auto flex items-center gap-3">
-        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-        <span className="text-xs text-zinc-500">Sistema activo</span>
+
+      <div className="ml-auto flex items-center gap-2 md:gap-3">
+        {/* Search — desktop */}
+        <div ref={searchContainerRef} className="relative hidden lg:block">
+          <div className="flex items-center gap-2 px-3 h-9 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-gold/30 transition-colors w-64 focus-within:border-phm-gold/50">
+            {searching ? (
+              <Loader2 className="w-4 h-4 text-phm-gray-soft animate-spin flex-shrink-0" />
+            ) : (
+              <Search className="w-4 h-4 text-phm-gray-soft flex-shrink-0" />
+            )}
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => { if (results.length > 0) setIsOpen(true) }}
+              placeholder="Buscar..."
+              className="bg-transparent outline-none text-sm text-white placeholder:text-phm-gray-soft flex-1 min-w-0"
+            />
+            {!query && (
+              <kbd className="hidden xl:inline-flex items-center px-1.5 h-5 text-[10px] font-mono text-phm-gray-soft bg-phm-charcoal-2 border border-phm-border-soft rounded">
+                CTRL+K
+              </kbd>
+            )}
+          </div>
+
+          {/* Dropdown results */}
+          {isOpen && (
+            <div className="absolute top-full mt-1.5 left-0 w-full min-w-[320px] bg-phm-charcoal border border-phm-border-soft rounded-xl shadow-2xl overflow-hidden z-50">
+              {results.length === 0 ? (
+                <p className="text-sm text-phm-gray-soft text-center py-4 px-4">Sin resultados para &ldquo;{query}&rdquo;</p>
+              ) : (
+                renderResultsList()
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Search icon — mobile */}
+        <button
+          onClick={() => setMobileSearchOpen(true)}
+          className="lg:hidden text-phm-gray hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
+          aria-label="Buscar"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+
+        <button className="hidden md:inline-flex items-center gap-2 h-9 px-3 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-gold/30 text-xs font-medium text-phm-gray hover:text-white transition-all">
+          <Calendar className="w-3.5 h-3.5 text-phm-gold" />
+          <span className="tabular-nums">{now || '—'}</span>
+        </button>
+
+        <NotificationsBell />
+
+        <div className="hidden md:flex items-center gap-2 ml-1">
+          <span className="relative flex h-2 w-2">
+            {online && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-2 w-2 ${online ? 'bg-emerald-400' : 'bg-red-500'}`}
+            ></span>
+          </span>
+          <span
+            className={`text-[11px] uppercase tracking-wider ${online ? 'text-phm-gray-soft' : 'text-red-400'}`}
+          >
+            {online ? 'Online' : 'Sin conexión'}
+          </span>
+        </div>
       </div>
+
+      {/* Overlay de búsqueda — móvil */}
+      {mobileSearchOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setMobileSearchOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute top-0 left-0 right-0 bg-phm-charcoal border-b border-phm-border-soft p-4 shadow-2xl">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 h-10 rounded-lg bg-phm-surface border border-phm-border-soft focus-within:border-phm-gold/50 flex-1 min-w-0">
+                {searching ? (
+                  <Loader2 className="w-4 h-4 text-phm-gray-soft animate-spin flex-shrink-0" />
+                ) : (
+                  <Search className="w-4 h-4 text-phm-gray-soft flex-shrink-0" />
+                )}
+                <input
+                  ref={mobileInputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setMobileSearchOpen(false) }}
+                  placeholder="Buscar..."
+                  className="bg-transparent outline-none text-sm text-white placeholder:text-phm-gray-soft flex-1 min-w-0"
+                />
+              </div>
+              <button
+                onClick={() => setMobileSearchOpen(false)}
+                className="text-phm-gray hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 flex-shrink-0"
+                aria-label="Cerrar búsqueda"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {query.trim().length >= 2 && (
+              <div className="mt-2 bg-phm-charcoal border border-phm-border-soft rounded-xl overflow-hidden">
+                {results.length === 0 ? (
+                  <p className="text-sm text-phm-gray-soft text-center py-4 px-4">
+                    {searching ? 'Buscando...' : <>Sin resultados para &ldquo;{query}&rdquo;</>}
+                  </p>
+                ) : (
+                  renderResultsList()
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   )
 }

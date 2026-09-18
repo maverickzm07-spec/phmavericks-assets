@@ -30,6 +30,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     where: { id: params.id },
     include: {
       cliente: { select: { id: true, name: true, business: true } },
+      project: { select: { id: true, nombre: true, precioFinal: true } },
+      monthlyPlan: { select: { id: true, month: true, year: true, precioFinal: true } },
       creadoPorUser: { select: { name: true } },
       abonos: {
         include: { creadoPorUser: { select: { name: true } } },

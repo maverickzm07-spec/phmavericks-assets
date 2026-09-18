@@ -1,20 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
-import { canWriteContents, canDeleteContents } from '@/lib/permissions'
+import { canWriteContents, canDeleteData } from '@/lib/permissions'
 import { z } from 'zod'
 
-const updateSchema = z.object({
-  clientId: z.string().min(1).optional(),
-  planId: z.string().optional().nullable(),
-  type: z.enum(['REEL', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA']).optional(),
-  title: z.string().min(1).optional(),
-  status: z.enum(['PENDIENTE', 'EN_PROCESO', 'ENTREGADO', 'PUBLICADO']).optional(),
-  requierePublicacion: z.boolean().optional(),
-  driveLink: z.string().url().optional().or(z.literal('')).nullable(),
-  publishedLink: z.string().url().optional().or(z.literal('')).nullable(),
-  observations: z.string().optional().nullable(),
+const contentSchema = z.object({
+  clientId: z.string().min(1),
+  planId: z.string().nullable().optional(),
+  projectId: z.string().nullable().optional(),
+  type: z.enum(['REEL', 'CAROUSEL', 'FLYER', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA', 'VIDEO', 'OTRO']),
+  formato: z.enum(['VERTICAL_9_16', 'HORIZONTAL_16_9', 'CUADRADO_1_1', 'NO_APLICA']).nullable().optional(),
+  title: z.string().min(1),
+  status: z.enum(['PENDING', 'EDITING', 'APPROVED', 'PUBLISHED', 'COMPLETED', 'PENDIENTE', 'EN_PROCESO', 'ENTREGADO', 'PUBLICADO']),
+  driveLink: z.string().url().optional().or(z.literal('')),
+  publishedLink: z.string().url().optional().or(z.literal('')),
+  publishedAt: z.string().optional(),
+  views: z.number().int().min(0),
+  likes: z.number().int().min(0),
+  comments: z.number().int().min(0),
+  shares: z.number().int().min(0),
+  saves: z.number().int().min(0),
+  observations: z.string().optional(),
 })
+
+const DONE_STATUSES = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
@@ -23,12 +32,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   const content = await prisma.content.findUnique({
     where: { id: params.id },
     include: {
-      client: { select: { id: true, name: true, business: true } },
-      plan: { select: { id: true, month: true, year: true } },
+      client: true,
+      plan: { include: { client: true } },
+      project: { select: { id: true, nombre: true, modalidad: true, estado: true } },
     },
   })
 
-  if (!content) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+  if (!content) return NextResponse.json({ error: 'Contenido no encontrado' }, { status: 404 })
   return NextResponse.json(content)
 }
 
@@ -39,29 +49,68 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   try {
     const body = await request.json()
-    const data = updateSchema.parse(body)
-
-    const existing = await prisma.content.findUnique({ where: { id: params.id } })
-    if (!existing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
-
-    const updateData: any = { ...data }
-    if ('driveLink' in data) updateData.driveLink = data.driveLink || null
-    if ('publishedLink' in data) updateData.publishedLink = data.publishedLink || null
-    if ('planId' in data) updateData.planId = data.planId || null
+    const data = contentSchema.parse(body)
 
     const content = await prisma.content.update({
       where: { id: params.id },
-      data: updateData,
+      data: {
+        clientId: data.clientId,
+        planId: data.planId || null,
+        projectId: data.projectId || null,
+        type: data.type,
+        formato: data.formato || null,
+        title: data.title,
+        status: data.status,
+        driveLink: data.driveLink || null,
+        publishedLink: data.publishedLink || null,
+        publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
+        views: data.views,
+        likes: data.likes,
+        comments: data.comments,
+        shares: data.shares,
+        saves: data.saves,
+        observations: data.observations || null,
+      },
       include: {
-        client: { select: { id: true, name: true, business: true } },
+        client: { select: { id: true, name: true } },
         plan: { select: { id: true, month: true, year: true } },
+        project: { select: { id: true, nombre: true, modalidad: true } },
       },
     })
+
+    // Auto-completar proyecto si todos sus entregables están listos
+    if (content.projectId) {
+      const siblings = await prisma.content.findMany({ where: { projectId: content.projectId } })
+      if (siblings.every((c) => DONE_STATUSES.includes(c.status))) {
+        await prisma.clientProject.update({ where: { id: content.projectId }, data: { estado: 'COMPLETADO' } })
+      } else {
+        const anyInProgress = siblings.some((c) => ['EDITING', 'EN_PROCESO', 'EN_EDICION'].includes(c.status))
+        if (anyInProgress) {
+          await prisma.clientProject.updateMany({
+            where: { id: content.projectId, estado: 'PENDIENTE' },
+            data: { estado: 'EN_PROCESO' },
+          })
+        }
+      }
+    }
+
+    // Auto-actualizar estado del Plan Mensual si todos sus contenidos están listos
+    if (content.planId) {
+      const planContents = await prisma.content.findMany({ where: { planId: content.planId } })
+      if (planContents.length > 0 && planContents.every((c) => DONE_STATUSES.includes(c.status))) {
+        await prisma.monthlyPlan.update({ where: { id: content.planId }, data: { planStatus: 'COMPLETED' } })
+      } else if (planContents.some((c) => ['EDITING', 'EN_PROCESO', 'APPROVED', 'PUBLISHED'].includes(c.status))) {
+        await prisma.monthlyPlan.updateMany({
+          where: { id: content.planId, planStatus: 'COMPLETED' },
+          data: { planStatus: 'IN_PROGRESS' },
+        })
+      }
+    }
 
     return NextResponse.json(content)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
+      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
     }
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })
   }
@@ -70,7 +119,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (!canDeleteContents(user.role)) return NextResponse.json({ error: 'Solo el Super Admin puede eliminar contenidos' }, { status: 403 })
+  if (!canDeleteData(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   await prisma.content.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })

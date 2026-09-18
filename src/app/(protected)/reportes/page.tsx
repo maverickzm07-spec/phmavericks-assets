@@ -2,22 +2,42 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Sparkles, ArrowUpRight, FileBarChart2, Download } from 'lucide-react'
 import { planStatusBadge, paymentStatusBadge } from '@/components/ui/Badge'
 import ProgressBar from '@/components/ui/ProgressBar'
 import EmptyState from '@/components/ui/EmptyState'
+import PremiumCard from '@/components/ui/PremiumCard'
 import { getMonthName, calculateCompliance, formatCurrency, MONTHS } from '@/lib/utils'
 
 export default function ReportesPage() {
   const [plans, setPlans] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ clientId: '', month: '', year: '' })
+  const [showFinancials, setShowFinancials] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.ok ? r.json() : null)
+      .then((u) => { if (['SUPER_ADMIN', 'ADMIN'].includes(u?.role)) setShowFinancials(true) })
+      .catch(() => {})
+  }, [])
 
   const currentYear = new Date().getFullYear()
   const years = [currentYear - 1, currentYear, currentYear + 1]
 
   useEffect(() => {
-    fetch('/api/clientes').then((r) => r.json()).then(setClients)
+    Promise.all([
+      fetch('/api/clientes').then((r) => r.ok ? r.json() : []),
+      fetch('/api/proyectos').then((r) => r.ok ? r.json() : []),
+    ]).then(([clientData, projectData]) => {
+      setClients(Array.isArray(clientData) ? clientData : [])
+      setProjects(Array.isArray(projectData) ? projectData : [])
+    }).catch(() => {
+      setClients([])
+      setProjects([])
+    })
   }, [])
 
   useEffect(() => {
@@ -25,9 +45,12 @@ export default function ReportesPage() {
     Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v) })
     setLoading(true)
     fetch(`/api/planes?${params}`)
-      .then((r) => r.json())
-      .then(setPlans)
-      .catch(console.error)
+      .then((r) => r.ok ? r.json() : [])
+      .then((d) => setPlans(Array.isArray(d) ? d : []))
+      .catch((error) => {
+        console.error(error)
+        setPlans([])
+      })
       .finally(() => setLoading(false))
   }, [filters])
 
@@ -35,85 +58,161 @@ export default function ReportesPage() {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
+  const exportCSV = () => {
+    const rows = [
+      showFinancials
+        ? ['Cliente', 'Negocio', 'Mes', 'Año', 'Estado Plan', 'Estado Pago', 'Precio', 'Reels', 'Carruseles', 'Flyers', 'Cumplimiento %']
+        : ['Cliente', 'Negocio', 'Mes', 'Año', 'Estado Plan', 'Reels', 'Carruseles', 'Flyers', 'Cumplimiento %'],
+      ...plans.map((plan) => {
+        const compliance = calculateCompliance(plan, plan.contents || [])
+        const base = [
+          plan.client?.name ?? '', plan.client?.business ?? '',
+          getMonthName(plan.month), plan.year,
+          plan.planStatus, ...(showFinancials ? [plan.paymentStatus, plan.monthlyPrice] : []),
+          plan.reelsCount, plan.carouselsCount, plan.flyersCount,
+          compliance.compliancePercentage,
+        ]
+        return base
+      }),
+    ]
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `reportes-phm-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click(); URL.revokeObjectURL(url)
+  }
+
+  const selectCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors'
+
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-zinc-50">Reportes Mensuales</h1>
-        <p className="text-zinc-500 text-sm">Selecciona un plan para ver el reporte completo</p>
-      </div>
+    <div className="space-y-6">
+      <header>
+        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-gold-premium">Análisis</span>
+        </div>
+        <div className="flex items-start justify-between mt-1">
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Reportes y Cierres</h1>
+            <p className="text-phm-gray-soft text-sm mt-1">Reportes mensuales y documentos finales de proyectos</p>
+          </div>
+          {plans.length > 0 && (
+            <button onClick={exportCSV}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-all">
+              <Download className="w-4 h-4" /> Exportar CSV
+            </button>
+          )}
+        </div>
+      </header>
 
-      {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
-        <select value={filters.clientId} onChange={(e) => handleFilter('clientId', e.target.value)}
-          className="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-zinc-500">
-          <option value="">Todos los clientes</option>
-          {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select value={filters.month} onChange={(e) => handleFilter('month', e.target.value)}
-          className="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-zinc-500">
-          <option value="">Todos los meses</option>
-          {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
-        </select>
-        <select value={filters.year} onChange={(e) => handleFilter('year', e.target.value)}
-          className="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-zinc-500">
-          <option value="">Todos los años</option>
-          {years.map((y) => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
+      <PremiumCard padding="sm">
+        <div className="flex gap-3 flex-wrap">
+          <select value={filters.clientId} onChange={(e) => handleFilter('clientId', e.target.value)} className={selectCls}>
+            <option value="">Todos los clientes</option>
+            {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select value={filters.month} onChange={(e) => handleFilter('month', e.target.value)} className={selectCls}>
+            <option value="">Todos los meses</option>
+            {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
+          </select>
+          <select value={filters.year} onChange={(e) => handleFilter('year', e.target.value)} className={selectCls}>
+            <option value="">Todos los años</option>
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      </PremiumCard>
 
-      {/* Plans Grid */}
+      {projects.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Cierres de proyecto</h2>
+            <p className="text-xs text-phm-gray-soft mt-0.5">Documentos de finalización basados en los datos reales del proyecto, entregables, pagos y link de entrega.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {projects.slice(0, 6).map((project: any) => {
+              const doneStatuses = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']
+              const total = project.contents?.length ?? 0
+              const done = (project.contents ?? []).filter((item: any) => doneStatuses.includes(item.status)).length
+              const pct = total > 0 ? Math.round((done / total) * 100) : project.estado === 'COMPLETADO' ? 100 : 0
+              return (
+                <PremiumCard key={project.id} hover padding="md">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white truncate">{project.nombre}</p>
+                      <p className="text-sm text-phm-gray-soft truncate">{project.client?.name}</p>
+                    </div>
+                    <span className="text-xs text-phm-gold whitespace-nowrap">{pct}%</span>
+                  </div>
+                  <ProgressBar value={pct} size="sm" />
+                  <Link href={`/reportes/proyecto/${project.id}`}
+                    className="mt-4 flex items-center justify-center gap-2 w-full py-2 text-sm font-semibold text-white bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 hover:text-phm-gold rounded-lg transition-colors">
+                    <FileBarChart2 className="w-4 h-4" /> Ver cierre / PDF
+                  </Link>
+                </PremiumCard>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-zinc-500 text-sm">Cargando...</div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-52 skeleton-shimmer rounded-2xl" />
+          ))}
+        </div>
       ) : plans.length === 0 ? (
-        <EmptyState
-          title="No hay planes"
-          description="Crea un plan mensual para generar reportes."
-          actionLabel="Nuevo Plan"
-          actionHref="/planes/nuevo"
-        />
+        <PremiumCard padding="none">
+          <EmptyState
+            title="No hay planes"
+            description="Crea un plan mensual para generar reportes."
+            actionLabel="Nuevo Plan"
+            actionHref="/planes/nuevo"
+          />
+        </PremiumCard>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => {
             const compliance = calculateCompliance(plan, plan.contents || [])
             return (
-              <div key={plan.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-all">
+              <PremiumCard key={plan.id} hover padding="md">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-semibold text-zinc-100">{plan.client?.name}</p>
-                    <p className="text-sm text-zinc-500">{getMonthName(plan.month)} {plan.year}</p>
+                    <p className="font-semibold text-white">{plan.client?.name}</p>
+                    <p className="text-sm text-phm-gray-soft">{getMonthName(plan.month)} {plan.year}</p>
                   </div>
                   {planStatusBadge(plan.planStatus)}
                 </div>
 
-                <div className="flex items-center gap-3 mb-4">
-                  {paymentStatusBadge(plan.paymentStatus)}
-                  <span className="text-sm text-zinc-400">{formatCurrency(plan.monthlyPrice)}</span>
-                </div>
+                {showFinancials && (
+                  <div className="flex items-center gap-3 mb-4">
+                    {paymentStatusBadge(plan.paymentStatus)}
+                    <span className="text-sm text-phm-gray font-semibold">{formatCurrency(plan.monthlyPrice)}</span>
+                  </div>
+                )}
 
                 <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-xs text-zinc-500">
+                  <div className="flex justify-between text-xs text-phm-gray-soft">
                     <span>Reels: <span className="text-purple-400">{compliance.reelsDelivered}/{plan.reelsCount}</span></span>
-                    <span>Carruseles: <span className="text-blue-400">{compliance.carouselsDelivered}/{plan.carouselsCount}</span></span>
+                    <span>Carr.: <span className="text-blue-400">{compliance.carouselsDelivered}/{plan.carouselsCount}</span></span>
                     <span>Flyers: <span className="text-orange-400">{compliance.flyersDelivered}/{plan.flyersCount}</span></span>
                   </div>
                   <ProgressBar value={compliance.compliancePercentage} size="sm" />
                   <div className="flex justify-between text-xs">
-                    <span className="text-zinc-500">Entregados: {compliance.totalDelivered}/{compliance.totalContracted}</span>
-                    <span className="font-semibold text-zinc-300">{compliance.compliancePercentage}%</span>
+                    <span className="text-phm-gray-soft">Entregados: {compliance.totalDelivered}/{compliance.totalContracted}</span>
+                    <span className="font-semibold text-white">{compliance.compliancePercentage}%</span>
                   </div>
                 </div>
 
                 <Link
                   href={`/reportes/${plan.id}`}
-                  className="flex items-center justify-center gap-2 w-full py-2 text-sm font-medium text-white rounded-lg transition-all"
-                  style={{ backgroundColor: '#8B0000' }}
+                  className="flex items-center justify-center gap-2 w-full py-2 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <FileBarChart2 className="w-4 h-4" />
                   Ver Reporte Completo
                 </Link>
-              </div>
+              </PremiumCard>
             )
           })}
         </div>

@@ -7,12 +7,15 @@ export function getMonthName(month: number): string {
   return MONTHS[month - 1] || 'Desconocido'
 }
 
+// Moneda única de todo el sistema. PHMavericks opera en Ecuador (USD).
+// Mostrar centavos solo cuando el monto los tenga (0 → "$150", 150.5 → "$150.50").
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-MX', {
+  return new Intl.NumberFormat('es-EC', {
     style: 'currency',
-    currency: 'MXN',
+    currency: 'USD',
     minimumFractionDigits: 0,
-  }).format(amount)
+    maximumFractionDigits: 2,
+  }).format(amount ?? 0)
 }
 
 export function formatNumber(num: number): string {
@@ -43,25 +46,26 @@ export interface ContentForCompliance {
   publishedLink: string | null
 }
 
+const DONE_STATUSES = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']
+
 export function calculateCompliance(
   plan: PlanWithCounts,
   contents: ContentForCompliance[]
 ): ComplianceData {
   const delivered = contents.filter(
-    (c) =>
-      (c.status === 'ENTREGADO' || c.status === 'PUBLICADO') &&
-      (c.driveLink || c.publishedLink)
+    (c) => DONE_STATUSES.includes(c.status) && (c.driveLink || c.publishedLink)
   )
 
-  const reelsDelivered = delivered.filter((c) => c.type === 'REEL').length
-  const carouselsDelivered = delivered.filter((c) => c.type === 'FOTO' || c.type === 'VIDEO_HORIZONTAL').length
-  const flyersDelivered = delivered.filter((c) => c.type === 'IMAGEN_FLYER').length
+  const reelsDelivered = delivered.filter((c) => ['REEL', 'VIDEO', 'VIDEO_HORIZONTAL'].includes(c.type)).length
+  const carouselsDelivered = delivered.filter((c) => c.type === 'CAROUSEL').length
+  const flyersDelivered = delivered.filter((c) => ['FLYER', 'IMAGEN_FLYER'].includes(c.type)).length
 
   const totalContracted = plan.reelsCount + plan.carouselsCount + plan.flyersCount
   const totalDelivered = reelsDelivered + carouselsDelivered + flyersDelivered
 
+  // Tope a 100%: entregar más piezas de las contratadas no debe superar el 100%
   const compliancePercentage =
-    totalContracted > 0 ? Math.round((totalDelivered / totalContracted) * 100) : 0
+    totalContracted > 0 ? Math.min(100, Math.round((totalDelivered / totalContracted) * 100)) : 0
 
   return {
     reelsDelivered,
@@ -73,23 +77,77 @@ export function calculateCompliance(
   }
 }
 
-export function getStatusLabel(status: string, type: 'client' | 'plan' | 'content' | 'payment'): string {
+export function getStatusLabel(status: string, type: 'client' | 'plan' | 'content' | 'payment' | 'project'): string {
   const labels: Record<string, Record<string, string>> = {
-    client: { ACTIVE: 'Activo', PAUSED: 'Pausado', FINISHED: 'Finalizado' },
-    plan: { IN_PROGRESS: 'En Proceso', COMPLETED: 'Completado', DELAYED: 'Atrasado' },
-    content: { PENDIENTE: 'Pendiente', EN_PROCESO: 'En proceso', ENTREGADO: 'Entregado', PUBLICADO: 'Publicado' },
+    client:  { ACTIVE: 'Activo', PAUSED: 'Pausado', FINISHED: 'Finalizado' },
+    plan:    { IN_PROGRESS: 'En Proceso', COMPLETED: 'Completado', DELAYED: 'Atrasado' },
+    content: {
+      PENDING: 'Pendiente', EDITING: 'En Edición', APPROVED: 'Aprobado',
+      PUBLISHED: 'Publicado', COMPLETED: 'Completado',
+      PENDIENTE: 'Pendiente', EN_PROCESO: 'En Proceso', EN_EDICION: 'En Edición',
+      ENTREGADO: 'Entregado', PUBLICADO: 'Publicado',
+    },
     payment: { PENDING: 'Pendiente', PARTIAL: 'Parcial', PAID: 'Pagado' },
+    project: {
+      PENDIENTE: 'Pendiente', EN_PROCESO: 'En Proceso', EN_EDICION: 'En Edición',
+      APROBADO: 'Aprobado', ENTREGADO: 'Entregado', COMPLETADO: 'Completado', ATRASADO: 'Atrasado',
+    },
   }
   return labels[type]?.[status] || status
 }
 
 export function getContentTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    REEL: 'Reel',
-    VIDEO_HORIZONTAL: 'Video horizontal',
-    FOTO: 'Foto',
-    IMAGEN_FLYER: 'Imagen / Flyer',
-    EXTRA: 'Extra',
+    REEL: 'Reel', CAROUSEL: 'Carrusel', FLYER: 'Flyer',
+    VIDEO_HORIZONTAL: 'Video Horizontal', FOTO: 'Foto',
+    IMAGEN_FLYER: 'Imagen/Flyer', EXTRA: 'Extra',
+    VIDEO: 'Video', OTRO: 'Otro',
   }
   return labels[type] || type
+}
+
+export function getFormatoLabel(formato: string | null | undefined): string {
+  if (!formato) return '—'
+  const labels: Record<string, string> = {
+    VERTICAL_9_16: 'Vertical 9:16',
+    HORIZONTAL_16_9: 'Horizontal 16:9',
+    CUADRADO_1_1: 'Cuadrado 1:1',
+    NO_APLICA: 'No aplica',
+  }
+  return labels[formato] || formato
+}
+
+export function getModalidadLabel(modalidad: string): string {
+  return modalidad === 'MENSUAL' ? 'Mensual' : 'Ocasional'
+}
+
+export function getProjectStatusColor(estado: string): string {
+  const colors: Record<string, string> = {
+    PENDIENTE: 'bg-zinc-800 text-zinc-400',
+    EN_PROCESO: 'bg-blue-950 text-blue-400',
+    EN_EDICION: 'bg-purple-950 text-purple-400',
+    APROBADO: 'bg-amber-950 text-amber-400',
+    ENTREGADO: 'bg-teal-950 text-teal-400',
+    COMPLETADO: 'bg-green-950 text-green-400',
+    ATRASADO: 'bg-red-950 text-red-400',
+  }
+  return colors[estado] || 'bg-zinc-800 text-zinc-400'
+}
+
+export function getContentStatusColor(status: string): string {
+  const colors: Record<string, string> = {
+    PENDING: 'bg-zinc-800 text-zinc-400',
+    PENDIENTE: 'bg-zinc-800 text-zinc-400',
+    EDITING: 'bg-blue-950 text-blue-400',
+    EN_PROCESO: 'bg-blue-950 text-blue-400',
+    EN_EDICION: 'bg-purple-950 text-purple-400',
+    APPROVED: 'bg-amber-950 text-amber-400',
+    APROBADO: 'bg-amber-950 text-amber-400',
+    PUBLISHED: 'bg-green-950 text-green-400',
+    PUBLICADO: 'bg-green-950 text-green-400',
+    ENTREGADO: 'bg-teal-950 text-teal-400',
+    COMPLETED: 'bg-zinc-700 text-zinc-300',
+    COMPLETADO: 'bg-zinc-700 text-zinc-300',
+  }
+  return colors[status] || 'bg-zinc-800 text-zinc-400'
 }

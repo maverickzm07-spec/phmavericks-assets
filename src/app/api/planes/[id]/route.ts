@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canWriteMonthlyPlans, canDeleteData, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
 import { z } from 'zod'
 
 const planSchema = z.object({
@@ -13,7 +14,10 @@ const planSchema = z.object({
   monthlyPrice: z.number().min(0),
   paymentStatus: z.enum(['PENDING', 'PARTIAL', 'PAID']),
   planStatus: z.enum(['IN_PROGRESS', 'COMPLETED', 'DELAYED']),
+  deliveryLink: z.string().optional().nullable(),
   observations: z.string().optional(),
+  precioBase: z.number().min(0).optional().nullable(),
+  precioFinal: z.number().min(0).optional().nullable(),
 })
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -24,17 +28,33 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     where: { id: params.id },
     include: {
       client: true,
+      ingresos: {
+        include: { abonos: { orderBy: { fechaAbono: 'asc' } } },
+        orderBy: { fechaIngreso: 'asc' },
+      },
       contents: { orderBy: [{ type: 'asc' }, { createdAt: 'asc' }] },
+      deliveryAccesses: { orderBy: { createdAt: 'desc' }, take: 1 },
     },
   })
 
   if (!plan) return NextResponse.json({ error: 'Plan no encontrado' }, { status: 404 })
-  return NextResponse.json(plan)
+
+  const totalPagado = plan.ingresos.reduce((s: number, i: any) => s + i.montoPagado, 0)
+  const precioRef = plan.precioFinal ?? plan.monthlyPrice
+  const saldoPendiente = precioRef > 0 ? Math.max(0, precioRef - totalPagado) : null
+  const estadoEconomico = precioRef <= 0 ? 'SIN_PRECIO'
+    : totalPagado <= 0 ? 'SIN_PAGO'
+    : totalPagado >= precioRef ? 'PAGADO'
+    : 'ABONADO'
+
+  const enriched = { ...plan, totalPagado, saldoPendiente, estadoEconomico }
+  return NextResponse.json(canViewFinancials(user.role) ? enriched : stripFinancialFields(enriched))
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canWriteMonthlyPlans(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   try {
     const body = await request.json()
@@ -50,8 +70,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         carouselsCount: data.carouselsCount,
         flyersCount: data.flyersCount,
         monthlyPrice: data.monthlyPrice,
+        precioBase: data.precioBase ?? undefined,
+        precioFinal: data.precioFinal ?? undefined,
         paymentStatus: data.paymentStatus,
         planStatus: data.planStatus,
+        deliveryLink: data.deliveryLink ?? null,
         observations: data.observations || null,
       },
       include: { client: true },
@@ -69,6 +92,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canDeleteData(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
 
   await prisma.monthlyPlan.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })
