@@ -8,44 +8,44 @@ type Tone = 'red' | 'gold' | 'green' | 'blue' | 'purple' | 'amber' | 'danger'
 
 const toneStyles: Record<Tone, { iconBg: string; iconRing: string; iconColor: string; accent: string }> = {
   red: {
-    iconBg: 'bg-gradient-to-br from-[#8B0000] to-[#B00000]',
-    iconRing: 'ring-1 ring-[#E50914]/40',
+    iconBg: 'bg-red-950/70',
+    iconRing: 'ring-1 ring-red-800/60',
     iconColor: 'text-white',
     accent: 'rgba(229, 9, 20, 0.18)',
   },
   gold: {
-    iconBg: 'bg-gradient-to-br from-[#A88B3A] to-[#C9A84C]',
-    iconRing: 'ring-1 ring-[#E5C76B]/45',
-    iconColor: 'text-phm-black',
+    iconBg: 'bg-amber-950/70',
+    iconRing: 'ring-1 ring-amber-700/60',
+    iconColor: 'text-phm-gold-bright',
     accent: 'rgba(201, 168, 76, 0.20)',
   },
   green: {
-    iconBg: 'bg-gradient-to-br from-emerald-700 to-emerald-500',
-    iconRing: 'ring-1 ring-emerald-400/45',
+    iconBg: 'bg-emerald-950/70',
+    iconRing: 'ring-1 ring-emerald-700/60',
     iconColor: 'text-white',
     accent: 'rgba(34, 197, 94, 0.18)',
   },
   blue: {
-    iconBg: 'bg-gradient-to-br from-blue-700 to-blue-500',
-    iconRing: 'ring-1 ring-blue-400/40',
+    iconBg: 'bg-blue-950/70',
+    iconRing: 'ring-1 ring-blue-700/60',
     iconColor: 'text-white',
     accent: 'rgba(59, 130, 246, 0.18)',
   },
   purple: {
-    iconBg: 'bg-gradient-to-br from-purple-700 to-fuchsia-500',
-    iconRing: 'ring-1 ring-purple-400/40',
+    iconBg: 'bg-purple-950/70',
+    iconRing: 'ring-1 ring-purple-700/60',
     iconColor: 'text-white',
     accent: 'rgba(139, 92, 246, 0.20)',
   },
   amber: {
-    iconBg: 'bg-gradient-to-br from-amber-700 to-amber-500',
-    iconRing: 'ring-1 ring-amber-400/45',
+    iconBg: 'bg-amber-950/70',
+    iconRing: 'ring-1 ring-amber-700/60',
     iconColor: 'text-white',
     accent: 'rgba(245, 158, 11, 0.18)',
   },
   danger: {
-    iconBg: 'bg-gradient-to-br from-red-800 to-red-600',
-    iconRing: 'ring-1 ring-red-400/45',
+    iconBg: 'bg-red-950/70',
+    iconRing: 'ring-1 ring-red-700/60',
     iconColor: 'text-white',
     accent: 'rgba(220, 38, 38, 0.22)',
   },
@@ -80,12 +80,12 @@ export default function KPICard({
       {/* Glow decorativo en esquina */}
       <div
         aria-hidden
-        className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-60 transition-opacity duration-500 group-hover:opacity-90"
+        className="absolute right-0 top-0 h-full w-1 opacity-80"
         style={{ background: t.accent }}
       />
       <div className="relative flex items-start justify-between">
         <div
-          className={`w-11 h-11 rounded-xl flex items-center justify-center ${t.iconBg} ${t.iconRing} shadow-lg`}
+          className={`w-10 h-10 rounded-lg flex items-center justify-center ${t.iconBg} ${t.iconRing}`}
         >
           <Icon className={`w-5 h-5 ${t.iconColor}`} strokeWidth={2} />
         </div>

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() ?? ''
   if (!q || q.length < 2) return NextResponse.json([])
 
-  const [clients, projects, plans, contents, events] = await Promise.all([
+  const [clients, projects, plans, events] = await Promise.all([
     prisma.client.findMany({
       where: {
         OR: [
@@ -32,11 +32,6 @@ export async function GET(request: NextRequest) {
       take: 2,
       include: { client: { select: { name: true } } },
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
-    }),
-    prisma.content.findMany({
-      where: { title: { contains: q, mode: 'insensitive' } },
-      take: 2,
-      select: { id: true, title: true },
     }),
     prisma.calendarEvent.findMany({
       where: { title: { contains: q, mode: 'insensitive' } },
@@ -66,13 +61,6 @@ export async function GET(request: NextRequest) {
       title: `Plan ${MONTHS[(p.month ?? 1) - 1]} ${p.year}`,
       subtitle: p.client?.name || '',
       href: `/planes/${p.id}`,
-    })),
-    ...contents.map((c) => ({
-      id: c.id,
-      type: 'contenido' as const,
-      title: c.title,
-      subtitle: '',
-      href: `/contenidos/${c.id}`,
     })),
     ...events.map((e) => ({
       id: e.id,

@@ -229,8 +229,8 @@ export default function DashboardPage() {
       {/* KPIs operativos — todos los roles */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <KPICard icon={Users} value={stats.activeClients} title="Clientes Activos" subtitle="Con plan o proyecto activo" tone="red" href="/clientes" ctaLabel="Ver clientes" />
-        <KPICard icon={Clock} value={stats.pendingContents} title="Contenidos Pendientes" subtitle="Planes y proyectos" tone="amber" href="/contenidos" ctaLabel="Ver pendientes" />
-        <KPICard icon={CheckCircle2} value={stats.completedContents} title="Contenidos Entregados" subtitle="Entregados, publicados y completados" tone="green" href="/contenidos" ctaLabel="Ver entregados" />
+        <KPICard icon={Clock} value={stats.pendingContents} title="Entregables por atender" subtitle="Dentro de planes y proyectos" tone="amber" href="/proyectos" ctaLabel="Ver operación" />
+        <KPICard icon={CheckCircle2} value={stats.completedContents} title="Entregables cerrados" subtitle="Listos para reportar o entregar" tone="green" href="/reportes" ctaLabel="Ver reportes" />
         <KPICard icon={CalendarCheck} value={stats.completedPlans} title="Trabajos Completados" subtitle="Planes y proyectos completados" tone="blue" href="/planes" ctaLabel="Ver planes" />
         <KPICard icon={AlertTriangle} value={stats.delayedPlans} title="Trabajos Atrasados" subtitle="Planes y proyectos atrasados" tone="danger" href="/planes" ctaLabel="Ver atrasados" />
         <KPICard icon={Activity} value={stats.avgCompliance + '%'} title="Cumplimiento Promedio" subtitle="Planes y proyectos" tone="purple" progress={stats.avgCompliance} href="/reportes" ctaLabel="Ver detalle" />

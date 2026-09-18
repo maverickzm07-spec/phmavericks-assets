@@ -63,6 +63,27 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json()
     const data = updateSchema.parse(body)
 
+    const existingProject = await prisma.clientProject.findUnique({
+      where: { id: params.id },
+      select: { id: true, clientId: true },
+    })
+    if (!existingProject) return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+
+    if (data.serviceId) {
+      const service = await prisma.servicePlan.findUnique({ where: { id: data.serviceId }, select: { id: true } })
+      if (!service) return NextResponse.json({ error: 'Servicio no encontrado' }, { status: 404 })
+    }
+    if (data.monthlyPlanId) {
+      const monthlyPlan = await prisma.monthlyPlan.findUnique({
+        where: { id: data.monthlyPlanId },
+        select: { id: true, clientId: true },
+      })
+      if (!monthlyPlan) return NextResponse.json({ error: 'Plan mensual no encontrado' }, { status: 404 })
+      if (monthlyPlan.clientId !== existingProject.clientId) {
+        return NextResponse.json({ error: 'El plan mensual pertenece a otro cliente' }, { status: 400 })
+      }
+    }
+
     const project = await prisma.clientProject.update({
       where: { id: params.id },
       data: {

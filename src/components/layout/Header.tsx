@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Menu, Search, ChevronRight, Calendar, User, Folder, FileText, CalendarDays, Loader2, X } from 'lucide-react'
+import { Menu, Search, ChevronRight, Calendar, User, Folder, CalendarDays, Loader2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import NotificationsBell from '@/components/ui/NotificationsBell'
 
@@ -12,8 +12,6 @@ const breadcrumbs: Record<string, string> = {
   '/clientes/nuevo': 'Nuevo Cliente',
   '/planes': 'Planes Mensuales',
   '/planes/nuevo': 'Nuevo Plan',
-  '/contenidos': 'Contenidos',
-  '/contenidos/nuevo': 'Nuevo Contenido',
   '/reportes': 'Reportes',
   '/ingresos': 'Ingresos',
   '/proyectos': 'Proyectos',
@@ -26,7 +24,6 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   cliente: User,
   proyecto: Folder,
   plan: CalendarDays,
-  contenido: FileText,
   evento: Calendar,
 }
 
@@ -34,13 +31,12 @@ const TYPE_LABEL: Record<string, string> = {
   cliente: 'Cliente',
   proyecto: 'Proyecto',
   plan: 'Plan',
-  contenido: 'Contenido',
   evento: 'Evento',
 }
 
 interface SearchResult {
   id: string
-  type: 'cliente' | 'proyecto' | 'plan' | 'contenido' | 'evento'
+  type: 'cliente' | 'proyecto' | 'plan' | 'evento'
   title: string
   subtitle: string
   href: string
@@ -193,7 +189,6 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     if (breadcrumbs[pathname]) return breadcrumbs[pathname]
     if (pathname.includes('/clientes/')) return 'Detalle de Cliente'
     if (pathname.includes('/planes/')) return 'Detalle de Plan'
-    if (pathname.includes('/contenidos/')) return 'Detalle de Contenido'
     if (pathname.includes('/reportes/')) return 'Reporte Mensual'
     return 'PHM Sistema'
   }
@@ -201,7 +196,6 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const getParent = () => {
     if (pathname.includes('/clientes/') && pathname !== '/clientes/nuevo') return { href: '/clientes', label: 'Clientes' }
     if (pathname.includes('/planes/') && pathname !== '/planes/nuevo') return { href: '/planes', label: 'Planes' }
-    if (pathname.includes('/contenidos/') && pathname !== '/contenidos/nuevo') return { href: '/contenidos', label: 'Contenidos' }
     if (pathname.includes('/reportes/') && pathname !== '/reportes') return { href: '/reportes', label: 'Reportes' }
     return null
   }
@@ -209,7 +203,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const parent = getParent()
 
   return (
-    <header className="sticky top-0 z-30 h-16 glass border-b border-phm-border-soft flex items-center px-4 md:px-6 no-print">
+    <header className="sticky top-0 z-30 h-16 glass border-b border-white/[0.07] flex items-center px-4 md:px-6 no-print">
       <button
         className="md:hidden mr-3 text-phm-gray hover:text-white transition-colors flex-shrink-0 p-1.5 rounded-lg hover:bg-white/5"
         onClick={onMenuClick}
@@ -233,7 +227,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       <div className="ml-auto flex items-center gap-2 md:gap-3">
         {/* Search — desktop */}
         <div ref={searchContainerRef} className="relative hidden lg:block">
-          <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-phm-charcoal border border-phm-border-soft hover:border-phm-gold/30 transition-colors w-64 focus-within:border-phm-gold/50">
+          <div className="flex items-center gap-2 px-3 h-9 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-gold/30 transition-colors w-64 focus-within:border-phm-gold/50">
             {searching ? (
               <Loader2 className="w-4 h-4 text-phm-gray-soft animate-spin flex-shrink-0" />
             ) : (
@@ -276,7 +270,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <Search className="w-4 h-4" />
         </button>
 
-        <button className="hidden md:inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-phm-charcoal border border-phm-border-soft hover:border-phm-gold/30 text-xs font-medium text-phm-gray hover:text-white transition-all">
+        <button className="hidden md:inline-flex items-center gap-2 h-9 px-3 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-gold/30 text-xs font-medium text-phm-gray hover:text-white transition-all">
           <Calendar className="w-3.5 h-3.5 text-phm-gold" />
           <span className="tabular-nums">{now || '—'}</span>
         </button>

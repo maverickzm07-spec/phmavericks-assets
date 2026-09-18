@@ -1,4 +1,5 @@
 import { prisma } from './prisma'
+import { Prisma } from '@prisma/client'
 
 type ContentType =
   | 'REEL'
@@ -74,6 +75,7 @@ function templatesFromContents(contents: any[]): ContentTemplate[] {
 }
 
 async function createContentsForPlan(
+  db: Prisma.TransactionClient,
   planId: string,
   clientId: string,
   templates: ContentTemplate[]
@@ -90,7 +92,7 @@ async function createContentsForPlan(
   )
 
   if (rows.length > 0) {
-    await prisma.content.createMany({ data: rows })
+    await db.content.createMany({ data: rows })
   }
 }
 
@@ -113,34 +115,46 @@ export async function createOrUpdateMonthlyPlanForClient(
   const month = now.getMonth() + 1
   const year = now.getFullYear()
 
-  const existingPlan = await prisma.monthlyPlan.findUnique({
-    where: { clientId_month_year: { clientId, month, year } },
-  })
-
-  // Nunca reiniciar un ciclo existente. El histórico del mes debe ser inmutable
-  // salvo cambios explícitos hechos desde su pantalla de edición.
-  if (existingPlan) return existingPlan.id
-
   const templates = templatesFromServicePlan(servicePlan)
-  const plan = await prisma.monthlyPlan.create({
-    data: {
-      clientId,
-      servicePlanId,
-      month,
-      year,
-      reelsCount: servicePlan.cantidadReels,
-      carouselsCount: 0,
-      flyersCount: servicePlan.cantidadImagenesFlyers,
-      monthlyPrice: servicePlan.precio,
-      precioBase: servicePlan.precio,
-      precioFinal: servicePlan.precio,
-      paymentStatus: 'PENDING',
-      planStatus: 'IN_PROGRESS',
-    },
-  })
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const existingPlan = await tx.monthlyPlan.findUnique({
+        where: { clientId_month_year: { clientId, month, year } },
+      })
 
-  await createContentsForPlan(plan.id, clientId, templates)
-  return plan.id
+      // Nunca reiniciar un ciclo existente. El histórico del mes debe ser inmutable
+      // salvo cambios explícitos hechos desde su pantalla de edición.
+      if (existingPlan) return existingPlan.id
+
+      const plan = await tx.monthlyPlan.create({
+        data: {
+          clientId,
+          servicePlanId,
+          month,
+          year,
+          reelsCount: servicePlan.cantidadReels,
+          carouselsCount: 0,
+          flyersCount: servicePlan.cantidadImagenesFlyers,
+          monthlyPrice: servicePlan.precio,
+          precioBase: servicePlan.precio,
+          precioFinal: servicePlan.precio,
+          paymentStatus: 'PENDING',
+          planStatus: 'IN_PROGRESS',
+        },
+      })
+
+      await createContentsForPlan(tx, plan.id, clientId, templates)
+      return plan.id
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const existingPlan = await prisma.monthlyPlan.findUnique({
+        where: { clientId_month_year: { clientId, month, year } },
+      })
+      if (existingPlan) return existingPlan.id
+    }
+    throw error
+  }
 }
 
 /**
@@ -169,26 +183,44 @@ export async function renewMonthlyPlan(planId: string): Promise<{ id: string; cr
         ...(source.flyersCount > 0 ? [{ type: 'FLYER' as ContentType, formato: 'NO_APLICA' as ContentFormat, count: source.flyersCount, label: 'Flyer' }] : []),
       ]
 
-  const plan = await prisma.monthlyPlan.create({
-    data: {
-      clientId: source.clientId,
-      servicePlanId: source.servicePlanId,
-      month,
-      year,
-      reelsCount: source.reelsCount,
-      carouselsCount: source.carouselsCount,
-      flyersCount: source.flyersCount,
-      monthlyPrice: source.monthlyPrice,
-      precioBase: source.precioBase,
-      precioFinal: source.precioFinal ?? source.monthlyPrice,
-      paymentStatus: 'PENDING',
-      planStatus: 'IN_PROGRESS',
-      observations: source.observations,
-    },
-  })
+  try {
+    const plan = await prisma.$transaction(async (tx) => {
+      const existingPlan = await tx.monthlyPlan.findUnique({
+        where: { clientId_month_year: { clientId: source.clientId, month, year } },
+      })
+      if (existingPlan) return { id: existingPlan.id, created: false }
 
-  await createContentsForPlan(plan.id, source.clientId, templates)
-  return { id: plan.id, created: true }
+      const createdPlan = await tx.monthlyPlan.create({
+        data: {
+          clientId: source.clientId,
+          servicePlanId: source.servicePlanId,
+          month,
+          year,
+          reelsCount: source.reelsCount,
+          carouselsCount: source.carouselsCount,
+          flyersCount: source.flyersCount,
+          monthlyPrice: source.monthlyPrice,
+          precioBase: source.precioBase,
+          precioFinal: source.precioFinal ?? source.monthlyPrice,
+          paymentStatus: 'PENDING',
+          planStatus: 'IN_PROGRESS',
+          observations: source.observations,
+        },
+      })
+
+      await createContentsForPlan(tx, createdPlan.id, source.clientId, templates)
+      return { id: createdPlan.id, created: true }
+    })
+    return plan
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const existingPlan = await prisma.monthlyPlan.findUnique({
+        where: { clientId_month_year: { clientId: source.clientId, month, year } },
+      })
+      if (existingPlan) return { id: existingPlan.id, created: false }
+    }
+    throw error
+  }
 }
 
 /**

@@ -47,8 +47,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Avenir Next', 'Segoe UI', 'sans-serif'],
+        display: ['Avenir Next', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {
         'glow-red': '0 0 24px rgba(139, 0, 0, 0.35)',

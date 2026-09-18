@@ -92,19 +92,11 @@ export default function DashboardHero({
   }
 
   return (
-    <div className="relative rounded-2xl border border-phm-border-soft shadow-premium">
+    <div className="relative rounded-xl border border-phm-border-soft bg-phm-charcoal shadow-premium">
       {/* Background decorations — clipped within their own wrapper */}
-      <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" aria-hidden>
-        <div className="absolute inset-0 bg-gradient-hero" />
-        <div className="absolute inset-0 bg-grid-pattern opacity-50 mix-blend-overlay" />
-        <div
-          className="absolute -top-24 -left-24 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(229, 9, 20, 0.30), transparent 70%)' }}
-        />
-        <div
-          className="absolute -bottom-24 -right-12 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(201, 168, 76, 0.20), transparent 70%)' }}
-        />
+        <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none" aria-hidden>
+        <div className="absolute inset-0 bg-gradient-card" />
+        <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
       </div>
       <div className="absolute top-0 left-0 right-0 h-px gold-line" />
 
@@ -112,7 +104,7 @@ export default function DashboardHero({
         {/* Left column */}
         <div>
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#8B0000] to-[#B00000] ring-1 ring-[#C9A84C]/40 shadow-glow-red flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-red-950/70 ring-1 ring-red-800/60 flex-shrink-0">
               <DollarSign className="w-6 h-6 text-white" strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">

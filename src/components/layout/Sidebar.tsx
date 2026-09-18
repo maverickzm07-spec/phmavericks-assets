@@ -146,25 +146,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           )
         })}
 
-        <div className="mt-6 mx-1">
-          <div className="relative rounded-xl border border-phm-border-soft bg-gradient-to-br from-phm-charcoal-2 to-phm-black p-4 overflow-hidden">
-            <div
-              aria-hidden
-              className="absolute -top-8 -right-8 w-24 h-24 rounded-full blur-2xl"
-              style={{ background: 'radial-gradient(circle, rgba(201,168,76,0.25), transparent 70%)' }}
-            />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-phm-gold" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-premium">
-                  PHMAVERICKS
-                </p>
-              </div>
-              <p className="text-[11px] leading-snug text-phm-gray italic">
-                Excelencia en cada entrega.
-              </p>
-            </div>
+        <div className="mt-6 mx-1 px-3 py-3 border-l border-phm-gold/50">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-phm-gold" />
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-premium">PHMAVERICKS</p>
           </div>
+          <p className="text-[11px] leading-snug text-phm-gray italic">Excelencia en cada entrega.</p>
         </div>
       </nav>
 

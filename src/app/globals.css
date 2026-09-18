@@ -10,10 +10,8 @@
     color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: 'Inter', system-ui, sans-serif;
-    background-image:
-      radial-gradient(ellipse at top left, rgba(139, 0, 0, 0.06), transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(201, 168, 76, 0.04), transparent 50%);
+    font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.018), transparent 26rem);
     background-attachment: fixed;
   }
 
@@ -77,10 +75,10 @@
     position: relative;
     background-color: #111113;
     border: 1px solid #1F1F23;
-    border-radius: 1rem;
-    box-shadow: 0 8px 32px -8px rgba(0,0,0,0.6), 0 2px 8px -2px rgba(0,0,0,0.5);
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 24px -12px rgba(0,0,0,0.65), 0 1px 4px -2px rgba(0,0,0,0.55);
     overflow: hidden;
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+    background-image: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 100%);
   }
   .premium-card::before {
     content: '';
@@ -88,24 +86,23 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0) 40%);
+    background: linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0) 42%);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
             mask-composite: exclude;
     pointer-events: none;
   }
-  .premium-card-hover { transition: all 0.3s ease; }
+  .premium-card-hover { transition: border-color 0.2s ease, background-color 0.2s ease; }
   .premium-card-hover:hover {
-    box-shadow: 0 16px 48px -12px rgba(0,0,0,0.7), 0 4px 12px -2px rgba(139,0,0,0.25);
-    transform: translateY(-2px);
+    box-shadow: 0 10px 28px -14px rgba(0,0,0,0.75);
     border-color: rgba(201, 168, 76, 0.25);
   }
 
   .glass {
-    background: rgba(20, 20, 23, 0.65);
-    backdrop-filter: blur(12px) saturate(140%);
-    -webkit-backdrop-filter: blur(12px) saturate(140%);
-    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(20, 20, 23, 0.76);
+    backdrop-filter: blur(20px) saturate(125%);
+    -webkit-backdrop-filter: blur(20px) saturate(125%);
+    border: 1px solid rgba(255,255,255,0.08);
   }
 
   .gold-line {

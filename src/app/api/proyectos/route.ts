@@ -89,6 +89,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const data = createSchema.parse(body)
 
+    const [client, service, monthlyPlan] = await Promise.all([
+      prisma.client.findUnique({ where: { id: data.clientId }, select: { id: true } }),
+      data.serviceId ? prisma.servicePlan.findUnique({ where: { id: data.serviceId }, select: { id: true } }) : null,
+      data.monthlyPlanId ? prisma.monthlyPlan.findUnique({ where: { id: data.monthlyPlanId }, select: { id: true, clientId: true } }) : null,
+    ])
+    if (!client) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
+    if (data.serviceId && !service) return NextResponse.json({ error: 'Servicio no encontrado' }, { status: 404 })
+    if (data.monthlyPlanId && !monthlyPlan) return NextResponse.json({ error: 'Plan mensual no encontrado' }, { status: 404 })
+    if (monthlyPlan && monthlyPlan.clientId !== data.clientId) {
+      return NextResponse.json({ error: 'El plan mensual pertenece a otro cliente' }, { status: 400 })
+    }
+
     const project = await prisma.clientProject.create({
       data: {
         clientId: data.clientId,
