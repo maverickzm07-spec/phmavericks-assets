@@ -67,7 +67,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       where: { id: params.id },
       data: {
         ...data,
-        linkEntrega: data.linkEntrega || null,
+        // Si el campo no viene en la petición, conservar el link actual.
+        // Antes `undefined || null` convertía cualquier cambio parcial (por ejemplo, estado)
+        // en `linkEntrega = null`, borrando el enlace de Drive accidentalmente.
+        linkEntrega: data.linkEntrega === undefined ? undefined : (data.linkEntrega || null),
         fechaEntrega: data.fechaEntrega ? new Date(data.fechaEntrega) : data.fechaEntrega === null ? null : undefined,
         serviceId: data.serviceId === undefined ? undefined : (data.serviceId || null),
         monthlyPlanId: data.monthlyPlanId === undefined ? undefined : (data.monthlyPlanId || null),
