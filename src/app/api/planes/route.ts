@@ -4,6 +4,7 @@ import { getUserFromRequest } from '@/lib/auth'
 import { canWriteMonthlyPlans, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
+import { ensureCurrentMonthlyPlans } from '@/lib/monthlyPlanUtils'
 
 const planSchema = z.object({
   clientId: z.string().min(1),
@@ -27,6 +28,14 @@ const planSchema = z.object({
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+
+  // Renovación mensual automática: crea el ciclo del mes actual para clientes
+  // activos con servicio mensual. Es idempotente y no modifica meses históricos.
+  try {
+    await ensureCurrentMonthlyPlans()
+  } catch (error) {
+    console.error('[GET /api/planes] Error asegurando renovación mensual', error)
+  }
 
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('clientId')
