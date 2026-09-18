@@ -24,6 +24,7 @@ export default function PlanDetailPage() {
   const [success, setSuccess]   = useState('')
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [renewing, setRenewing] = useState(false)
   const [form, setForm]         = useState<any>({})
   const [canAdmin, setCanAdmin] = useState(false)
 
@@ -182,6 +183,25 @@ export default function PlanDetailPage() {
     setRegistrandoPago(false)
   }
 
+
+  const renovarSiguienteMes = async () => {
+    setRenewing(true); setError(''); setSuccess('')
+    try {
+      const res = await fetch(`/api/planes/${id}/renovar`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(data.error || 'No se pudo generar el próximo mes')
+        return
+      }
+      setSuccess(data.created ? 'Próximo mes generado correctamente' : 'El próximo mes ya existía')
+      if (data.planId) setTimeout(() => router.push(`/planes/${data.planId}`), 700)
+    } catch {
+      setError('Error de conexión')
+    } finally {
+      setRenewing(false)
+    }
+  }
+
   const handleDelete = async () => {
     setDeleting(true)
     try { await fetch(`/api/planes/${id}`, { method: 'DELETE' }); router.push('/planes') }
@@ -236,6 +256,10 @@ export default function PlanDetailPage() {
           <p className="text-phm-gray-soft text-sm">{plan.client?.business}</p>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={renovarSiguienteMes} disabled={renewing}
+            className="inline-flex items-center gap-1 text-sm font-medium text-phm-gray hover:text-phm-gold transition-colors px-3 py-2 border border-phm-border-soft hover:border-phm-gold/40 rounded-lg disabled:opacity-50">
+            {renewing ? 'Generando...' : 'Generar próximo mes'}
+          </button>
           <Link href={`/reportes/${id}`}
             className="inline-flex items-center gap-1 text-sm font-medium text-phm-gray hover:text-phm-gold transition-colors px-3 py-2 border border-phm-border-soft hover:border-phm-gold/40 rounded-lg">
             Ver Reporte <ArrowUpRight className="w-3.5 h-3.5" />
