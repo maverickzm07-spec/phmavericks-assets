@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, X } from 'lucide-react'
+import { ArrowLeft, Plus, X, FileText } from 'lucide-react'
 import { ClientProject } from '@/types'
 import PremiumCard from '@/components/ui/PremiumCard'
 import ProgressBar from '@/components/ui/ProgressBar'
@@ -213,6 +213,10 @@ export default function ProyectoDetailPage() {
           <h1 className="text-2xl font-bold text-white truncate">{project.nombre}</h1>
           <p className="text-phm-gray-soft text-sm">{project.client?.name} — {project.client?.business}</p>
         </div>
+        <Link href={`/reportes/proyecto/${id}`}
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-phm-gray hover:text-phm-gold border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-all">
+          <FileText className="w-4 h-4" /> Cierre / PDF
+        </Link>
         <button onClick={handleDelete}
           className="px-3 py-2 text-sm font-medium text-red-400 border border-red-900/40 bg-red-950/20 hover:bg-red-950/40 rounded-lg transition-all">
           Eliminar
