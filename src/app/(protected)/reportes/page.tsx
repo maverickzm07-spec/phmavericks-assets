@@ -11,6 +11,7 @@ import { getMonthName, calculateCompliance, formatCurrency, MONTHS } from '@/lib
 
 export default function ReportesPage() {
   const [plans, setPlans] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ clientId: '', month: '', year: '' })
@@ -27,7 +28,16 @@ export default function ReportesPage() {
   const years = [currentYear - 1, currentYear, currentYear + 1]
 
   useEffect(() => {
-    fetch('/api/clientes').then((r) => r.json()).then(setClients)
+    Promise.all([
+      fetch('/api/clientes').then((r) => r.ok ? r.json() : []),
+      fetch('/api/proyectos').then((r) => r.ok ? r.json() : []),
+    ]).then(([clientData, projectData]) => {
+      setClients(Array.isArray(clientData) ? clientData : [])
+      setProjects(Array.isArray(projectData) ? projectData : [])
+    }).catch(() => {
+      setClients([])
+      setProjects([])
+    })
   }, [])
 
   useEffect(() => {
@@ -84,8 +94,8 @@ export default function ReportesPage() {
         </div>
         <div className="flex items-start justify-between mt-1">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Reportes Mensuales</h1>
-            <p className="text-phm-gray-soft text-sm mt-1">Selecciona un plan para ver el reporte completo</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Reportes y Cierres</h1>
+            <p className="text-phm-gray-soft text-sm mt-1">Reportes mensuales y documentos finales de proyectos</p>
           </div>
           {plans.length > 0 && (
             <button onClick={exportCSV}
@@ -112,6 +122,39 @@ export default function ReportesPage() {
           </select>
         </div>
       </PremiumCard>
+
+      {projects.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Cierres de proyecto</h2>
+            <p className="text-xs text-phm-gray-soft mt-0.5">Documentos de finalización basados en los datos reales del proyecto, entregables, pagos y link de entrega.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {projects.slice(0, 6).map((project: any) => {
+              const doneStatuses = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']
+              const total = project.contents?.length ?? 0
+              const done = (project.contents ?? []).filter((item: any) => doneStatuses.includes(item.status)).length
+              const pct = total > 0 ? Math.round((done / total) * 100) : project.estado === 'COMPLETADO' ? 100 : 0
+              return (
+                <PremiumCard key={project.id} hover padding="md">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white truncate">{project.nombre}</p>
+                      <p className="text-sm text-phm-gray-soft truncate">{project.client?.name}</p>
+                    </div>
+                    <span className="text-xs text-phm-gold whitespace-nowrap">{pct}%</span>
+                  </div>
+                  <ProgressBar value={pct} size="sm" />
+                  <Link href={`/reportes/proyecto/${project.id}`}
+                    className="mt-4 flex items-center justify-center gap-2 w-full py-2 text-sm font-semibold text-white bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 hover:text-phm-gold rounded-lg transition-colors">
+                    <FileBarChart2 className="w-4 h-4" /> Ver cierre / PDF
+                  </Link>
+                </PremiumCard>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {loading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
