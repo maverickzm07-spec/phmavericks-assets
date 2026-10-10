@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Sparkles, X } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
+import DocumentosAdjuntos from '@/components/ui/DocumentosAdjuntos'
 
 type TipoServicio = 'FOTOGRAFIA' | 'REELS' | 'VIDEOS_HORIZONTALES' | 'IMAGENES_FLYERS' | 'PLAN_MENSUAL' | 'PERSONALIZADO'
 type EstadoPago = 'PAGADO' | 'PENDIENTE' | 'PARCIAL'
@@ -227,7 +228,7 @@ function IngresosPageInner() {
       </header>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {[
           { label: 'Hoy', value: totales?.hoy || 0, color: 'text-phm-gold', money: true },
           { label: 'Esta semana', value: totales?.semana || 0, color: 'text-blue-400', money: true },
@@ -359,7 +360,7 @@ function IngresosPageInner() {
               <button onClick={() => setShowForm(false)} className="text-phm-gray-soft hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className={labelCls}>Cliente *</label>
                   <select name="clienteId" value={form.clienteId} onChange={handleFormChange} required className={selectCls}>
@@ -390,7 +391,7 @@ function IngresosPageInner() {
                   <input name="montoPagado" type="number" min="0" step="0.01" value={form.montoPagado} onChange={handleFormChange} placeholder="0.00" className={inputCls} />
                 </div>
                 {form.monto && (
-                  <div className="col-span-2 grid grid-cols-3 gap-3 p-3 bg-phm-surface border border-phm-border-soft rounded-lg">
+                  <div className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-phm-surface border border-phm-border-soft rounded-lg">
                     <div className="text-center"><p className="text-xs text-phm-gray-soft mb-0.5">Saldo pendiente</p><p className="text-sm font-bold text-red-400">{fmt(formSaldo)}</p></div>
                     <div className="text-center"><p className="text-xs text-phm-gray-soft mb-0.5">% pagado</p><p className="text-sm font-bold text-white">{formPct}%</p></div>
                     <div className="text-center"><p className="text-xs text-phm-gray-soft mb-0.5">Estado</p><span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${ESTADO_COLOR[formEstado]}`}>{ESTADO_LABEL[formEstado]}</span></div>
@@ -429,13 +430,13 @@ function IngresosPageInner() {
               <button onClick={() => setShowAbono(null)} className="text-phm-gray-soft hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleAbono} className="p-5 space-y-4">
-              <div className="grid grid-cols-3 gap-3 p-3 bg-phm-surface border border-phm-border-soft rounded-lg text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-phm-surface border border-phm-border-soft rounded-lg text-center">
                 <div><p className="text-xs text-phm-gray-soft mb-0.5">Valor total</p><p className="text-sm font-bold text-white">{fmt(showAbono.monto)}</p></div>
                 <div><p className="text-xs text-phm-gray-soft mb-0.5">Total abonado</p><p className="text-sm font-bold text-emerald-400">{fmt(showAbono.montoPagado)}</p></div>
                 <div><p className="text-xs text-phm-gray-soft mb-0.5">Saldo</p><p className="text-sm font-bold text-red-400">{fmt(showAbono.saldoPendiente)}</p></div>
               </div>
               {showAbono.cliente && <p className="text-xs text-phm-gray-soft">Cliente: <span className="text-white">{showAbono.cliente.name}</span> · {showAbono.descripcion || TIPO_LABEL_FULL[showAbono.tipoServicio]}</p>}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Nuevo abono ($) *</label>
                   <input type="number" min="0.01" step="0.01" value={abonoForm.monto} onChange={e => setAbonoForm(p => ({ ...p, monto: e.target.value }))} required placeholder={`Máx. ${fmt(showAbono.saldoPendiente)}`} className={inputCls} />
@@ -477,13 +478,13 @@ function IngresosPageInner() {
               <button onClick={() => setShowDetalle(null)} className="text-phm-gray-soft hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-5 space-y-5">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><p className="text-xs text-phm-gray-soft mb-1">Cliente</p><p className="text-white">{showDetalle.cliente?.name || '—'}</p></div>
                 <div><p className="text-xs text-phm-gray-soft mb-1">Tipo</p><span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${TIPO_COLOR[showDetalle.tipoServicio]}`}>{TIPO_LABEL_FULL[showDetalle.tipoServicio]}</span></div>
                 <div><p className="text-xs text-phm-gray-soft mb-1">Fecha</p><p className="text-white">{fmtDate(showDetalle.fechaIngreso)}</p></div>
                 <div><p className="text-xs text-phm-gray-soft mb-1">Estado</p><span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${ESTADO_COLOR[showDetalle.estadoPago]}`}>{ESTADO_LABEL[showDetalle.estadoPago]}</span></div>
               </div>
-              <div className="grid grid-cols-3 gap-3 p-4 bg-phm-surface border border-phm-border-soft rounded-xl text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-phm-surface border border-phm-border-soft rounded-xl text-center">
                 <div><p className="text-xs text-phm-gray-soft mb-1">Valor total</p><p className="text-lg font-bold text-white">{fmt(showDetalle.monto)}</p></div>
                 <div><p className="text-xs text-phm-gray-soft mb-1">Total abonado</p><p className="text-lg font-bold text-emerald-400">{fmt(showDetalle.montoPagado)}</p></div>
                 <div><p className="text-xs text-phm-gray-soft mb-1">Saldo</p><p className="text-lg font-bold text-red-400">{fmt(showDetalle.saldoPendiente)}</p></div>
@@ -512,6 +513,17 @@ function IngresosPageInner() {
                       ))}
                     </div>
                   )}
+              </div>
+
+              {/* Facturación: la factura del SRI se adjunta aquí (PDF y XML) */}
+              <div className="pt-5 border-t border-phm-border-soft">
+                <DocumentosAdjuntos
+                  ingresoId={showDetalle.id}
+                  tipo="FACTURA_PDF"
+                  titulo="Factura y comprobantes"
+                  descripcion="Adjunta la factura emitida en el SRI, en PDF o XML."
+                  accept="application/pdf,application/xml,text/xml"
+                />
               </div>
               {showDetalle.observaciones && <div><p className="text-xs text-phm-gray-soft mb-1">Observaciones</p><p className="text-sm text-phm-gray">{showDetalle.observaciones}</p></div>}
             </div>
