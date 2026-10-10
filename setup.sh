@@ -1,10 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Puesta en marcha de PH System en el VPS.
+#
+# Este script NO lleva credenciales: las toma del entorno. Antes estuvieron
+# escritas aqui en texto plano, lo que las publicaba en el repositorio.
+# Ejecutar asi:
+#   DATABASE_URL=... JWT_SECRET=... bash setup.sh
 set -e
 
 echo "==> Creando .env..."
 cat > /var/www/phm/.env << ENVEOF
-DATABASE_URL="postgresql://phmuser:PHMprod2026!@localhost:5432/phm_sistema"
-JWT_SECRET="phm-mavericks-prod-secret-2026-xK9mP2nQ7rT4vL8wZ"
+DATABASE_URL="${DATABASE_URL:?define DATABASE_URL antes de ejecutar}"
+JWT_SECRET="${JWT_SECRET:?define JWT_SECRET antes de ejecutar}"
 NODE_ENV="production"
 ENVEOF
 
