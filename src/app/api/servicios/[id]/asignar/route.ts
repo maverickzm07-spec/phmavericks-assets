@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
-import { canWriteMonthlyPlans } from '@/lib/permissions'
-import { createOrUpdateMonthlyPlanForClient } from '@/lib/monthlyPlanUtils'
+import { canWriteContents } from '@/lib/permissions'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -21,10 +20,18 @@ function calcEstado(monto: number, pagado: number): 'PAGADO' | 'PARCIAL' | 'PEND
   return 'PARCIAL'
 }
 
+/**
+ * Asignar un servicio a un cliente crea siempre un ClientProject.
+ *
+ * Antes, un servicio de modalidad MENSUAL generaba un MonthlyPlan automáticamente.
+ * Los planes mensuales se retiraron como módulo, y ningún trabajo debe quedar
+ * obligado a colgar de un plan: el catálogo de servicios sirve ahora para
+ * clasificar el proyecto y precargar su precio, nada más.
+ */
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  if (!canWriteMonthlyPlans(user.role)) return NextResponse.json({ error: 'Sin permisos para asignar servicios' }, { status: 403 })
+  if (!canWriteContents(user.role)) return NextResponse.json({ error: 'Sin permisos para asignar servicios' }, { status: 403 })
 
   try {
     const body = await request.json()
@@ -41,81 +48,17 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const precioFinal = data.precioFinal ?? precioBase
     const abonoMonto = data.abono && data.abono > 0 ? Math.min(data.abono, precioFinal) : 0
     const fechaPago = data.fechaPago ? new Date(data.fechaPago) : new Date()
+    const nombre = data.nombreProyecto || service.nombre
 
-    // ── Servicio MENSUAL → crear / actualizar MonthlyPlan ──────────────
-    if (service.modalidad === 'MENSUAL') {
-      await prisma.client.update({
-        where: { id: data.clientId },
-        data: { servicePlanId: params.id },
-      })
-
-      await createOrUpdateMonthlyPlanForClient(data.clientId, params.id)
-
-      const now = new Date()
-      const plan = await prisma.monthlyPlan.findFirst({
-        where: { clientId: data.clientId, servicePlanId: params.id, month: now.getMonth() + 1, year: now.getFullYear() },
-      })
-
-      if (plan) {
-        await prisma.monthlyPlan.update({
-          where: { id: plan.id },
-          data: { precioBase, precioFinal },
-        })
-
-        if (abonoMonto > 0) {
-          const estadoPago = calcEstado(precioFinal, abonoMonto)
-          const ingreso = await prisma.ingreso.create({
-            data: {
-              clienteId: data.clientId,
-              monthlyPlanId: plan.id,
-              tipoServicio: 'PLAN_MENSUAL',
-              descripcion: `Pago plan ${service.nombre} — ${now.toLocaleString('es', { month: 'long' })} ${now.getFullYear()}`,
-              monto: precioFinal,
-              montoPagado: abonoMonto,
-              estadoPago,
-              metodoPago: data.metodoPago || null,
-              fechaIngreso: fechaPago,
-              observaciones: data.observacionPago || null,
-              creadoPor: user.userId,
-            },
-          })
-
-          if (data.metodoPago) {
-            await prisma.abono.create({
-              data: {
-                ingresoId: ingreso.id,
-                monto: abonoMonto,
-                metodoPago: data.metodoPago,
-                fechaAbono: fechaPago,
-                observacion: data.observacionPago || null,
-                creadoPor: user.userId,
-              },
-            })
-          }
-        }
-      }
-
-      const planFinal = await prisma.monthlyPlan.findFirst({
-        where: { clientId: data.clientId, servicePlanId: params.id, month: now.getMonth() + 1, year: now.getFullYear() },
-        include: {
-          client: { select: { id: true, name: true, business: true } },
-          ingresos: { select: { id: true, monto: true, montoPagado: true, estadoPago: true } },
-          _count: { select: { contents: true } },
-        },
-      })
-
-      return NextResponse.json({ success: true, tipo: 'MENSUAL', plan: planFinal }, { status: 201 })
-    }
-
-    // ── Servicio OCASIONAL → crear ClientProject ───────────────────────
-    if (service.modalidad === 'OCASIONAL') {
-      const nombre = data.nombreProyecto || service.nombre
-      const project = await prisma.clientProject.create({
+    // Proyecto, ingreso y abono en una sola transacción: un fallo intermedio no debe
+    // dejar un proyecto sin su registro económico ni un ingreso sin su abono.
+    const project = await prisma.$transaction(async (tx) => {
+      const created = await tx.clientProject.create({
         data: {
           clientId: data.clientId,
           serviceId: params.id,
           nombre,
-          modalidad: 'OCASIONAL',
+          modalidad: service.modalidad,
           estado: 'PENDIENTE',
           precioBase,
           precioFinal,
@@ -123,16 +66,15 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       })
 
       if (abonoMonto > 0) {
-        const estadoPago = calcEstado(precioFinal, abonoMonto)
-        const ingreso = await prisma.ingreso.create({
+        const ingreso = await tx.ingreso.create({
           data: {
             clienteId: data.clientId,
-            projectId: project.id,
+            projectId: created.id,
             tipoServicio: 'PERSONALIZADO',
             descripcion: `Pago proyecto: ${nombre}`,
             monto: precioFinal,
             montoPagado: abonoMonto,
-            estadoPago,
+            estadoPago: calcEstado(precioFinal, abonoMonto),
             metodoPago: data.metodoPago || null,
             fechaIngreso: fechaPago,
             observaciones: data.observacionPago || null,
@@ -140,37 +82,36 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           },
         })
 
-        if (data.metodoPago) {
-          await prisma.abono.create({
-            data: {
-              ingresoId: ingreso.id,
-              monto: abonoMonto,
-              metodoPago: data.metodoPago,
-              fechaAbono: fechaPago,
-              observacion: data.observacionPago || null,
-              creadoPor: user.userId,
-            },
-          })
-        }
+        // El abono se registra siempre que haya dinero recibido, con o sin método de pago.
+        await tx.abono.create({
+          data: {
+            ingresoId: ingreso.id,
+            monto: abonoMonto,
+            metodoPago: data.metodoPago || null,
+            fechaAbono: fechaPago,
+            observacion: data.observacionPago || null,
+            creadoPor: user.userId,
+          },
+        })
       }
 
-      const projectFinal = await prisma.clientProject.findUnique({
-        where: { id: project.id },
-        include: {
-          client: { select: { id: true, name: true, business: true } },
-          service: { select: { id: true, nombre: true, tipo: true } },
-          ingresos: { select: { id: true, monto: true, montoPagado: true, estadoPago: true } },
-          _count: { select: { contents: true } },
-        },
-      })
+      return created
+    })
 
-      return NextResponse.json({ success: true, tipo: 'OCASIONAL', project: projectFinal }, { status: 201 })
-    }
+    const projectFinal = await prisma.clientProject.findUnique({
+      where: { id: project.id },
+      include: {
+        client: { select: { id: true, name: true, business: true } },
+        service: { select: { id: true, nombre: true, tipo: true } },
+        ingresos: { select: { id: true, monto: true, montoPagado: true, estadoPago: true } },
+        _count: { select: { contents: true } },
+      },
+    })
 
-    return NextResponse.json({ error: 'Modalidad de servicio no reconocida' }, { status: 400 })
+    return NextResponse.json({ success: true, tipo: 'PROYECTO', project: projectFinal }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Datos inválidos', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: error.errors[0].message }, { status: 400 })
     }
     console.error('[POST /api/servicios/[id]/asignar]', error)
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 })

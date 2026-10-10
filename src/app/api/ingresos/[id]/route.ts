@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { canWriteIngresos, canDeleteIngresos } from '@/lib/permissions'
+import { logAudit } from '@/lib/auditLog'
 import { z } from 'zod'
 
 function calcEstado(monto: number, pagado: number): 'PAGADO' | 'PARCIAL' | 'PENDIENTE' {

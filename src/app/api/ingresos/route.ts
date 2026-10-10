@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { canViewIngresos, canWriteIngresos } from '@/lib/permissions'
+import { calcularCarteraDesde, SELECT_PLAN_CARTERA, SELECT_PROYECTO_CARTERA } from '@/lib/cartera'
 import { z } from 'zod'
 
 const createSchema = z.object({
@@ -78,36 +79,16 @@ export async function GET(request: NextRequest) {
     // Deuda real de proyectos: precioFinal - lo cobrado vía sus Ingreso (que el puente marca PAGADO)
     prisma.clientProject.findMany({
       where: { precioFinal: { gt: 0 } },
-      select: { clientId: true, precioFinal: true, ingresos: { select: { montoPagado: true } } },
+      select: SELECT_PROYECTO_CARTERA,
     }),
     // Deuda real de planes mensuales: precioFinal/monthlyPrice - lo cobrado vía sus Ingreso
-    prisma.monthlyPlan.findMany({
-      select: { clientId: true, precioFinal: true, monthlyPrice: true, ingresos: { select: { montoPagado: true } } },
-    }),
+    prisma.monthlyPlan.findMany({ select: SELECT_PLAN_CARTERA }),
   ])
 
-  // La cartera por cobrar de proyectos/planes no vive en el saldo del Ingreso
-  // (el puente crea un Ingreso PAGADO por cada pago), sino en precioRef - Σ montoPagado.
-  const deudoresExtra = new Set<string>()
-  const saldoProyecto = (p: { clientId: string; precioFinal: number | null; ingresos: { montoPagado: number }[] }) => {
-    const ref = p.precioFinal ?? 0
-    if (ref <= 0) return 0
-    const pagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
-    const saldo = Math.max(0, ref - pagado)
-    if (saldo > 0 && p.clientId) deudoresExtra.add(p.clientId)
-    return saldo
-  }
-  const saldoPlan = (p: { clientId: string; precioFinal: number | null; monthlyPrice: number; ingresos: { montoPagado: number }[] }) => {
-    const ref = p.precioFinal ?? p.monthlyPrice ?? 0
-    if (ref <= 0) return 0
-    const pagado = p.ingresos.reduce((s, i) => s + i.montoPagado, 0)
-    const saldo = Math.max(0, ref - pagado)
-    if (saldo > 0 && p.clientId) deudoresExtra.add(p.clientId)
-    return saldo
-  }
-  const deudaProyectos = proyectosCartera.reduce((s, p) => s + saldoProyecto(p), 0)
-  const deudaPlanes = planesCartera.reduce((s, p) => s + saldoPlan(p), 0)
-  const pendientePuente = Math.round((deudaProyectos + deudaPlanes) * 100) / 100
+  // La cartera vive en src/lib/cartera.ts para que Finanzas y Dashboard muestren la misma cifra.
+  const cartera = calcularCarteraDesde(proyectosCartera, planesCartera)
+  const deudoresExtra = cartera.clientesDeudores
+  const pendientePuente = cartera.total
 
   const cobrado = (i: any) => i.estadoPago !== 'PENDIENTE' ? (i.montoPagado || 0) : 0
   const hoyStart = startOf('hoy')

@@ -2,7 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { canWriteContents, canViewFinancials, stripFinancialFields } from '@/lib/permissions'
+import { ESTADOS_PROYECTO } from '@/lib/projectStatus'
+import { sincronizarEventosProyecto } from '@/lib/eventosProyecto'
 import { z } from 'zod'
+
+/**
+ * Una fecha de formulario llega como AAAA-MM-DD. Interpretada tal cual queda en
+ * medianoche UTC, que en Ecuador (UTC−5) es el día anterior. Se fija a mediodía
+ * para que el día sea el mismo en ambos husos.
+ */
+function normalizarFecha(valor?: string | null): Date | null {
+  if (!valor) return null
+  const soloFecha = /^\d{4}-\d{2}-\d{2}$/.test(valor)
+  const fecha = new Date(soloFecha ? `${valor}T12:00:00` : valor)
+  return isNaN(fecha.getTime()) ? null : fecha
+}
 
 const VALID_CONTENT_TYPES = ['REEL', 'CAROUSEL', 'FLYER', 'VIDEO_HORIZONTAL', 'FOTO', 'IMAGEN_FLYER', 'EXTRA', 'VIDEO', 'OTRO'] as const
 const VALID_FORMATS = ['VERTICAL_9_16', 'HORIZONTAL_16_9', 'CUADRADO_1_1', 'NO_APLICA'] as const
@@ -12,10 +26,14 @@ const createSchema = z.object({
   serviceId: z.string().nullable().optional(),
   monthlyPlanId: z.string().nullable().optional(),
   nombre: z.string().min(1, 'El nombre del proyecto es obligatorio'),
+  descripcion: z.union([z.string(), z.null()]).optional(),
   modalidad: z.enum(['MENSUAL', 'OCASIONAL'], { errorMap: () => ({ message: 'Modalidad inválida' }) }).default('OCASIONAL'),
-  estado: z.enum(['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO', 'ENTREGADO', 'COMPLETADO', 'ATRASADO']).default('PENDIENTE'),
+  estado: z.enum(ESTADOS_PROYECTO).default('CONFIRMADO'),
   linkEntrega: z.union([z.string().url('El link de entrega debe ser una URL válida'), z.literal(''), z.null()]).optional(),
+  driveLink: z.union([z.string().url('El enlace de Drive debe ser una URL válida'), z.literal(''), z.null()]).optional(),
+  fechaGrabacion: z.union([z.string(), z.null()]).optional(),
   fechaEntrega: z.union([z.string(), z.null()]).optional(),
+  mensajeEntrega: z.union([z.string(), z.null()]).optional(),
   observaciones: z.union([z.string(), z.null()]).optional(),
   precioBase: z.number().min(0).optional().nullable(),
   precioFinal: z.number().min(0).optional().nullable(),
@@ -101,74 +119,100 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'El plan mensual pertenece a otro cliente' }, { status: 400 })
     }
 
-    const project = await prisma.clientProject.create({
-      data: {
-        clientId: data.clientId,
-        serviceId: data.serviceId || null,
-        monthlyPlanId: data.monthlyPlanId || null,
-        nombre: data.nombre,
-        modalidad: data.modalidad,
-        estado: data.estado,
-        linkEntrega: data.linkEntrega || null,
-        fechaEntrega: data.fechaEntrega ? new Date(data.fechaEntrega) : null,
-        observaciones: data.observaciones || null,
-        precioBase: data.precioBase ?? null,
-        precioFinal: data.precioFinal ?? data.precioBase ?? null,
-      },
-    })
-
-    // Generar entregables automáticamente si se proporcionaron
-    if (data.entregables && data.entregables.length > 0) {
-      await prisma.content.createMany({
-        data: data.entregables.map((e) => ({
-          clientId: data.clientId,
-          projectId: project.id,
-          planId: data.monthlyPlanId || null,
-          type: e.type,
-          formato: e.formato || null,
-          title: e.title,
-          status: 'PENDING' as const,
-        })),
-      })
-    }
-
-    // Crear ingreso si se registró abono o pago al crear el proyecto
-    const precioFinalReal = data.precioFinal ?? data.precioBase
-    const abonoMonto = data.abono && data.abono > 0 && precioFinalReal ? Math.min(data.abono, precioFinalReal) : 0
-
-    if (abonoMonto > 0 && precioFinalReal) {
-      const estadoPago = calcEstado(precioFinalReal, abonoMonto)
-      const fechaPago = data.fechaPago ? new Date(data.fechaPago) : new Date()
-
-      const ingreso = await prisma.ingreso.create({
+    // Proyecto, entregables, ingreso y abono se escriben en una sola transacción:
+    // si cualquiera falla, no debe quedar un proyecto sin su registro económico
+    // ni un ingreso sin su abono. Antes se escribían por separado y un fallo
+    // intermedio dejaba registros incompletos.
+    const project = await prisma.$transaction(async (tx) => {
+      const created = await tx.clientProject.create({
         data: {
-          clienteId: data.clientId,
-          projectId: project.id,
-          tipoServicio: 'PERSONALIZADO',
-          descripcion: `Pago proyecto: ${data.nombre}`,
-          monto: precioFinalReal,
-          montoPagado: abonoMonto,
-          estadoPago,
-          metodoPago: data.metodoPago || null,
-          fechaIngreso: fechaPago,
-          observaciones: data.observacionPago || null,
-          creadoPor: user.userId,
+          clientId: data.clientId,
+          serviceId: data.serviceId || null,
+          monthlyPlanId: data.monthlyPlanId || null,
+          nombre: data.nombre,
+          descripcion: data.descripcion || null,
+          modalidad: data.modalidad,
+          estado: data.estado as any,
+          linkEntrega: data.linkEntrega || null,
+          mensajeEntrega: data.mensajeEntrega || null,
+          driveLink: data.driveLink || null,
+          // Mediodía: una fecha suelta (AAAA-MM-DD) se interpreta como medianoche
+          // UTC y en Ecuador (UTC−5) caería el día anterior. Fijarla a las 12:00
+          // deja el día correcto en ambos husos.
+          fechaGrabacion: normalizarFecha(data.fechaGrabacion),
+          fechaEntrega: normalizarFecha(data.fechaEntrega),
+          observaciones: data.observaciones || null,
+          precioBase: data.precioBase ?? null,
+          precioFinal: data.precioFinal ?? data.precioBase ?? null,
         },
       })
 
-      if (data.metodoPago) {
-        await prisma.abono.create({
+      // Generar entregables automáticamente si se proporcionaron
+      if (data.entregables && data.entregables.length > 0) {
+        await tx.content.createMany({
+          data: data.entregables.map((e) => ({
+            clientId: data.clientId,
+            projectId: created.id,
+            planId: data.monthlyPlanId || null,
+            type: e.type,
+            formato: e.formato || null,
+            title: e.title,
+            status: 'PENDING' as const,
+          })),
+        })
+      }
+
+      // Crear ingreso si se registró abono o pago al crear el proyecto
+      const precioFinalReal = data.precioFinal ?? data.precioBase
+      const abonoMonto = data.abono && data.abono > 0 && precioFinalReal ? Math.min(data.abono, precioFinalReal) : 0
+
+      if (abonoMonto > 0 && precioFinalReal) {
+        const estadoPago = calcEstado(precioFinalReal, abonoMonto)
+        const fechaPago = data.fechaPago ? new Date(data.fechaPago) : new Date()
+
+        const ingreso = await tx.ingreso.create({
+          data: {
+            clienteId: data.clientId,
+            projectId: created.id,
+            tipoServicio: 'PERSONALIZADO',
+            descripcion: `Pago proyecto: ${data.nombre}`,
+            monto: precioFinalReal,
+            montoPagado: abonoMonto,
+            estadoPago,
+            metodoPago: data.metodoPago || null,
+            fechaIngreso: fechaPago,
+            observaciones: data.observacionPago || null,
+            creadoPor: user.userId,
+          },
+        })
+
+        // El abono se registra siempre que haya dinero recibido. Antes dependía de que
+        // se eligiera método de pago, y los anticipos sin método quedaban sin respaldo:
+        // el ingreso figuraba cobrado pero no existía el abono que lo justificara.
+        await tx.abono.create({
           data: {
             ingresoId: ingreso.id,
             monto: abonoMonto,
-            metodoPago: data.metodoPago,
+            metodoPago: data.metodoPago || null,
             fechaAbono: fechaPago,
             observacion: data.observacionPago || null,
             creadoPor: user.userId,
           },
         })
       }
-    }
+
+      // Las fechas del proyecto entran al calendario interno, dentro de la misma
+      // transacción para que un proyecto nunca quede sin sus eventos.
+      await sincronizarEventosProyecto(
+        created.id,
+        created.nombre,
+        data.clientId,
+        { fechaGrabacion: created.fechaGrabacion, fechaEntrega: created.fechaEntrega },
+        tx,
+      )
+
+      return created
+    })
 
     const projectWithContents = await prisma.clientProject.findUnique({
       where: { id: project.id },
