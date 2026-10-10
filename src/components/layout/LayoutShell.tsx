@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import TabBarMovil from './TabBarMovil'
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -18,10 +19,13 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col md:ml-64 overflow-hidden relative">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-7 lg:p-10 animate-fade-in">
+        {/* En móvil se reserva sitio para la barra inferior y el área segura
+            del teléfono; en escritorio no hay barra, así que vuelve al normal. */}
+        <main className="flex-1 overflow-y-auto p-4 pb-[calc(88px+env(safe-area-inset-bottom,0px))] animate-fade-in md:p-7 md:pb-7 lg:p-10 lg:pb-10">
           {children}
         </main>
       </div>
+      <TabBarMovil />
     </div>
   )
 }

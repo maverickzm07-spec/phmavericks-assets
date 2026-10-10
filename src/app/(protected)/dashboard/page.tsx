@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { DashboardStats } from '@/types'
 import { ESTADOS_ACTIVOS } from '@/lib/projectStatus'
+import { formatCurrency } from '@/lib/utils'
 import { TYPE_LABELS_ES } from '@/lib/calendar-constants'
 import PremiumCard from '@/components/ui/PremiumCard'
 import DashboardFinancialSummary from '@/components/ui/DashboardFinancialSummary'
@@ -177,6 +178,21 @@ export default function DashboardPage() {
   const attentionItems = alerts.slice(0, 4)
   const greetingName = userName ? userName.split(' ')[0] : 'Admin'
 
+  // Una frase con lo que de verdad importa hoy. Se arma solo con lo que hay:
+  // si no hay entregas ni saldo pendiente, no se inventa una línea vacía.
+  const resumenOperativo = useMemo(() => {
+    const partes: string[] = []
+    const enCurso = activeProjects.length
+    partes.push(enCurso === 1 ? '1 proyecto en curso' : `${enCurso} proyectos en curso`)
+    if (entregasPendientes > 0) {
+      partes.push(entregasPendientes === 1 ? '1 entrega pendiente' : `${entregasPendientes} entregas pendientes`)
+    }
+    if (showFinancials && receivable && receivable > 0) {
+      partes.push(`${formatCurrency(receivable)} por cobrar`)
+    }
+    return partes.join(' · ')
+  }, [activeProjects.length, entregasPendientes, receivable, showFinancials])
+
   if (loading) return <DashboardSkeleton />
   if (!stats) {
     return (
@@ -198,29 +214,37 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-[1480px] space-y-6">
-      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-medium text-phm-gold">Buen día, {greetingName} <span aria-hidden>👋</span></p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-white md:text-4xl">Dashboard</h1>
-          <p className="mt-1 text-sm text-phm-gray-soft">Resumen general de PHMavericks.</p>
+      {/* Tarjeta principal: lo primero que se ve al abrir la app. */}
+      <section className="card-hero px-5 py-6 md:px-7 md:py-7">
+        <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-phm-gray">
+              Hola, {greetingName} <span aria-hidden>👋</span>
+            </p>
+            <h1 className="mt-2 text-[26px] font-extrabold leading-[1.12] tracking-tight text-white md:text-4xl">
+              Tu producción,<br className="md:hidden" /> bajo control
+            </h1>
+            <p className="mt-2.5 text-sm leading-relaxed text-phm-gray">{resumenOperativo}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <select
+              value={incomeRange}
+              onChange={(event) => setIncomeRange(event.target.value)}
+              className="h-11 rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-semibold text-phm-gray outline-none transition-colors focus:border-phm-red-bright/60"
+              aria-label="Periodo del dashboard"
+            >
+              <option value="this_month">Este mes</option>
+              <option value="previous_month">Mes anterior</option>
+              <option value="this_year">Este año</option>
+              <option value="all_time">Histórico</option>
+            </select>
+            <Link href="/proyectos/nuevo" className="btn-primario flex-1 md:flex-none">
+              <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo proyecto
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={incomeRange}
-            onChange={(event) => setIncomeRange(event.target.value)}
-            className="h-9 rounded-lg border border-white/[0.09] bg-white/[0.035] px-3 text-xs font-medium text-phm-gray outline-none transition-colors focus:border-phm-gold/50"
-            aria-label="Periodo del dashboard"
-          >
-            <option value="this_month">Este mes</option>
-            <option value="previous_month">Mes anterior</option>
-            <option value="this_year">Este año</option>
-            <option value="all_time">Histórico</option>
-          </select>
-          <Link href="/proyectos/nuevo" className="inline-flex h-9 items-center gap-2 rounded-lg bg-phm-red px-3 text-xs font-semibold text-white transition-colors hover:bg-phm-red-hover">
-            <Plus className="h-3.5 w-3.5" /> Nuevo proyecto
-          </Link>
-        </div>
-      </header>
+      </section>
 
       <DashboardFinancialSummary
         income={showFinancials ? incomeData?.total ?? null : null}
@@ -236,21 +260,24 @@ export default function DashboardPage() {
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Indicadores operativos">
         {[
-          { label: 'Clientes activos', value: stats.activeClients, icon: Users, tone: 'text-phm-red-bright', href: '/clientes' },
-          { label: 'Proyectos en producción', value: inProgressProjects, icon: FolderKanban, tone: 'text-phm-gold', href: '/proyectos' },
-          { label: 'Entregas pendientes', value: entregasPendientes, icon: Clock3, tone: 'text-amber-400', href: '/proyectos' },
-          { label: 'Entregables completados', value: stats.completedContents, icon: CheckCircle2, tone: 'text-emerald-400', href: '/reportes' },
-        ].map(({ label, value, icon: Icon, tone, href }) => (
-          <Link key={label} href={href} className="group">
-            <PremiumCard hover padding="md" className="relative h-full overflow-hidden">
-              <div className="absolute right-0 top-0 h-full w-0.5 bg-current opacity-50" style={{ color: 'currentColor' }} />
-              <div className="flex items-center justify-between">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.045] ring-1 ring-white/[0.08] ${tone}`}><Icon className="h-4 w-4" strokeWidth={1.8} /></div>
-                <ArrowUpRight className="h-4 w-4 text-phm-gray-soft transition-colors group-hover:text-phm-gold" />
+          { label: 'Clientes activos', value: stats.activeClients, icon: Users, fondo: 'bg-phm-red-bright/14 text-phm-red-bright', href: '/clientes' },
+          { label: 'Proyectos en producción', value: inProgressProjects, icon: FolderKanban, fondo: 'bg-white/[0.07] text-white', href: '/proyectos' },
+          { label: 'Entregas pendientes', value: entregasPendientes, icon: Clock3, fondo: 'bg-phm-warn/14 text-phm-warn', href: '/proyectos' },
+          { label: 'Entregables completados', value: stats.completedContents, icon: CheckCircle2, fondo: 'bg-phm-ok/14 text-phm-ok', href: '/reportes' },
+        ].map(({ label, value, icon: Icon, fondo, href }) => (
+          <Link
+            key={label}
+            href={href}
+            className="card-premium group block p-4 transition-shadow hover:shadow-premium-hover"
+          >
+            <div className="flex items-center justify-between">
+              <div className={`flex h-[26px] w-[26px] items-center justify-center rounded-[9px] ${fondo}`}>
+                <Icon className="h-[14px] w-[14px]" strokeWidth={2.2} />
               </div>
-              <p className="mt-5 text-2xl font-semibold tracking-tight text-white">{value}</p>
-              <p className="mt-1 text-sm text-phm-gray">{label}</p>
-            </PremiumCard>
+              <ArrowUpRight className="h-4 w-4 text-phm-gray-soft transition-colors group-hover:text-phm-red-bright" />
+            </div>
+            <p className="tabular mt-4 text-[26px] font-extrabold leading-none tracking-tight text-white">{value}</p>
+            <p className="mt-1.5 text-[13px] text-phm-gray">{label}</p>
           </Link>
         ))}
       </section>
@@ -259,7 +286,7 @@ export default function DashboardPage() {
         <PremiumCard padding="none">
           <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
             <div className="flex items-center gap-2.5"><AlertCircle className="h-4 w-4 text-phm-red-bright" /><div><h2 className="text-sm font-semibold text-white">Requieren atención</h2><p className="mt-0.5 text-xs text-phm-gray-soft">Acciones que pueden bloquear la operación</p></div></div>
-            <Link href="/reportes" className="text-xs font-medium text-phm-gold hover:text-phm-gold-bright">Ver todo</Link>
+            <Link href="/reportes" className="text-xs font-medium text-phm-red-bright hover:text-red-400">Ver todo</Link>
           </div>
           {attentionItems.length === 0 ? (
             <div className="px-5 py-12 text-center text-sm text-phm-gray-soft">No hay alertas pendientes.</div>
@@ -269,7 +296,7 @@ export default function DashboardPage() {
                 <Link key={alert.id} href={alert.href} className="group flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-white/[0.025]">
                   <span className={`h-2 w-2 flex-shrink-0 rounded-full ${alert.type === 'danger' ? 'bg-phm-red-bright' : alert.type === 'warning' ? 'bg-amber-400' : 'bg-blue-400'}`} />
                   <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-white">{alert.title}</p><p className="mt-0.5 truncate text-xs text-phm-gray-soft">{alert.message}</p></div>
-                  <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-phm-gray-soft transition-colors group-hover:text-phm-gold" />
+                  <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-phm-gray-soft transition-colors group-hover:text-phm-red-bright" />
                 </Link>
               ))}
             </div>
@@ -277,7 +304,7 @@ export default function DashboardPage() {
         </PremiumCard>
 
         <PremiumCard padding="none">
-          <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4"><div className="flex items-center gap-2.5"><CalendarClock className="h-4 w-4 text-phm-gold" /><div><h2 className="text-sm font-semibold text-white">Próximas fechas</h2><p className="mt-0.5 text-xs text-phm-gray-soft">Agenda inmediata</p></div></div><Link href="/calendario" className="text-xs font-medium text-phm-gold hover:text-phm-gold-bright">Ver calendario</Link></div>
+          <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4"><div className="flex items-center gap-2.5"><CalendarClock className="h-4 w-4 text-phm-gold" /><div><h2 className="text-sm font-semibold text-white">Próximas fechas</h2><p className="mt-0.5 text-xs text-phm-gray-soft">Agenda inmediata</p></div></div><Link href="/calendario" className="text-xs font-medium text-phm-red-bright hover:text-red-400">Ver calendario</Link></div>
           {upcomingEvents.length === 0 ? <div className="px-5 py-12 text-center text-sm text-phm-gray-soft">No hay fechas próximas.</div> : <div className="divide-y divide-white/[0.06]">{upcomingEvents.slice(0, 4).map((event: any) => { const date = formatEventDate(event.startDateTime); return <div key={event.id} className="flex items-center gap-3 px-5 py-3.5"><div className="flex h-11 w-11 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-white/[0.045] ring-1 ring-white/[0.08]"><span className="text-sm font-semibold text-white">{date.day}</span><span className="text-[9px] font-bold text-phm-gold">{date.month}</span></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-white">{event.title}</p><p className="mt-0.5 truncate text-xs text-phm-gray-soft">{date.time}{event.clientName ? ` · ${event.clientName}` : ''}</p></div><span className="hidden text-[10px] text-phm-gray-soft sm:block">{TYPE_LABELS_ES[event.type] || event.type}</span></div> })}</div>}
         </PremiumCard>
       </section>

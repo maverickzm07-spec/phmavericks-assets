@@ -30,14 +30,21 @@ const config: Config = {
           'gold-soft': '#A88B3A',
           'gold-bright': '#E5C76B',
           white: '#FFFFFF',
-          gray: '#A1A1AA',
-          'gray-soft': '#71717A',
-          muted: '#A1A1AA',
-          ok: '#22C55E',
-          warn: '#F59E0B',
-          danger: '#DC2626',
+          gray: '#A5A5AC',
+          'gray-soft': '#6E6E76',
+          muted: '#A5A5AC',
+          // Estado. Deliberadamente fuera del rojo de marca: si el rojo acentúa
+          // botones, iconos y gráficas, un rojo de alerta se pierde entre ellos.
+          // El crítico es un rojo más claro y saturado, distinguible del #8B0000.
+          ok: '#3FB97F',
+          warn: '#E0A33C',
+          danger: '#F0564A',
           info: '#3B82F6',
           purple: '#8B5CF6',
+          // Superficies del rediseño
+          'g1': '#121214',
+          'g2': '#1A1A1D',
+          'g3': '#232327',
         },
         brand: {
           red: '#8B0000',
@@ -47,16 +54,25 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Avenir Next', 'Segoe UI', 'sans-serif'],
-        display: ['Avenir Next', 'Segoe UI', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'Avenir Next', 'Segoe UI', 'sans-serif'],
+        display: ['var(--font-jakarta)', 'Avenir Next', 'Segoe UI', 'sans-serif'],
+      },
+      borderRadius: {
+        card: '18px',
+        panel: '22px',
+        hero: '28px',
       },
       boxShadow: {
         'glow-red': '0 0 24px rgba(139, 0, 0, 0.35)',
         'glow-red-strong': '0 0 40px rgba(229, 9, 20, 0.45)',
         'glow-gold': '0 0 24px rgba(201, 168, 76, 0.30)',
         'glow-gold-strong': '0 0 40px rgba(201, 168, 76, 0.45)',
-        'premium': '0 8px 32px -8px rgba(0, 0, 0, 0.6), 0 2px 8px -2px rgba(0, 0, 0, 0.5)',
-        'premium-hover': '0 16px 48px -12px rgba(0, 0, 0, 0.7), 0 4px 12px -2px rgba(139, 0, 0, 0.25)',
+        // Dos capas: una de contacto y otra de elevación. Es lo que da la
+        // sensación de panel flotante en vez de bloque plano.
+        'premium': '0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35)',
+        'premium-hover': '0 2px 4px rgba(0,0,0,.5), 0 16px 48px rgba(0,0,0,.45)',
+        'boton-rojo': '0 4px 16px rgba(139, 0, 0, 0.45)',
+        'boton-rojo-hover': '0 6px 22px rgba(139, 0, 0, 0.6)',
         'inset-soft': 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
       },
       backgroundImage: {
