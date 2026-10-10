@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { canManageUsers } from '@/lib/permissions'
 import bcrypt from 'bcryptjs'
+import { logAudit } from '@/lib/auditLog'
 import { z } from 'zod'
 
 const updateSchema = z.object({
@@ -75,6 +76,23 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       data: updateData,
       select: { id: true, name: true, email: true, cedula: true, role: true, activo: true, createdAt: true },
     })
+
+    // Cambiar el rol o dar de baja a alguien altera qué puede ver y hacer:
+    // queda registrado con el antes y el después.
+    if (target.role !== updated.role || target.activo !== updated.activo) {
+      await logAudit({
+        userId: user.userId,
+        userEmail: user.email,
+        action: target.activo !== updated.activo
+          ? (updated.activo ? 'USUARIO_REACTIVADO' : 'USUARIO_DESACTIVADO')
+          : 'USUARIO_CAMBIO_ROL',
+        entity: 'User',
+        entityId: updated.id,
+        before: { role: target.role, activo: target.activo },
+        after: { role: updated.role, activo: updated.activo },
+      })
+    }
+
     return NextResponse.json(updated)
   } catch (error) {
     if (error instanceof z.ZodError) {

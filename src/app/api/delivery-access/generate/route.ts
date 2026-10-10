@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
+import { canWriteContents } from '@/lib/permissions'
 import { randomBytes } from 'crypto'
 import { generateDeliverySlug, planEntityName } from '@/lib/deliverySlug'
 
@@ -16,6 +17,7 @@ async function uniqueSlug(clientName: string, entityName: string): Promise<strin
 export async function POST(request: NextRequest) {
   const user = await getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  if (!canWriteContents(user.role)) return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
   if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
   }
