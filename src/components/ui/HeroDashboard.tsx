@@ -177,7 +177,7 @@ export default function HeroDashboard({
             <div className="relative w-full flex-none lg:w-[48%] lg:max-w-[560px]">
               <div
                 aria-hidden
-                className="pointer-events-none absolute -inset-4 rounded-[28px] blur-2xl"
+                className="pointer-events-none absolute inset-0 rounded-[28px] blur-2xl"
                 style={{ background: 'radial-gradient(62% 72% at 50% 62%, rgba(196,30,30,.2), transparent 72%)' }}
               />
               <div className="relative rounded-[20px] border border-white/[0.06] bg-black/20 px-3 pb-1 pt-3">

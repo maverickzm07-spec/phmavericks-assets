@@ -3,9 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BarChart3, CalendarDays, FolderKanban, Home, Plus } from 'lucide-react'
+import { useTecladoVisible } from '@/hooks/useTecladoVisible'
 
 /**
  * Navegación inferior para teléfono.
+ *
+ * Va anclada con `fixed` al borde inferior y suma `env(safe-area-inset-*)` a
+ * su propio relleno, de modo que queda por encima del indicador del iPhone sin
+ * dejar una franja vacía en los teléfonos que no lo tienen. Eso depende de
+ * `viewportFit: 'cover'` en el layout raíz: sin él, `env()` vale cero.
  *
  * Solo caben cinco destinos y el sistema tiene diez secciones: aquí van los
  * cuatro de uso diario más el botón de crear. El resto (Clientes, Gastos,
@@ -24,6 +30,9 @@ const DESTINOS = [
 
 export default function TabBarMovil() {
   const pathname = usePathname()
+  // Con el teclado abierto la barra se quedaria flotando encima, tapando el
+  // campo que se esta escribiendo. Se aparta mientras dure.
+  const teclado = useTecladoVisible()
 
   const esActivo = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
@@ -57,13 +66,23 @@ export default function TabBarMovil() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-end border-t border-white/[0.08] md:hidden"
+      aria-hidden={teclado}
+      className={`fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-end border-t border-white/[0.08] transition-transform duration-200 md:hidden ${
+        teclado ? 'pointer-events-none translate-y-full' : 'translate-y-0'
+      }`}
       style={{
         background: 'linear-gradient(180deg, rgba(5,5,5,.80), rgba(5,5,5,.97))',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))',
         paddingTop: '8px',
+        // Con el telefono en horizontal, el recorte de la pantalla se come los
+        // dos botones de los extremos si no se aparta de los bordes.
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+        // La barra es un ancla: no debe moverse ni rebotar con el scroll.
+        touchAction: 'manipulation',
+        overscrollBehavior: 'contain',
       }}
     >
       {izquierda.map((d) => <Boton key={d.href} {...d} />)}

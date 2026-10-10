@@ -7,6 +7,7 @@ import {
   RefreshCw, Link2, Video, Package, Users, Check,
 } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
+import { useBloqueoScroll } from '@/hooks/useBloqueoScroll'
 
 // ── Tipos ──────────────────────────────────────────────────────────
 
@@ -143,6 +144,10 @@ export default function CalendarioPage() {
 
   // Eliminar
   const [deleteId, setDeleteId] = useState<string | null>(null)
+
+  // Con un dialogo abierto la pagina de detras queda congelada: no se
+  // desplaza al deslizar sobre el fondo y al cerrar se vuelve al mismo punto.
+  useBloqueoScroll(showForm || deleteId !== null)
   const [deleting, setDeleting] = useState(false)
 
   // Google Calendar
@@ -771,9 +776,15 @@ export default function CalendarioPage() {
 
       {/* ── Modal formulario ────────────────────────────────────── */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-4"
+          style={{
+            paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))',
+            paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
+          }}
+        >
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={closeForm} />
-          <div className="relative w-full max-w-lg bg-phm-charcoal rounded-2xl border border-phm-border-soft shadow-2xl overflow-hidden">
+          <div className="relative my-auto w-full max-w-lg overflow-hidden rounded-2xl border border-phm-border-soft bg-phm-charcoal shadow-2xl">
             <div className="px-6 py-4 border-b border-phm-border-soft flex items-center justify-between">
               <h3 className="text-base font-semibold text-white">{editingEvent ? 'Editar evento' : 'Nuevo evento'}</h3>
               <button onClick={closeForm} className="p-1.5 hover:bg-phm-surface rounded-lg text-phm-gray hover:text-white transition-colors">
@@ -781,7 +792,7 @@ export default function CalendarioPage() {
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-4 max-h-[68vh] overflow-y-auto">
+            <div className="px-6 py-5 space-y-4 max-h-[68dvh] overflow-y-auto">
               <div>
                 <label className={labelCls}>Título *</label>
                 <input type="text" value={form.title} onChange={e => handleFormChange('title', e.target.value)} placeholder="Nombre del evento" className={inputCls} />
@@ -856,9 +867,15 @@ export default function CalendarioPage() {
 
       {/* ── Modal confirmar eliminar ─────────────────────────────── */}
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-4"
+          style={{
+            paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))',
+            paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
+          }}
+        >
           <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
-          <div className="relative w-full max-w-sm bg-phm-charcoal rounded-2xl border border-phm-border-soft shadow-2xl p-6">
+          <div className="relative my-auto w-full max-w-sm rounded-2xl border border-phm-border-soft bg-phm-charcoal p-6 shadow-2xl">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-full bg-red-950/60 border border-red-900/60 flex items-center justify-center flex-shrink-0">
                 <Trash2 className="w-5 h-5 text-red-400" />

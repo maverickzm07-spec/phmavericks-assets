@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Menu, Search, ChevronRight, Calendar, User, Folder, CalendarDays, Loader2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import NotificationsBell from '@/components/ui/NotificationsBell'
+import { useBloqueoScroll } from '@/hooks/useBloqueoScroll'
 
 const breadcrumbs: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -145,6 +146,10 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     }
   }, [mobileSearchOpen])
 
+  // Con el buscador a pantalla completa abierto, la pagina de detras no debe
+  // moverse: el teclado la empujaria y al cerrar se volveria a otro punto.
+  useBloqueoScroll(mobileSearchOpen)
+
   const handleSelect = (href: string) => {
     setIsOpen(false)
     setMobileSearchOpen(false)
@@ -200,7 +205,11 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const parent = getParent()
 
   return (
-    <header className="sticky top-0 z-30 h-16 glass border-b border-white/[0.07] flex items-center px-4 md:px-6 no-print">
+    <header className="sticky top-0 z-30 flex h-16 items-center border-b border-white/[0.07] glass px-4 no-print md:px-6"
+      style={{
+        paddingLeft: 'max(1rem, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(1rem, env(safe-area-inset-right, 0px))',
+      }}>
       <button
         className="md:hidden mr-3 text-phm-gray hover:text-white transition-colors flex-shrink-0 p-1.5 rounded-lg hover:bg-white/5"
         onClick={onMenuClick}
@@ -299,7 +308,10 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             onClick={() => setMobileSearchOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute top-0 left-0 right-0 bg-phm-charcoal border-b border-phm-border-soft p-4 shadow-2xl">
+          <div
+            className="absolute inset-x-0 top-0 border-b border-phm-border-soft bg-phm-charcoal p-4 shadow-2xl"
+            style={{ paddingTop: 'max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem))' }}
+          >
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 px-3 h-10 rounded-lg bg-phm-surface border border-phm-border-soft focus-within:border-phm-red-bright/50 flex-1 min-w-0">
                 {searching ? (

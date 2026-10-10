@@ -4,7 +4,16 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  html, body { background-color: #050505; }
+
+  html {
+    background-color: #050505;
+    /* Safari reescala el texto al girar el telefono a horizontal y el bloque
+       entero se recoloca. Con esto el cuerpo de letra no cambia; el zoom
+       manual del usuario sigue funcionando igual. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     background-color: #050505;
     color: #FFFFFF;
@@ -12,8 +21,34 @@
     -moz-osx-font-smoothing: grayscale;
     font-family: var(--font-jakarta), 'Avenir Next', 'Segoe UI', sans-serif;
     letter-spacing: -0.011em;
-    background-image: linear-gradient(180deg, rgba(255,255,255,0.018), transparent 26rem);
-    background-attachment: fixed;
+    /* `clip` recorta lo que se salga de lado SIN crear un contenedor de
+       scroll: a diferencia de `hidden`, no rompe `position: sticky` ni
+       desactiva el desplazamiento vertical. Es una red de seguridad contra un
+       desbordamiento lateral puntual, no el remedio: las causas se corrigen
+       en cada componente. El eje vertical queda intacto. */
+    overflow-x: clip;
+  }
+
+  /* El degradado de fondo va en una capa fija propia. Antes era
+     `background-attachment: fixed` en el body, que obliga al navegador a
+     repintar el fondo en cada fotograma del scroll y en moviles produce
+     tirones. Asi se ve igual y el scroll va suelto. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.018), transparent 26rem), #050505;
+  }
+
+  /* Un toque en un boton o un enlace no tiene que esperar por si llega un
+     segundo toque (el doble toque para ampliar). Quita el retardo de 300 ms y
+     evita ampliaciones accidentales al pulsar rapido. El pellizco para hacer
+     zoom en la pagina no se toca. */
+  a, button, [role="button"], label, summary {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Las cifras alinean en columna: dinero, fechas y contadores. */
@@ -33,6 +68,16 @@
   input::placeholder,
   textarea::placeholder {
     color: #71717A;
+  }
+
+  /* Los menus y listas con scroll propio no arrastran la pagina de debajo al
+     llegar al final, ni disparan el "deslizar para recargar". */
+  [data-scroll-contenido],
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
   /* El foco pasa al rojo corporativo: el dorado sale del sistema. */
   input:focus,
@@ -285,5 +330,26 @@
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+/* ── Campos de formulario en el teléfono ──────────────────────────────────
+   iOS Safari amplía la página en cuanto enfocas un campo cuya letra mide menos
+   de 16px, y al salir no la devuelve: la interfaz queda corrida. Evitarlo con
+   `maximum-scale=1` sería prohibir el zoom, que es justo lo que no se puede
+   hacer. La vía correcta es que en el teléfono los campos lleguen a 16px.
+
+   El selector lleva la clase de Tailwind a propósito: una regla de elemento
+   (`input { }`) pierde contra `.text-sm`, que es más específica. Así solo se
+   tocan los campos que de verdad se quedan cortos, y únicamente por debajo de
+   768px: en escritorio el diseño aprobado no cambia. */
+@media (max-width: 767px) {
+  input.text-xs,
+  input.text-sm,
+  select.text-xs,
+  select.text-sm,
+  textarea.text-xs,
+  textarea.text-sm {
+    font-size: 16px;
   }
 }

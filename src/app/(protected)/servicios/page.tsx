@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Sparkles, X, UserPlus } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
+import { useBloqueoScroll } from '@/hooks/useBloqueoScroll'
 
 type PlanType = 'CONTENIDO' | 'IA' | 'FOTOGRAFIA' | 'PERSONALIZADO'
 type Modalidad = 'MENSUAL' | 'OCASIONAL'
@@ -44,12 +45,24 @@ const TABS = [
   { key: 'PERSONALIZADO', label: 'Personalizados' },
 ]
 
-const ModalWrapper = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+// Solo se monta con el dialogo abierto, asi que congela la pagina de detras
+// mientras existe. Respeta las areas seguras y, si el contenido no cabe
+// (telefono en horizontal, teclado abierto), desplaza dentro de la capa.
+const ModalWrapper = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => {
+  useBloqueoScroll(true)
+  return (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-4"
+    style={{
+      paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))',
+      paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
+    }}
+  >
     <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
     {children}
   </div>
-)
+  )
+}
 
 const EMPTY_FORM = {
   nombre: '', tipo: 'PERSONALIZADO' as PlanType, modalidad: 'MENSUAL' as Modalidad,
@@ -201,7 +214,7 @@ export default function ServiciosPage() {
         </div>
       </header>
 
-      <div className="flex gap-1 bg-phm-surface border border-phm-border-soft rounded-lg p-1 w-fit">
+      <div className="flex w-full flex-wrap gap-1 rounded-lg border border-phm-border-soft bg-phm-surface p-1 sm:w-fit">
         {TABS.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${tab === t.key ? 'bg-phm-charcoal text-white border border-phm-border-soft' : 'text-phm-gray-soft hover:text-white'}`}>
@@ -286,7 +299,7 @@ export default function ServiciosPage() {
       {/* Modal Crear/Editar */}
       {showForm && (
         <ModalWrapper onClose={() => setShowForm(false)}>
-          <div className="relative bg-phm-charcoal border border-phm-border-soft rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="relative bg-phm-charcoal border border-phm-border-soft rounded-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-phm-border-soft sticky top-0 bg-phm-charcoal z-10">
               <h2 className="font-semibold text-white">{editingPlan ? `Editar: ${editingPlan.nombre}` : 'Nueva opción personalizada'}</h2>
               <button onClick={() => setShowForm(false)} className="text-phm-gray-soft hover:text-white transition-colors"><X className="w-5 h-5" /></button>

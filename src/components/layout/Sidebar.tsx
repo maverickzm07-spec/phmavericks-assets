@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { useBloqueoScroll } from '@/hooks/useBloqueoScroll'
 import {
   LayoutDashboard,
   Users,
@@ -57,16 +58,9 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  // `isOpen` solo lo activa el boton de la cabecera, que es exclusivo de
+  // movil: en escritorio el menu esta siempre visible y no tapa nada.
+  useBloqueoScroll(isOpen)
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -86,7 +80,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-dvh w-64 z-50 flex flex-col transition-transform duration-300 md:translate-x-0 border-r border-phm-border-soft ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      className={`fixed left-0 top-0 z-50 flex h-dvh w-64 flex-col overflow-hidden overscroll-contain border-r border-phm-border-soft transition-transform duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       style={{ background: 'linear-gradient(180deg, #09090B 0%, #0B0B0E 60%, #050506 100%)' }}
     >
       <div

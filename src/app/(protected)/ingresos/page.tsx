@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Plus, Sparkles, X } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
 import DocumentosAdjuntos from '@/components/ui/DocumentosAdjuntos'
+import { useBloqueoScroll } from '@/hooks/useBloqueoScroll'
 
 type TipoServicio = 'FOTOGRAFIA' | 'REELS' | 'VIDEOS_HORIZONTALES' | 'IMAGENES_FLYERS' | 'PLAN_MENSUAL' | 'PERSONALIZADO'
 type EstadoPago = 'PAGADO' | 'PENDIENTE' | 'PARCIAL'
@@ -58,12 +59,24 @@ const inputCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft 
 const selectCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 const labelCls = 'block text-xs font-medium text-phm-gray-soft mb-1.5'
 
-const ModalWrap = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+// Solo se monta con el dialogo abierto, asi que congela la pagina de detras
+// mientras existe. Respeta las areas seguras y, si el contenido no cabe
+// (telefono en horizontal, teclado abierto), desplaza dentro de la capa.
+const ModalWrap = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => {
+  useBloqueoScroll(true)
+  return (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-4"
+    style={{
+      paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))',
+      paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
+    }}
+  >
     <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
     {children}
   </div>
-)
+  )
+}
 
 function IngresosPageInner() {
   const searchParams = useSearchParams()
@@ -258,24 +271,24 @@ function IngresosPageInner() {
             ))}
           </div>
           <div className="flex gap-2 flex-wrap items-center">
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {[{ key: '', label: 'Todo estado' }, { key: 'PAGADO', label: 'Pagado' }, { key: 'PARCIAL', label: 'Parcial' }, { key: 'PENDIENTE', label: 'Pendiente' }].map(s => (
                 <button key={s.key} onClick={() => setFiltroEstado(s.key)} className={filterBtnCls(filtroEstado === s.key)}>{s.label}</button>
               ))}
             </div>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {[{ key: 'hoy', label: 'Hoy' }, { key: 'semana', label: 'Semana' }, { key: 'mes', label: 'Mes' }, { key: 'anio', label: 'Año' }, { key: '', label: 'Todo' }, { key: 'rango', label: 'Rango' }].map(p => (
                 <button key={p.key} onClick={() => setFiltroPeriodo(p.key)} className={filterBtnCls(filtroPeriodo === p.key)}>{p.label}</button>
               ))}
             </div>
             {filtroPeriodo === 'rango' && (
-              <div className="flex gap-2 items-center">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <input type="date" value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
                 <span className="text-phm-gray-soft text-xs">—</span>
                 <input type="date" value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
               </div>
             )}
-            <select value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors ml-auto">
+            <select value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="w-full min-w-0 rounded-md border border-phm-border-soft bg-phm-surface px-3 py-1 text-xs text-phm-gray transition-colors focus:border-phm-red-bright/40 focus:outline-none sm:ml-auto sm:w-auto sm:max-w-[240px]">
               <option value="">Todos los clientes</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
             </select>
@@ -354,7 +367,7 @@ function IngresosPageInner() {
       {/* Modal Crear/Editar */}
       {showForm && (
         <ModalWrap onClose={() => setShowForm(false)}>
-          <div className="relative bg-phm-charcoal border border-phm-border-soft rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="relative bg-phm-charcoal border border-phm-border-soft rounded-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-phm-border-soft sticky top-0 bg-phm-charcoal z-10">
               <h2 className="font-semibold text-white">{editingIngreso ? 'Editar ingreso' : 'Nuevo ingreso'}</h2>
               <button onClick={() => setShowForm(false)} className="text-phm-gray-soft hover:text-white transition-colors"><X className="w-5 h-5" /></button>
@@ -472,7 +485,7 @@ function IngresosPageInner() {
       {/* Modal Detalle */}
       {showDetalle && (
         <ModalWrap onClose={() => setShowDetalle(null)}>
-          <div className="relative bg-phm-charcoal border border-phm-border-soft rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="relative bg-phm-charcoal border border-phm-border-soft rounded-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between p-5 border-b border-phm-border-soft sticky top-0 bg-phm-charcoal z-10">
               <h2 className="font-semibold text-white">Detalle del ingreso</h2>
               <button onClick={() => setShowDetalle(null)} className="text-phm-gray-soft hover:text-white transition-colors"><X className="w-5 h-5" /></button>

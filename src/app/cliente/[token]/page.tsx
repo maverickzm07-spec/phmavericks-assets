@@ -40,13 +40,13 @@ export default function ClientPortalPage() {
   }, [token])
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+    <div className="min-h-screen min-h-dvh bg-zinc-950 flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
   if (notFound || !data) return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 text-center px-4">
+    <div className="min-h-screen min-h-dvh bg-zinc-950 flex flex-col items-center justify-center gap-4 text-center px-4">
       <div className="w-16 h-16 rounded-2xl bg-red-950/40 border border-red-900/60 flex items-center justify-center mb-2">
         <span className="text-2xl">🔒</span>
       </div>
@@ -80,7 +80,7 @@ export default function ClientPortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen min-h-dvh bg-zinc-950 text-white">
       {/* Header */}
       <div className="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">

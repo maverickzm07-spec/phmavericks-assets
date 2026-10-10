@@ -1,5 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useBloqueoScroll } from '@/hooks/useBloqueoScroll'
+
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
@@ -12,12 +15,32 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, onConfirm, title, description, confirmLabel = 'Eliminar', loadingLabel, isLoading = false }: ModalProps) {
+  // El hook va antes del return: las reglas de hooks no permiten saltarselo.
+  // Mientras el dialogo esta abierto la pagina de detras queda congelada, asi
+  // el fondo no se desplaza y al cerrar se vuelve al mismo punto.
+  useBloqueoScroll(isOpen)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const alPulsar = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', alPulsar)
+    return () => document.removeEventListener('keydown', alPulsar)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
   const loadingText = loadingLabel ?? (confirmLabel === 'Eliminar' ? 'Eliminando...' : 'Procesando...')
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overscroll-contain p-4"
+      style={{
+        paddingTop: 'max(1rem, env(safe-area-inset-top, 0px))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))',
+      }}
+    >
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-phm-charcoal border border-phm-border-soft rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+      <div className="relative my-auto w-full max-w-md rounded-xl border border-phm-border-soft bg-phm-charcoal p-6 shadow-2xl">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-red-950/60 border border-red-900/60 flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

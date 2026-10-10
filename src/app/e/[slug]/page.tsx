@@ -76,13 +76,13 @@ export default function EntregaSlugPage() {
   }, [slug])
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+    <div className="min-h-screen min-h-dvh bg-zinc-950 flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-[#C41E1E]/30 border-t-[#C41E1E] rounded-full animate-spin" />
     </div>
   )
 
   if (error || !data) return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4 text-center gap-4">
+    <div className="min-h-screen min-h-dvh bg-zinc-950 flex flex-col items-center justify-center px-4 text-center gap-4">
       <AlertCircle className="w-10 h-10 text-zinc-600" />
       <p className="text-white font-semibold text-lg">Link no disponible</p>
       <p className="text-zinc-500 text-sm">{error || 'Este enlace no existe o ha sido desactivado.'}</p>
@@ -121,7 +121,7 @@ export default function EntregaSlugPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen min-h-dvh bg-zinc-950 text-white">
 
       {/* HEADER */}
       <header className="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/60">
