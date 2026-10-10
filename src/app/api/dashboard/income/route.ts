@@ -170,15 +170,17 @@ export async function GET(request: NextRequest) {
   const { start, end, groupBy } = getRangeDates(range, startDate, endDate)
   const prev = getPreviousDates(range, { start, end })
 
+  // No se filtra por estadoPago: montoPagado es la fuente de verdad del dinero recibido,
+  // y un ingreso con abono parcial debe sumar aunque su estado siga pendiente.
   const currentWhere = range === 'all_time'
-    ? { estadoPago: { not: 'PENDIENTE' as const } }
-    : { fechaIngreso: { gte: start, lte: end }, estadoPago: { not: 'PENDIENTE' as const } }
+    ? {}
+    : { fechaIngreso: { gte: start, lte: end } }
 
   const [currentIngresos, prevIngresos] = await Promise.all([
     prisma.ingreso.findMany({ where: currentWhere, select: { fechaIngreso: true, montoPagado: true } }),
     prev
       ? prisma.ingreso.findMany({
-          where: { fechaIngreso: { gte: prev.start, lte: prev.end }, estadoPago: { not: 'PENDIENTE' } },
+          where: { fechaIngreso: { gte: prev.start, lte: prev.end } },
           select: { montoPagado: true },
         })
       : Promise.resolve([]),

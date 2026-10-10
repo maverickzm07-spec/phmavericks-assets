@@ -147,7 +147,7 @@ export default function DashboardHero({
                     {/* Custom date inputs */}
                     {showCustom && (
                       <div className="border-t border-white/10 p-3 space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div>
                             <label className="text-[10px] text-phm-gray-soft uppercase tracking-wide block mb-1">Desde</label>
                             <input

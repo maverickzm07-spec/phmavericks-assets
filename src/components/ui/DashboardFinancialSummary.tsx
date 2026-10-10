@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowUpRight, CircleDollarSign, FolderKanban, WalletCards } from 'lucide-react'
+import { ArrowUpRight, CircleDollarSign, FolderKanban, Receipt, TrendingUp, WalletCards } from 'lucide-react'
 import Sparkline from './Sparkline'
 import PremiumCard from './PremiumCard'
 
@@ -10,6 +10,11 @@ interface DashboardFinancialSummaryProps {
   incomeChange: number | null
   incomeSeries: number[]
   activeProjects: number | null
+  receivable: number | null
+  /** Gastos pagados del mes en curso. */
+  expenses: number | null
+  /** Cobrado menos pagado en el mes. */
+  operatingResult: number | null
   showFinancials: boolean
   loading?: boolean
 }
@@ -46,13 +51,18 @@ export default function DashboardFinancialSummary({
   incomeChange,
   incomeSeries,
   activeProjects,
+  receivable,
+  expenses,
+  operatingResult,
   showFinancials,
   loading = false,
 }: DashboardFinancialSummaryProps) {
+  const dinero = (v: number | null) =>
+    v === null ? '—' : `$${v.toLocaleString('es-EC', { maximumFractionDigits: 0 })}`
   return (
     <PremiumCard padding="md" className="overflow-visible">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="grid flex-1 gap-4 md:grid-cols-3 md:gap-6">
+        <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
           {showFinancials ? (
             <SummaryMetric
               label="Ingresos cobrados"
@@ -63,13 +73,42 @@ export default function DashboardFinancialSummary({
           ) : (
             <SummaryMetric label="Ingresos cobrados" value="—" detail="Solo visible para administración" icon={CircleDollarSign} muted />
           )}
-          <SummaryMetric label="Por cobrar" value="—" detail="Revisar en Ingresos" icon={WalletCards} muted />
-          <SummaryMetric
-            label="Proyectos activos"
-            value={activeProjects === null ? '—' : String(activeProjects)}
-            detail="Pendientes de cierre"
-            icon={FolderKanban}
-          />
+          {showFinancials ? (
+            <SummaryMetric
+              label="Por cobrar"
+              value={receivable === null ? '—' : `$${receivable.toLocaleString('es-EC', { maximumFractionDigits: 0 })}`}
+              detail={receivable === null ? 'Revisar en Ingresos' : receivable > 0 ? 'Saldos de proyectos y planes' : 'Sin saldos pendientes'}
+              icon={WalletCards}
+              muted={receivable === 0}
+            />
+          ) : (
+            <SummaryMetric label="Por cobrar" value="—" detail="Solo visible para administración" icon={WalletCards} muted />
+          )}
+          {showFinancials ? (
+            <SummaryMetric
+              label="Gastos pagados"
+              value={loading ? '—' : dinero(expenses)}
+              detail="Salida real de caja"
+              icon={Receipt}
+            />
+          ) : (
+            <SummaryMetric label="Gastos pagados" value="—" detail="Solo visible para administración" icon={Receipt} muted />
+          )}
+          {showFinancials ? (
+            <SummaryMetric
+              label="Resultado operativo"
+              value={loading ? '—' : dinero(operatingResult)}
+              detail="Cobrado menos pagado"
+              icon={TrendingUp}
+            />
+          ) : (
+            <SummaryMetric
+              label="Proyectos activos"
+              value={activeProjects === null ? '—' : String(activeProjects)}
+              detail="Pendientes de cierre"
+              icon={FolderKanban}
+            />
+          )}
         </div>
         {incomeSeries.length > 1 && showFinancials && (
           <div className="hidden w-52 flex-shrink-0 lg:block">

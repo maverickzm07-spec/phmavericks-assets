@@ -13,10 +13,9 @@ import {
   Users,
 } from 'lucide-react'
 import { DashboardStats } from '@/types'
-import { calculateCompliance, formatCurrency, getMonthName } from '@/lib/utils'
+import { ESTADOS_ACTIVOS } from '@/lib/projectStatus'
 import { TYPE_LABELS_ES } from '@/lib/calendar-constants'
 import PremiumCard from '@/components/ui/PremiumCard'
-import ProgressBar from '@/components/ui/ProgressBar'
 import DashboardFinancialSummary from '@/components/ui/DashboardFinancialSummary'
 
 interface IncomeData {
@@ -42,12 +41,10 @@ interface Project {
   saldoPendiente?: number | null
 }
 
-const ACTIVE_PROJECT_STATES = ['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO']
-const IN_PROGRESS_STATES = ['EN_PROCESO', 'EN_EDICION']
-
-function initials(name = '') {
-  return name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'PH'
-}
+// Misma lista que usa la API, para que las tarjetas no cuenten distinto.
+const ACTIVE_PROJECT_STATES = ESTADOS_ACTIVOS
+// En producción activa: ya se grabó o se está editando.
+const IN_PROGRESS_STATES = ['GRABADO', 'EN_EDICION', 'EN_PROCESO']
 
 function formatEventDate(value: string) {
   const date = new Date(value)
@@ -93,10 +90,14 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [gastosMes, setGastosMes] = useState<number | null>(null)
+  const [resultadoOperativo, setResultadoOperativo] = useState<number | null>(null)
+  const [entregasPendientes, setEntregasPendientes] = useState(0)
   const [projects, setProjects] = useState<Project[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
   const [incomeData, setIncomeData] = useState<IncomeData | null>(null)
+  const [receivable, setReceivable] = useState<number | null>(null)
   const [userRole, setUserRole] = useState('')
   const [userName, setUserName] = useState('')
   const [incomeRange, setIncomeRange] = useState('this_month')
@@ -145,11 +146,12 @@ export default function DashboardPage() {
             activeClients: dashboard.activeClients ?? 0,
             pendingContents: dashboard.pendingContents ?? 0,
             completedContents: dashboard.completedContents ?? 0,
-            completedPlans: dashboard.completedPlans ?? 0,
-            delayedPlans: dashboard.delayedPlans ?? 0,
             avgCompliance: dashboard.avgCompliance ?? 0,
-            recentPlans: Array.isArray(dashboard.recentPlans) ? dashboard.recentPlans : [],
           })
+          setReceivable(typeof dashboard.porCobrar === 'number' ? dashboard.porCobrar : null)
+          setGastosMes(typeof dashboard.gastosMes === 'number' ? dashboard.gastosMes : null)
+          setResultadoOperativo(typeof dashboard.resultadoOperativo === 'number' ? dashboard.resultadoOperativo : null)
+          setEntregasPendientes(dashboard.entregasPendientes ?? 0)
         }
         setProjects(Array.isArray(projectData) ? projectData : [])
         setUpcomingEvents(Array.isArray(eventData) ? eventData : [])
@@ -173,7 +175,6 @@ export default function DashboardPage() {
   const activeProjects = useMemo(() => projects.filter((project) => ACTIVE_PROJECT_STATES.includes(project.estado)), [projects])
   const inProgressProjects = useMemo(() => projects.filter((project) => IN_PROGRESS_STATES.includes(project.estado)).length, [projects])
   const attentionItems = alerts.slice(0, 4)
-  const plans = (stats?.recentPlans || []).slice(0, 4)
   const greetingName = userName ? userName.split(' ')[0] : 'Admin'
 
   if (loading) return <DashboardSkeleton />
@@ -226,6 +227,9 @@ export default function DashboardPage() {
         incomeChange={showFinancials ? incomeData?.percentChange ?? null : null}
         incomeSeries={incomeData?.series?.map((item) => item.value) || []}
         activeProjects={activeProjects.length}
+        receivable={showFinancials ? receivable : null}
+        expenses={showFinancials ? gastosMes : null}
+        operatingResult={showFinancials ? resultadoOperativo : null}
         showFinancials={showFinancials}
         loading={loadingIncome}
       />
@@ -233,9 +237,9 @@ export default function DashboardPage() {
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Indicadores operativos">
         {[
           { label: 'Clientes activos', value: stats.activeClients, icon: Users, tone: 'text-phm-red-bright', href: '/clientes' },
-          { label: 'Pendientes', value: stats.pendingContents, icon: Clock3, tone: 'text-amber-400', href: '/proyectos' },
-          { label: 'En proceso', value: inProgressProjects, icon: FolderKanban, tone: 'text-phm-gold', href: '/proyectos?estado=EN_PROCESO' },
-          { label: 'Entregados', value: stats.completedContents, icon: CheckCircle2, tone: 'text-emerald-400', href: '/reportes' },
+          { label: 'Proyectos en producción', value: inProgressProjects, icon: FolderKanban, tone: 'text-phm-gold', href: '/proyectos' },
+          { label: 'Entregas pendientes', value: entregasPendientes, icon: Clock3, tone: 'text-amber-400', href: '/proyectos' },
+          { label: 'Entregables completados', value: stats.completedContents, icon: CheckCircle2, tone: 'text-emerald-400', href: '/reportes' },
         ].map(({ label, value, icon: Icon, tone, href }) => (
           <Link key={label} href={href} className="group">
             <PremiumCard hover padding="md" className="relative h-full overflow-hidden">
@@ -278,10 +282,6 @@ export default function DashboardPage() {
         </PremiumCard>
       </section>
 
-      <PremiumCard padding="none">
-        <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4"><div><h2 className="text-sm font-semibold text-white">Planes mensuales activos</h2><p className="mt-0.5 text-xs text-phm-gray-soft">Seguimiento de los últimos ciclos registrados</p></div><Link href="/planes" className="inline-flex items-center gap-1 text-xs font-medium text-phm-gold hover:text-phm-gold-bright">Ver todos <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>
-        {plans.length === 0 ? <div className="px-5 py-12 text-center text-sm text-phm-gray-soft">No hay planes mensuales registrados.</div> : <div className="divide-y divide-white/[0.06]">{plans.map((plan: any) => { const compliance = calculateCompliance(plan, plan.contents || []); return <div key={plan.id} className="grid items-center gap-3 px-5 py-3.5 md:grid-cols-[1.4fr_1fr_1.2fr_auto_auto]"><div className="flex min-w-0 items-center gap-3"><div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-phm-red/20 text-[10px] font-bold text-phm-red-bright ring-1 ring-phm-red/30">{initials(plan.client?.name)}</div><p className="truncate text-sm font-medium text-white">{plan.client?.name || 'Sin cliente'}</p></div><p className="text-xs text-phm-gray">{getMonthName(plan.month)} {plan.year}</p><div className="min-w-0"><ProgressBar value={compliance.compliancePercentage} size="sm" /><span className="mt-1 block text-[10px] text-phm-gray-soft">{compliance.totalDelivered} / {compliance.totalContracted} entregables</span></div><span className="text-xs text-phm-gray">{plan.paymentStatus === 'PAID' ? 'Pagado' : plan.paymentStatus === 'PARTIAL' ? 'Parcial' : 'Pendiente'}</span><Link href={`/planes/${plan.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray transition-colors hover:text-phm-gold">Ver plan <ArrowUpRight className="h-3 w-3" /></Link></div> })}</div>}
-      </PremiumCard>
 
       <div className="flex justify-end"><Link href="/reportes" className="inline-flex items-center gap-1.5 text-xs text-phm-gray-soft transition-colors hover:text-phm-gold"><span className="h-1.5 w-1.5 rounded-full bg-phm-gold" /> Ver actividad reciente <ArrowUpRight className="h-3.5 w-3.5" /></Link></div>
     </div>

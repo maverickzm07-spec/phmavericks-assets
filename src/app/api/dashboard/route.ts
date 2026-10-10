@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromRequest } from '@/lib/auth'
 import { canViewFinancials } from '@/lib/permissions'
+import { calcularResumenFinanciero, rangoDelMes } from '@/lib/finanzas'
+import { ESTADOS_ACTIVOS } from '@/lib/projectStatus'
 
 // Valores válidos del enum ContentStatus en la base de datos
 const PENDING_STATUSES = ['PENDING', 'EDITING', 'APPROVED', 'PENDIENTE', 'EN_PROCESO']
 const DONE_STATUSES = ['PUBLISHED', 'COMPLETED', 'ENTREGADO', 'PUBLICADO']
 
-// Estados de proyecto que se consideran "trabajo activo"
-const ACTIVE_PROJECT_STATES = ['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO']
+// Estados de trabajo abierto. Se toman de projectStatus para que incluyan los
+// vigentes (CONFIRMADO, GRABADO) y no solo los antiguos: con la lista anterior,
+// un proyecto recién confirmado no contaba como cliente activo.
+const ACTIVE_PROJECT_STATES = ESTADOS_ACTIVOS
 
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request)
@@ -19,10 +23,8 @@ export async function GET(request: NextRequest) {
     totalContents,
     pendingContents,
     completedContents,
-    allPlans,
-    completedProjects,
-    delayedProjects,
     recentProjects,
+    entregasPendientes,
   ] = await Promise.all([
     // Clientes con plan mensual en curso O proyecto activo
     prisma.client.count({
@@ -47,59 +49,51 @@ export async function GET(request: NextRequest) {
       where: { status: { in: DONE_STATUSES as any[] } },
     }),
 
-    // Planes mensuales recientes
-    prisma.monthlyPlan.findMany({
-      include: { client: true, contents: true },
-      orderBy: [{ year: 'desc' }, { month: 'desc' }],
-      take: 20,
-    }),
-
-    // Proyectos completados
-    prisma.clientProject.count({ where: { estado: 'COMPLETADO' } }),
-
-    // Proyectos atrasados
-    prisma.clientProject.count({ where: { estado: 'ATRASADO' } }),
-
     // Proyectos recientes
     prisma.clientProject.findMany({
       include: { client: true, contents: true },
       orderBy: { createdAt: 'desc' },
       take: 6,
     }),
-  ])
 
-  // Conteos unificados: planes mensuales + proyectos ocasionales
-  const completedPlans = allPlans.filter((p) => p.planStatus === 'COMPLETED').length + completedProjects
-  const delayedPlans = allPlans.filter((p) => p.planStatus === 'DELAYED').length + delayedProjects
+    // Entregas pendientes: trabajos con fecha comprometida que aún no salieron.
+    prisma.clientProject.count({
+      where: {
+        fechaEntrega: { not: null },
+        estado: { notIn: ['ENTREGADO', 'COMPLETADO'] },
+      },
+    }),
+  ])
 
   // Cumplimiento global: entregables completados / total entregables creados
   const avgCompliance = totalContents > 0
     ? Math.round((completedContents / totalContents) * 100)
     : 0
 
-  // Últimos 6 planes para la tabla del dashboard
-  const recentPlans = allPlans.slice(0, 6)
-
   const financialData: Record<string, number> = {}
   if (canViewFinancials(user.role)) {
-    const now = new Date()
-    const mesStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const ingresosMesData = await prisma.ingreso.findMany({
-      where: { fechaIngreso: { gte: mesStart }, estadoPago: { not: 'PENDIENTE' } },
-      select: { montoPagado: true },
-    })
-    financialData.ingresosMes = ingresosMesData.reduce((s, i) => s + (i.montoPagado || 0), 0)
+    // Mismo helper que usa Finanzas: así las dos pantallas no pueden discrepar.
+    // Antes el dashboard consultaba por su cuenta y sin límite superior de
+    // fecha, de modo que un ingreso futuro inflaba el mes en una vista y no en
+    // la otra.
+    const { inicio, fin } = rangoDelMes()
+    const resumen = await calcularResumenFinanciero(inicio, fin)
+
+    financialData.ingresosMes = resumen.ingresosCobrados
+    financialData.gastosMes = resumen.gastosPagados
+    financialData.resultadoOperativo = resumen.resultadoOperativo
+    financialData.porCobrar = resumen.cuentasPorCobrar
+    financialData.porPagar = resumen.cuentasPorPagar
+    financialData.cobrosCarteraHistorica = resumen.cobrosCarteraHistorica
   }
 
   return NextResponse.json({
     activeClients,
     pendingContents,
     completedContents,
-    completedPlans,
-    delayedPlans,
     avgCompliance,
-    recentPlans,
     recentProjects,
+    entregasPendientes,
     totalContents,
     ...financialData,
   })
