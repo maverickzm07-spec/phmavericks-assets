@@ -29,7 +29,7 @@ export default function GraficoIngresosGastos({ datos }: { datos: PuntoMes[] }) 
   // Se redondea hacia arriba para que la línea superior sea una cifra legible.
   const tope = Math.ceil(maximo / 100) * 100 || 100
 
-  const alto = 170
+  const alto = 206
   const margenY = 22
   const utilAlto = alto - margenY
   const anchoCol = 100 / datos.length
@@ -73,7 +73,7 @@ export default function GraficoIngresosGastos({ datos }: { datos: PuntoMes[] }) 
               onMouseLeave={() => setActivo(null)}
             >
               <div
-                className="w-[38%] max-w-[18px] rounded-t-[4px] transition-opacity"
+                className="w-[38%] max-w-[22px] rounded-t-[4px] transition-opacity"
                 style={{
                   height: Math.max(d.ingresos > 0 ? 3 : 0, altura(d.ingresos)),
                   background: VERDE,
@@ -81,7 +81,7 @@ export default function GraficoIngresosGastos({ datos }: { datos: PuntoMes[] }) 
                 }}
               />
               <div
-                className="w-[38%] max-w-[18px] rounded-t-[4px] transition-opacity"
+                className="w-[38%] max-w-[22px] rounded-t-[4px] transition-opacity"
                 style={{
                   height: Math.max(d.gastos > 0 ? 3 : 0, altura(d.gastos)),
                   background: AMBAR,

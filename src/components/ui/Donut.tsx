@@ -81,13 +81,13 @@ export default function Donut({ data, size = 180, thickness = 18, centerLabel, c
         {data.map((d, i) => {
           const pct = total > 0 ? Math.round((d.value / total) * 100) : 0
           return (
-            <li key={i} className="flex items-center justify-between text-sm">
+            <li key={i} className="flex items-center justify-between gap-3 text-sm">
               <div className="flex items-center gap-2 min-w-0">
                 <span
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ background: d.color, boxShadow: `0 0 8px ${d.color}80` }}
                 />
-                <span className="text-phm-gray truncate">{d.label}</span>
+                <span className="truncate text-phm-gray">{d.label}</span>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-white font-semibold tabular-nums">{d.value}</span>

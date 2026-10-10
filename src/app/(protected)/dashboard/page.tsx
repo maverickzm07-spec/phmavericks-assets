@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   Clock3,
   FolderKanban,
-  Plus,
   Users,
 } from 'lucide-react'
 import { DashboardStats } from '@/types'
@@ -17,7 +16,7 @@ import { ESTADOS_ACTIVOS } from '@/lib/projectStatus'
 import { formatCurrency } from '@/lib/utils'
 import { TYPE_LABELS_ES } from '@/lib/calendar-constants'
 import PremiumCard from '@/components/ui/PremiumCard'
-import DashboardFinancialSummary from '@/components/ui/DashboardFinancialSummary'
+import HeroDashboard from '@/components/ui/HeroDashboard'
 import GraficoIngresosGastos, { type PuntoMes } from '@/components/ui/GraficoIngresosGastos'
 import AnilloProgreso from '@/components/ui/AnilloProgreso'
 import Donut from '@/components/ui/Donut'
@@ -259,70 +258,45 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-[1480px] space-y-6">
-      {/* Tarjeta principal: lo primero que se ve al abrir la app. */}
-      <section className="card-hero px-5 py-6 md:px-7 md:py-7">
-        <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-phm-gray">
-              Hola, {greetingName} <span aria-hidden>👋</span>
-            </p>
-            <h1 className="mt-2 text-[26px] font-extrabold leading-[1.12] tracking-tight text-white md:text-4xl">
-              Tu producción,<br className="md:hidden" /> bajo control
-            </h1>
-            <p className="mt-2.5 text-sm leading-relaxed text-phm-gray">{resumenOperativo}</p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <select
-              value={incomeRange}
-              onChange={(event) => setIncomeRange(event.target.value)}
-              className="h-11 rounded-[14px] border border-white/[0.08] bg-white/[0.04] px-3.5 text-xs font-semibold text-phm-gray outline-none transition-colors focus:border-phm-red-bright/60"
-              aria-label="Periodo del dashboard"
-            >
-              <option value="this_month">Este mes</option>
-              <option value="previous_month">Mes anterior</option>
-              <option value="this_year">Este año</option>
-              <option value="all_time">Histórico</option>
-            </select>
-            <Link href="/proyectos/nuevo" className="btn-primario flex-1 md:flex-none">
-              <Plus className="h-4 w-4" strokeWidth={2.5} /> Nuevo proyecto
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <DashboardFinancialSummary
-        income={showFinancials ? incomeData?.total ?? null : null}
-        incomeChange={showFinancials ? incomeData?.percentChange ?? null : null}
-        incomeSeries={incomeData?.series?.map((item) => item.value) || []}
-        activeProjects={activeProjects.length}
-        receivable={showFinancials ? receivable : null}
-        expenses={showFinancials ? gastosMes : null}
-        operatingResult={showFinancials ? resultadoOperativo : null}
-        showFinancials={showFinancials}
-        loading={loadingIncome}
+      {/* Bloque principal: la cifra del mes manda y la gráfica la acompaña. */}
+      <HeroDashboard
+        saludo={`Hola, ${greetingName} \u{1F44B}`}
+        resumen={resumenOperativo}
+        cobrado={showFinancials ? incomeData?.total ?? null : null}
+        cambioPct={showFinancials ? incomeData?.percentChange ?? null : null}
+        serie={incomeData?.series || []}
+        serieMensual={analitica?.serie.map((m) => ({ label: m.etiqueta, value: m.ingresos })) || []}
+        porCobrar={showFinancials ? receivable : null}
+        gastos={showFinancials ? gastosMes : null}
+        resultado={showFinancials ? resultadoOperativo : null}
+        rango={incomeRange}
+        onRangoChange={setIncomeRange}
+        verFinanzas={showFinancials}
+        cargando={loadingIncome}
       />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Indicadores operativos">
         {[
-          { label: 'Clientes activos', value: stats.activeClients, icon: Users, fondo: 'bg-phm-red-bright/14 text-phm-red-bright', href: '/clientes' },
-          { label: 'Proyectos en producción', value: inProgressProjects, icon: FolderKanban, fondo: 'bg-white/[0.07] text-white', href: '/proyectos' },
-          { label: 'Entregas pendientes', value: entregasPendientes, icon: Clock3, fondo: 'bg-phm-warn/14 text-phm-warn', href: '/proyectos' },
-          { label: 'Entregables completados', value: stats.completedContents, icon: CheckCircle2, fondo: 'bg-phm-ok/14 text-phm-ok', href: '/reportes' },
-        ].map(({ label, value, icon: Icon, fondo, href }) => (
+          { label: 'Clientes activos', value: stats.activeClients, icon: Users, fondo: 'bg-phm-red-bright/16 text-phm-red-bright', halo: 'bg-phm-red-bright/25', href: '/clientes' },
+          { label: 'Proyectos en producción', value: inProgressProjects, icon: FolderKanban, fondo: 'bg-white/[0.08] text-white', halo: 'bg-white/[0.12]', href: '/proyectos' },
+          { label: 'Entregas pendientes', value: entregasPendientes, icon: Clock3, fondo: 'bg-phm-warn/16 text-phm-warn', halo: 'bg-phm-warn/20', href: '/proyectos' },
+          { label: 'Entregables completados', value: stats.completedContents, icon: CheckCircle2, fondo: 'bg-phm-ok/16 text-phm-ok', halo: 'bg-phm-ok/20', href: '/reportes' },
+        ].map(({ label, value, icon: Icon, fondo, halo, href }) => (
           <Link
             key={label}
             href={href}
-            className="card-premium group block p-4 transition-shadow hover:shadow-premium-hover"
+            className="card-premium group relative block overflow-hidden p-4 transition-all hover:-translate-y-0.5 hover:shadow-premium-hover"
           >
-            <div className="flex items-center justify-between">
-              <div className={`flex h-[26px] w-[26px] items-center justify-center rounded-[9px] ${fondo}`}>
-                <Icon className="h-[14px] w-[14px]" strokeWidth={2.2} />
+            {/* Resplandor de la esquina: da relieve a la tarjeta sin añadir ruido. */}
+            <span aria-hidden className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-50 blur-2xl transition-opacity group-hover:opacity-90 ${halo}`} />
+            <div className="relative flex items-center justify-between">
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${fondo}`}>
+                <Icon className="h-[17px] w-[17px]" strokeWidth={2.2} />
               </div>
               <ArrowUpRight className="h-4 w-4 text-phm-gray-soft transition-colors group-hover:text-phm-red-bright" />
             </div>
-            <p className="tabular mt-4 text-[26px] font-extrabold leading-none tracking-tight text-white">{value}</p>
-            <p className="mt-1.5 text-[13px] text-phm-gray">{label}</p>
+            <p className="tabular relative mt-5 text-[32px] font-extrabold leading-none tracking-[-0.03em] text-white">{value}</p>
+            <p className="relative mt-2 text-[12.5px] font-medium text-phm-gray">{label}</p>
           </Link>
         ))}
       </section>

@@ -32,7 +32,7 @@ export default function AnilloProgreso({
   centro,
   pie,
   tono = 'rojo',
-  tamano = 104,
+  tamano = 112,
 }: Props) {
   const grosor = 9
   const radio = (tamano - grosor) / 2
@@ -41,6 +41,10 @@ export default function AnilloProgreso({
   const pct = sinDato ? 0 : Math.max(0, Math.min(100, valor))
   const avance = circunferencia * (1 - pct / 100)
   const { trazo, halo } = TONOS[tono]
+  // Una cifra larga ($1.433,33) no cabe a 19px junto al pie: se reduce el
+  // cuerpo en vez de recortar el numero, que es el dato que importa.
+  const textoCentro = centro ?? `${pct}%`
+  const cuerpoCentro = textoCentro.length > 8 ? 15 : textoCentro.length > 6 ? 17 : 19
 
   return (
     <div className="flex flex-col items-center gap-2.5">
@@ -86,10 +90,17 @@ export default function AnilloProgreso({
             <span className="text-[11px] font-semibold text-phm-gray-soft">Sin datos</span>
           ) : (
             <>
-              <span className="tabular text-[19px] font-extrabold leading-none tracking-tight text-white">
-                {centro ?? `${pct}%`}
+              <span
+                className="tabular font-extrabold leading-none tracking-tight text-white"
+                style={{ fontSize: cuerpoCentro }}
+              >
+                {textoCentro}
               </span>
-              {pie && <span className="mt-1 text-[10px] text-phm-gray-soft">{pie}</span>}
+              {pie && (
+                <span className="mt-1.5 max-w-[80%] text-center text-[9.5px] leading-tight text-phm-gray-soft">
+                  {pie}
+                </span>
+              )}
             </>
           )}
         </div>
