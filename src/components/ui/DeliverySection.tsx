@@ -13,10 +13,16 @@ interface Props {
   entityType: 'MONTHLY_PLAN' | 'PROJECT'
   entityId: string
   existingAccess?: any
+  /** Datos del cliente, para compartir la entrega por WhatsApp o correo. */
+  clientName?: string
+  clientWhatsapp?: string | null
+  clientEmail?: string | null
+  projectName?: string
 }
 
 export default function DeliverySection({
   initialLink, onSave, canAdmin, clientId, entityType, entityId, existingAccess,
+  clientName, clientWhatsapp, clientEmail, projectName,
 }: Props) {
   const [link, setLink]               = useState(initialLink ?? '')
   const [saved, setSaved]             = useState(initialLink ?? '')
@@ -168,6 +174,10 @@ export default function DeliverySection({
             entityType={entityType}
             entityId={entityId}
             existing={existingAccess ?? null}
+            clientName={clientName}
+            clientWhatsapp={clientWhatsapp}
+            clientEmail={clientEmail}
+            projectName={projectName}
           />
         </div>
       )}

@@ -91,6 +91,13 @@ export default function EntregaSlugPage() {
 
   const { client, monthlyPlan, project } = data
 
+  // Agradecimiento: el mensaje escrito para el proyecto o, si no hay, uno por
+  // defecto con el nombre del cliente.
+  const mensajeGracias = project?.mensajeEntrega?.trim()
+    || (project
+      ? `Gracias por confiar en PHMavericks${client?.name ? `, ${client.name}` : ''}. Esperamos que disfrutes el resultado.`
+      : null)
+
   const deliveryLink  = monthlyPlan?.deliveryLink || project?.linkEntrega || null
   const embedInfo     = deliveryLink ? getGoogleDriveEmbedInfo(deliveryLink) : { type: null, embedUrl: null }
   const statusCfg     = monthlyPlan
@@ -171,8 +178,8 @@ export default function EntregaSlugPage() {
             <StatusIcon type={statusCfg.icon} />
             <span className="text-2xl font-bold tracking-tight">{statusCfg.label}</span>
           </div>
-          {project?.observaciones && (
-            <p className="mt-3 text-sm text-zinc-400 border-t border-zinc-700/50 pt-3">{project.observaciones}</p>
+          {mensajeGracias && (
+            <p className="mt-3 text-sm text-zinc-400 border-t border-zinc-700/50 pt-3">{mensajeGracias}</p>
           )}
         </div>
 
@@ -190,7 +197,7 @@ export default function EntregaSlugPage() {
                 <p className="text-xs text-zinc-300 font-mono truncate flex-1 select-all">{deliveryLink}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <a href={deliveryLink} target="_blank" rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#C9A84C]/10 border border-[#C9A84C]/25 text-[#C9A84C] hover:bg-[#C9A84C]/20 transition-colors text-sm font-semibold">
                   <ExternalLink className="w-4 h-4" />
@@ -260,7 +267,7 @@ export default function EntregaSlugPage() {
               {paymentCfg.label}
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {[
                 { label: 'Total',     value: formatCurrency(monthlyPlan.monthlyPrice ?? 0), cls: 'text-white' },
                 { label: 'Abonado',   value: formatCurrency(monthlyPlan.montoPagado ?? 0), cls: (monthlyPlan.montoPagado ?? 0) > 0 ? 'text-emerald-400' : 'text-zinc-300' },

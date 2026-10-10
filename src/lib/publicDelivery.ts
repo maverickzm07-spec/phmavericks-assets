@@ -24,9 +24,11 @@ export const PUBLIC_DELIVERY_INCLUDE = {
       estado: true,
       linkEntrega: true,
       fechaEntrega: true,
-      observaciones: true,
-      precioFinal: true,
-      ingresos: { select: { montoPagado: true } },
+      mensajeEntrega: true,
+      // `observaciones` NO se incluye a propósito: son notas internas
+      // (condiciones especiales, acuerdos, apuntes de producción) y el enlace
+      // de entrega es público para cualquiera que lo reciba.
+      // Los importes tampoco: el portal sirve para entregar, no para cobrar.
     },
   },
 } as const
@@ -64,18 +66,12 @@ export function serializePublicDelivery(access: any) {
   let project = null
   if (access.project) {
     const pr = access.project
-    const precioRef = pr.precioFinal ?? 0
-    const montoPagado = (pr.ingresos ?? []).reduce((s: number, i: any) => s + (i.montoPagado || 0), 0)
-    const saldoPendiente = precioRef > 0 ? Math.max(0, precioRef - montoPagado) : 0
     project = {
       nombre: pr.nombre,
       estado: pr.estado,
       linkEntrega: pr.linkEntrega,
       fechaEntrega: pr.fechaEntrega,
-      observaciones: pr.observaciones,
-      precioFinal: round2(precioRef),
-      montoPagado: round2(montoPagado),
-      saldoPendiente: round2(saldoPendiente),
+      mensajeEntrega: pr.mensajeEntrega ?? null,
     }
   }
 
