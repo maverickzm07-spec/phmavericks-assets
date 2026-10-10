@@ -42,3 +42,6 @@ prisma/migrations
 
 # claude code
 .claude/
+
+# Documentos adjuntos (cotizaciones, facturas). Nunca se versionan.
+uploads/

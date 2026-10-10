@@ -18,6 +18,7 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   ingresosCreados  Ingreso[] @relation("IngresosCreados")
+  gastosCreados    Gasto[]   @relation("GastosCreados")
   abonosCreados    Abono[]   @relation("AbonosCreados")
 }
 
@@ -32,10 +33,14 @@ enum Role {
 model Client {
   id                String          @id @default(cuid())
   name              String
-  business          String
+  // Razón social / negocio. Opcional: para registrar un cliente bastan
+  // nombre, contacto, correo y cédula o RUC.
+  business          String?
   contact           String?
   whatsapp          String?
   email             String?
+  // Cédula o RUC para facturación ante el SRI
+  cedulaRuc         String?
   status            ClientStatus    @default(ACTIVE)
   notes             String?
   servicePlanId     String?
@@ -136,12 +141,18 @@ enum PlanStatus {
   DELAYED
 }
 
+// Estados de producción vigentes: CONFIRMADO → GRABADO → EN_EDICION → ENTREGADO.
+// El estado de pago es independiente y se calcula desde los Ingreso del proyecto,
+// de modo que un trabajo puede estar ENTREGADO y seguir pendiente de cobro.
+// Los demás valores son legacy: los conservan proyectos anteriores al cambio.
 enum ProjectStatus {
+  CONFIRMADO
+  GRABADO
+  EN_EDICION
+  ENTREGADO
   PENDIENTE
   EN_PROCESO
-  EN_EDICION
   APROBADO
-  ENTREGADO
   COMPLETADO
   ATRASADO
 }
@@ -155,11 +166,21 @@ model ClientProject {
   monthlyPlanId String?
   monthlyPlan   MonthlyPlan?  @relation(fields: [monthlyPlanId], references: [id], onDelete: SetNull)
   nombre        String
+  // Descripción general del servicio contratado, en los términos acordados
+  descripcion   String?
   modalidad     Modalidad     @default(OCASIONAL)
-  estado        ProjectStatus @default(PENDIENTE)
+  estado        ProjectStatus @default(CONFIRMADO)
   linkEntrega   String?
+  // Carpeta de Google Drive donde se organizan los archivos finales
+  driveLink     String?
+  // Fecha de grabación o sesión; alimenta el calendario junto con fechaEntrega
+  fechaGrabacion DateTime?
   fechaEntrega  DateTime?
+  // Notas internas. NO se publican en el portal de entrega.
   observaciones String?
+  // Mensaje de agradecimiento que ve el cliente en el portal de entrega.
+  // Si está vacío se usa uno por defecto con el nombre del cliente.
+  mensajeEntrega String?
   // Precio base copiado del ServicePlan al momento de crear el proyecto
   precioBase    Float?
   // Precio final acordado con el cliente (editable sobre el precio base)
@@ -169,6 +190,9 @@ model ClientProject {
   contents         Content[]
   ingresos         Ingreso[]
   deliveryAccesses DeliveryAccess[]
+  documentos       Documento[]
+  gastos           Gasto[]
+  calendarEvents   CalendarEvent[]
 }
 
 model Content {
@@ -290,6 +314,47 @@ model Ingreso {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   abonos        Abono[]
+  documentos    Documento[]
+}
+
+// ── Documentos adjuntos ───────────────────────────────────────
+//
+// Archivos que respaldan un proyecto o un movimiento de dinero: la cotización
+// aprobada, la factura emitida por el SRI (PDF y XML) o un comprobante de pago.
+// El binario vive en disco (ver src/lib/storage.ts); aquí queda su metadato.
+
+enum TipoDocumento {
+  COTIZACION
+  FACTURA_PDF
+  FACTURA_XML
+  COMPROBANTE
+  OTRO
+}
+
+model Documento {
+  id             String        @id @default(cuid())
+  tipo           TipoDocumento
+  // Nombre con el que el usuario subió el archivo, para mostrarlo y descargarlo
+  nombreOriginal String
+  // Nombre interno en el almacén; nunca se construye con datos del usuario
+  archivo        String        @unique
+  mimeType       String
+  tamanoBytes    Int
+  // Número de factura cuando corresponda (SRI)
+  numeroFactura  String?
+  projectId      String?
+  project        ClientProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ingresoId      String?
+  ingreso        Ingreso?       @relation(fields: [ingresoId], references: [id], onDelete: Cascade)
+  gastoId        String?
+  gasto          Gasto?         @relation(fields: [gastoId], references: [id], onDelete: Cascade)
+  subidoPor      String
+  createdAt      DateTime       @default(now())
+
+  @@index([projectId])
+  @@index([ingresoId])
+  @@index([gastoId])
+  @@index([tipo])
 }
 
 model Abono {
@@ -303,6 +368,56 @@ model Abono {
   creadoPor     String
   creadoPorUser User        @relation("AbonosCreados", fields: [creadoPor], references: [id])
   createdAt     DateTime    @default(now())
+}
+
+// ── Gastos ────────────────────────────────────────────────────
+//
+// Las categorías viven en su propia tabla para poder ampliarlas desde la
+// aplicación, sin tocar el código ni desplegar.
+
+model CategoriaGasto {
+  id          String   @id @default(cuid())
+  nombre      String   @unique
+  descripcion String?
+  // Las categorías base no se pueden eliminar, solo desactivar
+  esDefault   Boolean  @default(false)
+  activa      Boolean  @default(true)
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  gastos      Gasto[]
+}
+
+enum EstadoGasto {
+  PAGADO
+  PENDIENTE
+}
+
+model Gasto {
+  id            String         @id @default(cuid())
+  fecha         DateTime
+  concepto      String
+  categoriaId   String
+  categoria     CategoriaGasto @relation(fields: [categoriaId], references: [id])
+  monto         Float
+  proveedor     String?
+  metodoPago    MetodoPago?
+  estado        EstadoGasto    @default(PAGADO)
+  // Con proyecto: afecta el resultado de ese trabajo.
+  // Sin proyecto: gasto general de la empresa.
+  projectId     String?
+  project       ClientProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  observaciones String?
+  creadoPor     String
+  creadoPorUser User           @relation("GastosCreados", fields: [creadoPor], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  documentos    Documento[]
+
+  @@index([fecha])
+  @@index([categoriaId])
+  @@index([projectId])
+  @@index([estado])
 }
 
 model VerificationCode {
@@ -406,10 +521,25 @@ model CalendarEvent {
   notes         String?
   clientId      String?
   clientName    String?
+  // Proyecto que originó el evento. Permite mantener las fechas al día cuando
+  // el proyecto se edita; antes solo se relacionaban por el texto de las notas,
+  // que se perdía al renombrar el proyecto.
+  projectId     String?
+  project       ClientProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   status        EventStatus @default(AGENDADO)
   googleEventId String?
   source        EventSource @default(PHM)
   syncStatus    SyncStatus  @default(PENDING)
+  // Momento de la última sincronización correcta con Google.
+  //
+  // Hace falta un campo propio: `updatedAt` se refresca en cada escritura, así
+  // que marcar un evento como sincronizado lo hacía parecer "más nuevo" que su
+  // versión en Google y los cambios hechos allí no volvían nunca. Comparando
+  // contra esta marca se sabe de qué lado hubo un cambio real.
+  lastSyncedAt  DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  @@index([googleEventId])
+  @@index([projectId])
 }
