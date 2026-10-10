@@ -176,8 +176,8 @@ export default function ClienteDetailPage() {
   )
   if (!client) return <PremiumCard padding="lg" className="text-center"><p className="text-phm-gray">Cliente no encontrado.</p></PremiumCard>
 
-  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   return (
@@ -251,7 +251,7 @@ export default function ClienteDetailPage() {
               <div className="px-4 py-3 bg-phm-surface border border-phm-border-soft rounded-lg space-y-1">
                 <p className="text-sm text-white font-medium">{client.servicePlan.nombre}</p>
                 <p className="text-xs text-phm-gray-soft">
-                  {canAdmin && <span className="text-phm-gold">${client.servicePlan.precio} · </span>}
+                  {canAdmin && <span className="text-phm-red-bright">${client.servicePlan.precio} · </span>}
                   {TIPO_LABEL[client.servicePlan.tipo]}
                 </p>
                 <div className="flex gap-3 flex-wrap text-xs text-phm-gray-soft mt-1">
@@ -260,18 +260,18 @@ export default function ClienteDetailPage() {
                   {client.servicePlan.cantidadFotos > 0 && <span><span className="text-amber-400">◆</span> {client.servicePlan.cantidadFotos} fotos</span>}
                   {client.servicePlan.cantidadImagenesFlyers > 0 && <span><span className="text-pink-400">◈</span> {client.servicePlan.cantidadImagenesFlyers} imgs/flyers</span>}
                 </div>
-                <p className="text-xs text-phm-gray-soft mt-1">Para cambiar el servicio, usa <span className="text-phm-gold">Asignar a cliente</span> en la sección Servicios.</p>
+                <p className="text-xs text-phm-gray-soft mt-1">Para cambiar el servicio, usa <span className="text-phm-red-bright">Asignar a cliente</span> en la sección Servicios.</p>
               </div>
             ) : (
               <div className="px-4 py-3 bg-phm-surface border border-phm-border-soft rounded-lg">
-                <p className="text-sm text-phm-gray-soft">Sin servicio asignado. Usa <span className="text-phm-gold">Asignar a cliente</span> en la sección Servicios.</p>
+                <p className="text-sm text-phm-gray-soft">Sin servicio asignado. Usa <span className="text-phm-red-bright">Asignar a cliente</span> en la sección Servicios.</p>
               </div>
             )}
           </div>
           <div>
             <label className={labelCls}>Notas</label>
             <textarea name="notes" value={form.notes} onChange={handleChange} rows={3}
-              className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
+              className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors resize-none" />
           </div>
           {error && <div className="px-4 py-3 bg-red-950/60 border border-red-900/60 rounded-lg text-sm text-red-300">{error}</div>}
           {success && <div className="px-4 py-3 bg-emerald-950/60 border border-emerald-900/60 rounded-lg text-sm text-emerald-300">{success}</div>}
@@ -286,7 +286,7 @@ export default function ClienteDetailPage() {
       {canAdmin && (
         <PremiumCard padding="md">
           <div className="flex items-center gap-2 mb-3">
-            <Link2 className="w-4 h-4 text-phm-gold" />
+            <Link2 className="w-4 h-4 text-phm-red-bright" />
             <h2 className="font-semibold text-white">Portal del cliente</h2>
           </div>
           <p className="text-xs text-phm-gray-soft mb-4">
@@ -295,9 +295,9 @@ export default function ClienteDetailPage() {
           {portalToken ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2 p-3 bg-phm-surface border border-phm-border-soft rounded-lg">
-                <code className="text-xs text-phm-gold flex-1 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/cliente/${portalToken}`}</code>
+                <code className="text-xs text-phm-red-bright flex-1 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}/cliente/${portalToken}`}</code>
                 <button onClick={handleCopyPortalLink}
-                  className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-white px-2.5 py-1.5 rounded-md border border-phm-border-soft hover:border-phm-gold/40 transition-all">
+                  className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-white px-2.5 py-1.5 rounded-md border border-phm-border-soft hover:border-phm-red-bright/40 transition-all">
                   {copied ? <><Check className="w-3 h-3 text-emerald-400" /> Copiado</> : <><Copy className="w-3 h-3" /> Copiar</>}
                 </button>
               </div>
@@ -324,7 +324,7 @@ export default function ClienteDetailPage() {
             + Registrar ingreso
           </Link>
           <Link href={`/ingresos?clienteId=${client.id}`}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-all">
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-all">
             Ver todos los ingresos <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -336,7 +336,7 @@ export default function ClienteDetailPage() {
           <div className="flex items-center justify-between px-5 py-4 border-b border-phm-border-soft">
             <h2 className="font-semibold text-white">Ingresos del cliente</h2>
             <Link href={`/ingresos?clienteId=${client.id}`}
-              className="text-sm text-phm-gray hover:text-phm-gold transition-colors">Ver todos →</Link>
+              className="text-sm text-phm-gray hover:text-phm-red-bright transition-colors">Ver todos →</Link>
           </div>
 
           {loadingIngresos ? (

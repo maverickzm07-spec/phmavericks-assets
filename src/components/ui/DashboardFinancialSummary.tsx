@@ -24,18 +24,27 @@ function SummaryMetric({
   value,
   detail,
   icon: Icon,
+  tono = 'neutro',
   muted = false,
 }: {
   label: string
   value: string
   detail: string
   icon: typeof CircleDollarSign
+  /** El color del icono dice de qué habla la cifra, no solo decora. */
+  tono?: 'entra' | 'sale' | 'pendiente' | 'neutro'
   muted?: boolean
 }) {
+  const tonos = {
+    entra: 'bg-phm-ok/14 text-phm-ok',
+    sale: 'bg-phm-warn/14 text-phm-warn',
+    pendiente: 'bg-phm-red-bright/16 text-phm-red-bright',
+    neutro: 'bg-white/[0.07] text-white',
+  }
   return (
     <div className="flex min-w-0 items-center gap-3 border-b border-white/[0.07] pb-4 last:border-0 last:pb-0 md:border-b-0 md:border-r md:pb-0 md:pr-6 md:last:border-0 md:last:pr-0">
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/[0.045] text-phm-gold ring-1 ring-white/[0.08]">
-        <Icon className="h-4 w-4" strokeWidth={1.8} />
+      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${muted ? tonos.neutro : tonos[tono]}`}>
+        <Icon className="h-4 w-4" strokeWidth={2} />
       </div>
       <div className="min-w-0">
         <p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-phm-gray-soft">{label}</p>
@@ -66,9 +75,10 @@ export default function DashboardFinancialSummary({
           {showFinancials ? (
             <SummaryMetric
               label="Ingresos cobrados"
-              value={loading || income === null ? '—' : `$${income.toLocaleString('es-EC', { maximumFractionDigits: 0 })}`}
+              value={loading || income === null ? '—' : dinero(income)}
               detail={incomeChange === null ? 'Este mes' : `${incomeChange >= 0 ? '+' : ''}${incomeChange}% vs mes anterior`}
               icon={CircleDollarSign}
+              tono="entra"
             />
           ) : (
             <SummaryMetric label="Ingresos cobrados" value="—" detail="Solo visible para administración" icon={CircleDollarSign} muted />
@@ -79,6 +89,7 @@ export default function DashboardFinancialSummary({
               value={receivable === null ? '—' : `$${receivable.toLocaleString('es-EC', { maximumFractionDigits: 0 })}`}
               detail={receivable === null ? 'Revisar en Ingresos' : receivable > 0 ? 'Saldos de proyectos y planes' : 'Sin saldos pendientes'}
               icon={WalletCards}
+              tono="pendiente"
               muted={receivable === 0}
             />
           ) : (
@@ -90,6 +101,7 @@ export default function DashboardFinancialSummary({
               value={loading ? '—' : dinero(expenses)}
               detail="Salida real de caja"
               icon={Receipt}
+              tono="sale"
             />
           ) : (
             <SummaryMetric label="Gastos pagados" value="—" detail="Solo visible para administración" icon={Receipt} muted />
@@ -100,6 +112,7 @@ export default function DashboardFinancialSummary({
               value={loading ? '—' : dinero(operatingResult)}
               detail="Cobrado menos pagado"
               icon={TrendingUp}
+              tono="neutro"
             />
           ) : (
             <SummaryMetric
@@ -118,7 +131,7 @@ export default function DashboardFinancialSummary({
       </div>
       <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-3">
         <span className="text-xs text-phm-gray-soft">Lectura rápida de la operación</span>
-        <Link href={showFinancials ? '/ingresos' : '/proyectos'} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gold transition-colors hover:text-phm-gold-bright">
+        <Link href={showFinancials ? '/ingresos' : '/proyectos'} className="inline-flex items-center gap-1 text-xs font-medium text-phm-red-bright transition-colors hover:text-red-400">
           Ver detalle <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
       </div>

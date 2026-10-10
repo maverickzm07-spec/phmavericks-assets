@@ -60,9 +60,9 @@ export default function Sparkline({
           <stop offset="100%" stopColor="rgba(0,0,0,0)" />
         </linearGradient>
         <linearGradient id={gid + '-line'} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#C9A84C" />
+          <stop offset="0%" stopColor="#C41E1E" />
           <stop offset="55%" stopColor={color} />
-          <stop offset="100%" stopColor="#E5C76B" />
+          <stop offset="100%" stopColor="#E8696B" />
         </linearGradient>
         <filter id={gid + '-glow'} x="-20%" y="-50%" width="140%" height="200%">
           <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />

@@ -61,7 +61,7 @@ export default function DeliverySection({
     })
   }
 
-  const inputCls = 'flex-1 px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors placeholder:text-phm-gray-soft/50'
+  const inputCls = 'flex-1 px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors placeholder:text-phm-gray-soft/50'
 
   return (
     <div className="space-y-4">
@@ -85,7 +85,7 @@ export default function DeliverySection({
           <button
             onClick={handleSave}
             disabled={saving || !isDirty}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-phm-gold/10 border border-phm-gold/25 text-phm-gold hover:bg-phm-gold/20 transition-colors text-sm font-semibold disabled:opacity-40 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-phm-red-bright/10 border border-phm-red-bright/25 text-phm-red-bright hover:bg-phm-red-bright/20 transition-colors text-sm font-semibold disabled:opacity-40 whitespace-nowrap"
           >
             {saving
               ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -105,14 +105,14 @@ export default function DeliverySection({
             href={saved}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-phm-surface border border-phm-border-soft text-phm-gray hover:text-white hover:border-phm-gold/40 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-phm-surface border border-phm-border-soft text-phm-gray hover:text-white hover:border-phm-red-bright/40 transition-colors text-sm font-medium"
           >
             <ExternalLink className="w-4 h-4" />
             Abrir entrega
           </a>
           <button
             onClick={copyLink}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-phm-surface border border-phm-border-soft text-phm-gray hover:text-white hover:border-phm-gold/40 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-phm-surface border border-phm-border-soft text-phm-gray hover:text-white hover:border-phm-red-bright/40 transition-colors text-sm font-medium"
           >
             {copied
               ? <><Check className="w-4 h-4 text-emerald-400" /> Copiado</>
@@ -166,7 +166,7 @@ export default function DeliverySection({
       {canAdmin && (
         <div className="pt-3 border-t border-phm-border-soft">
           <div className="flex items-center gap-2 mb-3">
-            <Link2 className="w-4 h-4 text-phm-gold" />
+            <Link2 className="w-4 h-4 text-phm-red-bright" />
             <p className="text-sm font-medium text-white">Link privado para el cliente</p>
           </div>
           <DeliveryAccessCard

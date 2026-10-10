@@ -82,8 +82,8 @@ function NuevoContenidoForm() {
     finally { setLoading(false) }
   }
 
-  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   return (
@@ -178,7 +178,7 @@ function NuevoContenidoForm() {
           <div>
             <label className={labelCls}>Fecha de publicación</label>
             <input name="publishedAt" value={form.publishedAt} onChange={handleChange} type="date"
-              className="px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors" />
+              className="px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
           </div>
 
           <div>
@@ -189,12 +189,12 @@ function NuevoContenidoForm() {
                 { name: 'likes', label: 'Likes', color: 'text-red-400' },
                 { name: 'comments', label: 'Comentarios', color: 'text-blue-400' },
                 { name: 'shares', label: 'Compartidos', color: 'text-emerald-400' },
-                { name: 'saves', label: 'Guardados', color: 'text-phm-gold' },
+                { name: 'saves', label: 'Guardados', color: 'text-phm-red-bright' },
               ].map((field) => (
                 <div key={field.name} className="bg-phm-surface border border-phm-border-soft rounded-lg p-3">
                   <label className={`block text-xs mb-1.5 text-center ${field.color}`}>{field.label}</label>
                   <input name={field.name} type="number" min="0" value={(form as any)[field.name]} onChange={handleChange}
-                    className="w-full px-2 py-1.5 bg-phm-charcoal border border-phm-border-soft rounded text-white text-sm text-center focus:outline-none focus:border-phm-gold/40" />
+                    className="w-full px-2 py-1.5 bg-phm-charcoal border border-phm-border-soft rounded text-white text-sm text-center focus:outline-none focus:border-phm-red-bright/40" />
                 </div>
               ))}
             </div>
@@ -203,7 +203,7 @@ function NuevoContenidoForm() {
           <div>
             <label className={labelCls}>Observaciones</label>
             <textarea name="observations" value={form.observations} onChange={handleChange} rows={2}
-              className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
+              className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors resize-none" />
           </div>
 
           {error && <div className="px-4 py-3 bg-red-950/60 border border-red-900/60 rounded-lg text-sm text-red-300">{error}</div>}
@@ -214,7 +214,7 @@ function NuevoContenidoForm() {
               {loading ? 'Guardando...' : 'Guardar Contenido'}
             </button>
             <Link href="/proyectos"
-              className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-all text-center">
+              className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg transition-all text-center">
               Cancelar
             </Link>
           </div>

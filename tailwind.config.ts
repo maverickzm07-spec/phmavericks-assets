@@ -11,24 +11,21 @@ const config: Config = {
       colors: {
         // Paleta oficial PHMavericks
         phm: {
-          black: '#050506',
+          black: '#050505',
           dark: '#09090B',
-          charcoal: '#111113',
-          'charcoal-2': '#111113',
-          card: '#18181B',
-          surface: '#141417',
-          'surface-2': '#1A1A1F',
-          border: '#27272A',
-          'border-soft': '#1F1F23',
+          charcoal: '#121214',
+          'charcoal-2': '#121214',
+          card: '#1A1A1D',
+          surface: '#1A1A1D',
+          'surface-2': '#232327',
+          border: 'rgba(255,255,255,0.14)',
+          'border-soft': 'rgba(255,255,255,0.08)',
           red: '#8B0000',
           'red-mid': '#B00000',
-          'red-bright': '#E50914',
-          redBright: '#E50914',
-          'red-hover': '#A00000',
+          'red-bright': '#C41E1E',
+          redBright: '#C41E1E',
+          'red-hover': '#660000',
           'red-light': '#C62828',
-          gold: '#C9A84C',
-          'gold-soft': '#A88B3A',
-          'gold-bright': '#E5C76B',
           white: '#FFFFFF',
           gray: '#A5A5AC',
           'gray-soft': '#6E6E76',
@@ -48,9 +45,8 @@ const config: Config = {
         },
         brand: {
           red: '#8B0000',
-          'red-hover': '#A00000',
+          'red-hover': '#660000',
           'red-light': '#C62828',
-          gold: '#C9A84C',
         },
       },
       fontFamily: {
@@ -65,8 +61,6 @@ const config: Config = {
       boxShadow: {
         'glow-red': '0 0 24px rgba(139, 0, 0, 0.35)',
         'glow-red-strong': '0 0 40px rgba(229, 9, 20, 0.45)',
-        'glow-gold': '0 0 24px rgba(201, 168, 76, 0.30)',
-        'glow-gold-strong': '0 0 40px rgba(201, 168, 76, 0.45)',
         // Dos capas: una de contacto y otra de elevación. Es lo que da la
         // sensación de panel flotante en vez de bloque plano.
         'premium': '0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35)',
@@ -76,9 +70,8 @@ const config: Config = {
         'inset-soft': 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
       },
       backgroundImage: {
-        'gradient-hero': 'radial-gradient(circle at 20% 30%, rgba(139, 0, 0, 0.18), transparent 55%), radial-gradient(circle at 80% 70%, rgba(201, 168, 76, 0.10), transparent 60%), linear-gradient(135deg, #0F0F12 0%, #18181B 100%)',
+        'gradient-hero': 'radial-gradient(circle at 20% 30%, rgba(139, 0, 0, 0.18), transparent 55%), linear-gradient(135deg, #0F0F12 0%, #18181B 100%)',
         'gradient-active': 'linear-gradient(135deg, rgba(139, 0, 0, 0.95) 0%, rgba(176, 0, 0, 0.85) 100%)',
-        'gradient-gold': 'linear-gradient(135deg, #C9A84C 0%, #E5C76B 100%)',
         'gradient-red-soft': 'linear-gradient(135deg, rgba(139, 0, 0, 0.12) 0%, rgba(229, 9, 20, 0.04) 100%)',
         'gradient-card': 'linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%)',
       },

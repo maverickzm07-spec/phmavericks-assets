@@ -16,8 +16,8 @@ const toneStyles: Record<Tone, { iconBg: string; iconRing: string; iconColor: st
   gold: {
     iconBg: 'bg-amber-950/70',
     iconRing: 'ring-1 ring-amber-700/60',
-    iconColor: 'text-phm-gold-bright',
-    accent: 'rgba(201, 168, 76, 0.20)',
+    iconColor: 'text-red-400',
+    accent: 'rgba(196, 30, 30, 0.20)',
   },
   green: {
     iconBg: 'bg-emerald-950/70',
@@ -90,7 +90,7 @@ export default function KPICard({
           <Icon className={`w-5 h-5 ${t.iconColor}`} strokeWidth={2} />
         </div>
         {href && ctaLabel && (
-          <span className="text-[11px] font-medium text-phm-gray-soft group-hover:text-phm-gold transition-colors flex items-center gap-1">
+          <span className="text-[11px] font-medium text-phm-gray-soft group-hover:text-phm-red-bright transition-colors flex items-center gap-1">
             {ctaLabel}
             <ArrowUpRight className="w-3.5 h-3.5" />
           </span>
@@ -107,8 +107,8 @@ export default function KPICard({
               className="h-full rounded-full transition-all duration-700"
               style={{
                 width: `${Math.min(100, Math.max(0, progress))}%`,
-                background: 'linear-gradient(90deg, #C9A84C 0%, #E50914 100%)',
-                boxShadow: '0 0 10px rgba(201, 168, 76, 0.5)',
+                background: 'linear-gradient(90deg, #C41E1E 0%, #E50914 100%)',
+                boxShadow: '0 0 10px rgba(196, 30, 30, 0.55)',
               }}
             />
           </div>
@@ -119,7 +119,7 @@ export default function KPICard({
 
   if (href) {
     return (
-      <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-phm-gold/50 rounded-2xl">
+      <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-phm-red-bright/50 rounded-2xl">
         {inner}
       </Link>
     )

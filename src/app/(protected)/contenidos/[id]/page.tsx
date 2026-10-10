@@ -88,8 +88,8 @@ export default function ContenidoDetailPage() {
   if (!content) return <PremiumCard padding="lg" className="text-center"><p className="text-phm-gray">Contenido no encontrado.</p></PremiumCard>
 
   const engagement = content.likes + content.comments + content.shares + content.saves
-  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   return (
@@ -121,7 +121,7 @@ export default function ContenidoDetailPage() {
               { label: 'Likes', value: content.likes, icon: '❤️', color: 'text-red-400' },
               { label: 'Comentarios', value: content.comments, icon: '💬', color: 'text-blue-400' },
               { label: 'Compartidos', value: content.shares, icon: '↗️', color: 'text-emerald-400' },
-              { label: 'Guardados', value: content.saves, icon: '🔖', color: 'text-phm-gold' },
+              { label: 'Guardados', value: content.saves, icon: '🔖', color: 'text-phm-red-bright' },
             ].map((m) => (
               <div key={m.label} className="bg-phm-surface border border-phm-border-soft rounded-lg p-4 text-center">
                 <p className="text-sm mb-1">{m.icon}</p>
@@ -200,7 +200,7 @@ export default function ContenidoDetailPage() {
           <div>
             <label className={labelCls}>Fecha de publicación</label>
             <input name="publishedAt" value={form.publishedAt} onChange={handleChange} type="date"
-              className="px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors" />
+              className="px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
           </div>
 
           <div>
@@ -211,12 +211,12 @@ export default function ContenidoDetailPage() {
                 { name: 'likes', label: 'Likes', color: 'text-red-400' },
                 { name: 'comments', label: 'Comentarios', color: 'text-blue-400' },
                 { name: 'shares', label: 'Compartidos', color: 'text-emerald-400' },
-                { name: 'saves', label: 'Guardados', color: 'text-phm-gold' },
+                { name: 'saves', label: 'Guardados', color: 'text-phm-red-bright' },
               ].map((field) => (
                 <div key={field.name} className="bg-phm-surface border border-phm-border-soft rounded-lg p-3">
                   <label className={`block text-xs mb-1.5 text-center ${field.color}`}>{field.label}</label>
                   <input name={field.name} type="number" min="0" value={form[field.name] || 0} onChange={handleChange}
-                    className="w-full px-2 py-1.5 bg-phm-charcoal border border-phm-border-soft rounded text-white text-sm text-center focus:outline-none focus:border-phm-gold/40" />
+                    className="w-full px-2 py-1.5 bg-phm-charcoal border border-phm-border-soft rounded text-white text-sm text-center focus:outline-none focus:border-phm-red-bright/40" />
                 </div>
               ))}
             </div>
@@ -225,7 +225,7 @@ export default function ContenidoDetailPage() {
           <div>
             <label className={labelCls}>Observaciones</label>
             <textarea name="observations" value={form.observations} onChange={handleChange} rows={3}
-              className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
+              className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors resize-none" />
           </div>
 
           {error && <div className="px-4 py-3 bg-red-950/60 border border-red-900/60 rounded-lg text-sm text-red-300">{error}</div>}

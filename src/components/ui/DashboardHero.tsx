@@ -98,7 +98,7 @@ export default function DashboardHero({
         <div className="absolute inset-0 bg-gradient-card" />
         <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
       </div>
-      <div className="absolute top-0 left-0 right-0 h-px gold-line" />
+      <div className="absolute top-0 left-0 right-0 h-px linea-acento" />
 
       <div className="relative grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6 p-6 md:p-8 items-center">
         {/* Left column */}
@@ -115,7 +115,7 @@ export default function DashboardHero({
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(v => !v)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:border-phm-gold/40 hover:bg-white/10 transition-all text-xs font-semibold text-white"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:border-phm-red-bright/40 hover:bg-white/10 transition-all text-xs font-semibold text-white"
                 >
                   {loading && <Loader2 className="w-3 h-3 animate-spin text-phm-gray-soft" />}
                   <span>{activeLabel}</span>
@@ -133,10 +133,10 @@ export default function DashboardHero({
                             <button
                               onClick={() => handleSelect(r.value)}
                               className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm transition-colors text-left ${
-                                isActive ? 'text-phm-gold bg-white/5' : 'text-white hover:bg-white/5'
+                                isActive ? 'text-phm-red-bright bg-white/5' : 'text-white hover:bg-white/5'
                               }`}
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-phm-gold' : 'bg-transparent'}`} />
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-phm-red-bright' : 'bg-transparent'}`} />
                               {r.label}
                             </button>
                           </li>
@@ -154,7 +154,7 @@ export default function DashboardHero({
                               type="date"
                               value={customStart}
                               onChange={e => setCustomStart(e.target.value)}
-                              className="w-full bg-phm-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-phm-gold/40 [color-scheme:dark]"
+                              className="w-full bg-phm-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-phm-red-bright/40 [color-scheme:dark]"
                             />
                           </div>
                           <div>
@@ -163,7 +163,7 @@ export default function DashboardHero({
                               type="date"
                               value={customEnd}
                               onChange={e => setCustomEnd(e.target.value)}
-                              className="w-full bg-phm-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-phm-gold/40 [color-scheme:dark]"
+                              className="w-full bg-phm-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-phm-red-bright/40 [color-scheme:dark]"
                             />
                           </div>
                         </div>
@@ -185,7 +185,7 @@ export default function DashboardHero({
           {/* Date range label */}
           {rangeStart && rangeEnd && (
             <div className="flex items-center gap-1.5 mb-3">
-              <CalendarRange className="w-3.5 h-3.5 text-phm-gold/60 flex-shrink-0" />
+              <CalendarRange className="w-3.5 h-3.5 text-phm-red-bright/60 flex-shrink-0" />
               <span className="text-[11px] text-phm-gray-soft">
                 {rangeStart} — {rangeEnd}
               </span>
@@ -220,7 +220,7 @@ export default function DashboardHero({
           <div className="mt-5 flex items-center gap-3">
             <a
               href="/ingresos"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-phm-gold hover:text-phm-gold-bright transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-phm-red-bright hover:text-red-400 transition-colors"
             >
               Ver detalle de ingresos
               <ArrowUpRight className="w-4 h-4" />
@@ -230,7 +230,7 @@ export default function DashboardHero({
 
         {/* Right column — chart */}
         <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-transparent via-phm-gold/10 to-transparent rounded-2xl blur-xl pointer-events-none" />
+          <div className="absolute -inset-2 bg-gradient-to-r from-transparent via-phm-red-bright/10 to-transparent rounded-2xl blur-xl pointer-events-none" />
           {!hasData && series.length > 0 ? (
             <div className="flex items-center justify-center h-[140px]">
               <p className="text-sm text-phm-gray-soft">Sin ingresos en este rango</p>

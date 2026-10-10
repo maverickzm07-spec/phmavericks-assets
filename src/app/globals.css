@@ -121,12 +121,12 @@
     border: 1px solid rgba(255,255,255,0.08);
   }
 
-  .gold-line {
+  .linea-acento {
     background: linear-gradient(90deg, transparent, #C41E1E, transparent);
     height: 1px;
   }
 
-  .text-gold-premium {
+  .text-acento-premium {
     background: linear-gradient(135deg, #FFFFFF 0%, #E8A5A5 55%, #C41E1E 100%);
     -webkit-background-clip: text;
             background-clip: text;

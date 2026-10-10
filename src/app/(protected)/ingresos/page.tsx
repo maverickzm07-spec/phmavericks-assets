@@ -54,8 +54,8 @@ function calcAuto(monto: string, pagado: string) {
   return { saldo, pct, estado }
 }
 
-const inputCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-const selectCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+const inputCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+const selectCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 const labelCls = 'block text-xs font-medium text-phm-gray-soft mb-1.5'
 
 const ModalWrap = ({ children, onClose }: { children: React.ReactNode; onClose: () => void }) => (
@@ -212,9 +212,9 @@ function IngresosPageInner() {
   return (
     <div className="space-y-6">
       <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+        <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">Finanzas</span>
+          <span className="text-acento-premium">Finanzas</span>
         </div>
         <div className="flex items-start justify-between mt-1">
           <div>
@@ -230,7 +230,7 @@ function IngresosPageInner() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {[
-          { label: 'Hoy', value: totales?.hoy || 0, color: 'text-phm-gold', money: true },
+          { label: 'Hoy', value: totales?.hoy || 0, color: 'text-phm-red-bright', money: true },
           { label: 'Esta semana', value: totales?.semana || 0, color: 'text-blue-400', money: true },
           { label: 'Este mes', value: totales?.mes || 0, color: 'text-emerald-400', money: true },
           { label: 'Este año', value: totales?.anio || 0, color: 'text-purple-400', money: true },
@@ -270,12 +270,12 @@ function IngresosPageInner() {
             </div>
             {filtroPeriodo === 'rango' && (
               <div className="flex gap-2 items-center">
-                <input type="date" value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors" />
+                <input type="date" value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
                 <span className="text-phm-gray-soft text-xs">—</span>
-                <input type="date" value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors" />
+                <input type="date" value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
               </div>
             )}
-            <select value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors ml-auto">
+            <select value={filtroCliente} onChange={e => setFiltroCliente(e.target.value)} className="px-3 py-1 text-xs bg-phm-surface border border-phm-border-soft rounded-md text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors ml-auto">
               <option value="">Todos los clientes</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name} — {c.business}</option>)}
             </select>
@@ -335,8 +335,8 @@ function IngresosPageInner() {
                     <td className="px-4 py-3 text-xs text-phm-gray-soft whitespace-nowrap">{ing.metodoPago ? METODO_LABEL[ing.metodoPago] : '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 justify-end flex-wrap min-w-[180px]">
-                        <button onClick={() => openDetalle(ing)} className="px-2 py-1 text-xs font-medium text-phm-gray hover:text-phm-gold border border-phm-border-soft hover:border-phm-gold/40 rounded transition-all">Ver</button>
-                        <button onClick={() => openEdit(ing)} className="px-2 py-1 text-xs font-medium text-phm-gray hover:text-phm-gold border border-phm-border-soft hover:border-phm-gold/40 rounded transition-all">Editar</button>
+                        <button onClick={() => openDetalle(ing)} className="px-2 py-1 text-xs font-medium text-phm-gray hover:text-phm-red-bright border border-phm-border-soft hover:border-phm-red-bright/40 rounded transition-all">Ver</button>
+                        <button onClick={() => openEdit(ing)} className="px-2 py-1 text-xs font-medium text-phm-gray hover:text-phm-red-bright border border-phm-border-soft hover:border-phm-red-bright/40 rounded transition-all">Editar</button>
                         {ing.estadoPago !== 'PAGADO' && <button onClick={() => openAbono(ing)} className="px-2 py-1 text-xs font-medium text-blue-300 border border-blue-900/50 bg-blue-950/30 hover:bg-blue-950/60 rounded transition-all">+ Abono</button>}
                         {ing.estadoPago !== 'PAGADO' && <button onClick={() => handleEstado(ing, 'PAGADO')} className="px-2 py-1 text-xs font-medium text-emerald-300 border border-emerald-900/50 bg-emerald-950/30 hover:bg-emerald-950/60 rounded transition-all">✓ Pagado</button>}
                         {ing.estadoPago !== 'PENDIENTE' && <button onClick={() => handleEstado(ing, 'PENDIENTE')} className="px-2 py-1 text-xs font-medium text-amber-300 border border-amber-900/50 bg-amber-950/30 hover:bg-amber-950/60 rounded transition-all">Pendiente</button>}
@@ -406,7 +406,7 @@ function IngresosPageInner() {
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Observaciones</label>
-                  <textarea name="observaciones" value={form.observaciones} onChange={handleFormChange} rows={2} placeholder="Notas adicionales..." className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
+                  <textarea name="observaciones" value={form.observaciones} onChange={handleFormChange} rows={2} placeholder="Notas adicionales..." className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors resize-none" />
                 </div>
               </div>
               {formError && <div className="px-4 py-3 bg-red-950/60 border border-red-900/60 rounded-lg text-sm text-red-300">{formError}</div>}

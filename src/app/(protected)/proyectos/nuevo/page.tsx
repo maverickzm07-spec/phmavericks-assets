@@ -183,8 +183,8 @@ function NuevoProyectoForm() {
     }
   }
 
-  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   const saldo = form.precioFinal
@@ -260,8 +260,8 @@ function NuevoProyectoForm() {
           <p className="text-xs text-phm-gray-soft mb-4">Adjunta el PDF que el cliente aprobó. Queda guardado en la ficha del proyecto.</p>
 
           <label htmlFor="cotizacion"
-            className="flex items-center gap-3 px-4 py-3 bg-phm-surface border border-dashed border-phm-border-soft hover:border-phm-gold/40 rounded-lg cursor-pointer transition-colors">
-            <FileText className="w-4 h-4 text-phm-gold flex-shrink-0" />
+            className="flex items-center gap-3 px-4 py-3 bg-phm-surface border border-dashed border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg cursor-pointer transition-colors">
+            <FileText className="w-4 h-4 text-phm-red-bright flex-shrink-0" />
             <span className="text-sm text-phm-gray truncate">
               {cotizacion ? cotizacion.name : 'Seleccionar archivo PDF (máximo 10 MB)'}
             </span>
@@ -368,7 +368,7 @@ function NuevoProyectoForm() {
               </p>
             </div>
             <button type="button" onClick={() => setVerEntregables((v) => !v)}
-              className="flex-shrink-0 text-xs px-3 py-1.5 text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-colors">
+              className="flex-shrink-0 text-xs px-3 py-1.5 text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-colors">
               {verEntregables ? 'Ocultar' : 'Agregar detalle'}
             </button>
           </div>
@@ -394,7 +394,7 @@ function NuevoProyectoForm() {
                 </div>
               ))}
               <button type="button" onClick={addEntregable}
-                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 text-phm-gold border border-phm-gold/30 hover:border-phm-gold/60 bg-phm-surface rounded-lg transition-colors">
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 text-phm-red-bright border border-phm-red-bright/30 hover:border-phm-red-bright/60 bg-phm-surface rounded-lg transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Agregar entregable
               </button>
             </div>
@@ -410,7 +410,7 @@ function NuevoProyectoForm() {
             {loading ? 'Guardando...' : 'Guardar proyecto'}
           </button>
           <Link href="/proyectos"
-            className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-colors">
+            className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg transition-colors">
             Cancelar
           </Link>
         </div>

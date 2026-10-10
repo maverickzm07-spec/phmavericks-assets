@@ -64,14 +64,14 @@ export default function ProyectosPage() {
   const pending = projects.filter((p) => ['PENDIENTE', 'EN_PROCESO', 'EN_EDICION', 'APROBADO'].includes(p.estado)).length
   const done = projects.filter((p) => ['ENTREGADO', 'COMPLETADO'].includes(p.estado)).length
 
-  const selectCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const selectCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 
   return (
     <div className="space-y-6">
       <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+        <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">Producción</span>
+          <span className="text-acento-premium">Producción</span>
         </div>
         <div className="flex items-start justify-between mt-1">
           <div>
@@ -86,7 +86,7 @@ export default function ProyectosPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { label: 'Total', value: projects.length, color: 'text-phm-gold' },
+          { label: 'Total', value: projects.length, color: 'text-phm-red-bright' },
           { label: 'Activos', value: pending, color: 'text-amber-400' },
           { label: 'Completados', value: done, color: 'text-emerald-400' },
         ].map((s) => (
@@ -131,7 +131,7 @@ export default function ProyectosPage() {
         <PremiumCard padding="none">
           <div className="text-center py-16">
             <p className="text-phm-gray text-sm">No hay proyectos.{' '}
-              <Link href="/proyectos/nuevo" className="text-phm-gold hover:text-phm-gold-bright underline">Crear uno</Link>
+              <Link href="/proyectos/nuevo" className="text-phm-red-bright hover:text-red-400 underline">Crear uno</Link>
             </p>
           </div>
         </PremiumCard>
@@ -167,7 +167,7 @@ export default function ProyectosPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <Link href={`/proyectos/${p.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
+                    <Link href={`/proyectos/${p.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-red-bright transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-red-bright/40">
                       Ver <ArrowUpRight className="w-3 h-3" />
                     </Link>
                     <button onClick={() => { setDeleteError(''); setDeleteId(p.id) }} disabled={deleting && deleteId === p.id}
@@ -203,7 +203,7 @@ export default function ProyectosPage() {
                               {getStatusLabel(c.status, 'content')}
                             </span>
                             {c.driveLink && (
-                              <a href={c.driveLink} target="_blank" rel="noopener noreferrer" className="text-phm-gray-soft hover:text-phm-gold transition-colors">↗</a>
+                              <a href={c.driveLink} target="_blank" rel="noopener noreferrer" className="text-phm-gray-soft hover:text-phm-red-bright transition-colors">↗</a>
                             )}
                           </div>
                         </div>

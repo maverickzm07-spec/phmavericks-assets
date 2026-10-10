@@ -248,7 +248,7 @@ export default function CalendarioPage() {
   // ── KPIs ───────────────────────────────────────────────────────
   const upcomingEvents = events.filter(ev => toLocalDateStr(new Date(ev.startDateTime)) >= todayStr)
   const kpis = [
-    { label: 'Próximos eventos',    value: upcomingEvents.length,                                             color: 'text-phm-gold',    bg: 'bg-phm-gold/10',      Icon: Calendar },
+    { label: 'Próximos eventos',    value: upcomingEvents.length,                                             color: 'text-phm-red-bright',    bg: 'bg-phm-red-bright/10',      Icon: Calendar },
     { label: 'Grabaciones',         value: events.filter(ev => ev.type === 'GRABACION').length,               color: 'text-red-400',     bg: 'bg-red-950/30',       Icon: Video    },
     { label: 'Entregas pendientes', value: events.filter(ev => ev.type === 'ENTREGA' && ev.status !== 'REALIZADO').length, color: 'text-emerald-400', bg: 'bg-emerald-950/30', Icon: Package },
     { label: 'Reuniones',           value: events.filter(ev => ev.type === 'REUNION').length,                 color: 'text-blue-400',    bg: 'bg-blue-950/30',      Icon: Users    },
@@ -326,8 +326,8 @@ export default function CalendarioPage() {
   const toggleFilterType = (type: string) =>
     setFilterTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type])
 
-  const inputCls  = 'w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls  = 'w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls  = 'block text-xs font-medium text-phm-gray-soft mb-1.5'
 
   // ── Render ─────────────────────────────────────────────────────
@@ -338,8 +338,8 @@ export default function CalendarioPage() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <header>
         <div className="flex items-center gap-2 text-xs font-semibold tracking-widest uppercase">
-          <Sparkles className="w-3.5 h-3.5 text-phm-gold" />
-          <span className="text-gold-premium">Agenda de Producción</span>
+          <Sparkles className="w-3.5 h-3.5 text-phm-red-bright" />
+          <span className="text-acento-premium">Agenda de Producción</span>
         </div>
         <div className="flex items-start justify-between mt-1 gap-4 flex-wrap">
           <div>
@@ -350,7 +350,7 @@ export default function CalendarioPage() {
             {googleConnected ? (
               <>
                 <button onClick={handleGoogleSync} disabled={syncing}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white bg-phm-surface rounded-lg transition-all disabled:opacity-50">
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white bg-phm-surface rounded-lg transition-all disabled:opacity-50">
                   <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
                   {syncing ? 'Sincronizando...' : 'Sincronizar'}
                 </button>
@@ -362,7 +362,7 @@ export default function CalendarioPage() {
             ) : (
               <a href={googleConfigured ? '/api/auth/google' : undefined}
                 onClick={!googleConfigured ? () => setSyncMsg('Configura GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en el servidor') : undefined}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white bg-phm-surface rounded-lg transition-all cursor-pointer">
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white bg-phm-surface rounded-lg transition-all cursor-pointer">
                 <Link2 className="w-3.5 h-3.5" />
                 Conectar Google
               </a>
@@ -437,15 +437,15 @@ export default function CalendarioPage() {
                     onClick={() => openDay(cell.dateStr)}
                     className={`relative w-full aspect-square flex flex-col items-center justify-center rounded-md text-[11px] font-medium transition-all
                       ${!isCurrent ? 'opacity-20' : ''}
-                      ${isToday ? 'text-white' : isSelected ? 'text-phm-gold' : 'text-phm-gray hover:text-white'}
-                      ${isSelected && !isToday ? 'bg-phm-surface border border-phm-gold/30' : isToday ? '' : 'hover:bg-phm-surface'}
+                      ${isToday ? 'text-white' : isSelected ? 'text-phm-red-bright' : 'text-phm-gray hover:text-white'}
+                      ${isSelected && !isToday ? 'bg-phm-surface border border-phm-red-bright/30' : isToday ? '' : 'hover:bg-phm-surface'}
                     `}
                     style={isToday ? { backgroundColor: '#8B0000' } : {}}
                   >
                     {cell.day}
                     {hasEvents && isCurrent && (
                       <span className="absolute bottom-0.5 w-1 h-1 rounded-full"
-                        style={{ backgroundColor: isToday ? 'rgba(255,255,255,0.6)' : '#C9A84C' }} />
+                        style={{ backgroundColor: isToday ? 'rgba(255,255,255,0.6)' : '#C41E1E' }} />
                     )}
                   </button>
                 )
@@ -458,7 +458,7 @@ export default function CalendarioPage() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[10px] font-bold text-phm-gray-soft uppercase tracking-widest">Tipo de evento</h3>
               {filterTypes.length > 0 && (
-                <button onClick={() => setFilterTypes([])} className="text-[10px] text-phm-gray-soft hover:text-phm-gold transition-colors">
+                <button onClick={() => setFilterTypes([])} className="text-[10px] text-phm-gray-soft hover:text-phm-red-bright transition-colors">
                   Limpiar
                 </button>
               )}
@@ -470,7 +470,7 @@ export default function CalendarioPage() {
                 return (
                   <button key={type} onClick={() => toggleFilterType(type)}
                     className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all
-                      ${isActive ? 'bg-phm-surface border border-phm-gold/20' : 'hover:bg-phm-surface/50'}`}>
+                      ${isActive ? 'bg-phm-surface border border-phm-red-bright/20' : 'hover:bg-phm-surface/50'}`}>
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[type] }} />
                       <span className={isActive ? 'text-white font-medium' : 'text-phm-gray'}>{label}</span>
@@ -493,7 +493,7 @@ export default function CalendarioPage() {
                     className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-phm-surface transition-all group">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[ev.type] }} />
-                      <span className="text-xs font-medium text-white truncate group-hover:text-phm-gold transition-colors">{ev.title}</span>
+                      <span className="text-xs font-medium text-white truncate group-hover:text-phm-red-bright transition-colors">{ev.title}</span>
                     </div>
                     <p className="text-[10px] text-phm-gray-soft pl-3.5">
                       {new Date(ev.startDateTime).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} · {formatTime(ev.startDateTime)}
@@ -521,7 +521,7 @@ export default function CalendarioPage() {
               </button>
             </div>
             <button onClick={goToday}
-              className="px-3 py-1.5 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-all">
+              className="px-3 py-1.5 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-all">
               Hoy
             </button>
           </div>
@@ -560,7 +560,7 @@ export default function CalendarioPage() {
                   >
                     {/* Day number */}
                     <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-semibold mb-1 flex-shrink-0
-                      ${isToday ? 'text-white' : isSelected ? 'text-phm-gold' : isCurrent ? 'text-phm-gray' : 'text-phm-gray-soft'}
+                      ${isToday ? 'text-white' : isSelected ? 'text-phm-red-bright' : isCurrent ? 'text-phm-gray' : 'text-phm-gray-soft'}
                     `}
                       style={isToday ? { backgroundColor: '#8B0000' } : {}}
                     >
@@ -579,7 +579,7 @@ export default function CalendarioPage() {
                           </div>
                         ))}
                         {cellEvents.length > 2 && (
-                          <p className="text-[9px] text-phm-gold px-1.5">+{cellEvents.length - 2}</p>
+                          <p className="text-[9px] text-phm-red-bright px-1.5">+{cellEvents.length - 2}</p>
                         )}
                       </div>
                     )}
@@ -684,7 +684,7 @@ export default function CalendarioPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button onClick={() => openNewForm(selectedDate)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-phm-gold border border-phm-gold/30 hover:border-phm-gold/60 bg-phm-surface rounded-lg transition-all">
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-phm-red-bright border border-phm-red-bright/30 hover:border-phm-red-bright/60 bg-phm-surface rounded-lg transition-all">
                     <Plus className="w-3.5 h-3.5" />
                     Agregar
                   </button>
@@ -705,7 +705,7 @@ export default function CalendarioPage() {
                       <Calendar className="w-5 h-5 text-phm-gray-soft" />
                     </div>
                     <p className="text-xs text-phm-gray-soft">No hay eventos este día</p>
-                    <button onClick={() => openNewForm(selectedDate)} className="mt-3 text-xs text-phm-gold hover:underline transition-colors">
+                    <button onClick={() => openNewForm(selectedDate)} className="mt-3 text-xs text-phm-red-bright hover:underline transition-colors">
                       + Crear evento
                     </button>
                   </div>
@@ -717,7 +717,7 @@ export default function CalendarioPage() {
                         style={{ borderLeft: `3px solid ${TYPE_COLORS[ev.type]}` }}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-white truncate group-hover:text-phm-gold transition-colors">{ev.title}</p>
+                            <p className="text-sm font-semibold text-white truncate group-hover:text-phm-red-bright transition-colors">{ev.title}</p>
                             <p className="text-xs mt-0.5" style={{ color: TYPE_COLORS[ev.type] }}>
                               {formatTime(ev.startDateTime)} – {formatTime(ev.endDateTime)}
                               {ev.type !== 'OTRO' && ` · ${TYPE_LABELS[ev.type]}`}

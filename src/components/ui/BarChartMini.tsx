@@ -29,8 +29,8 @@ export default function BarChartMini({ data, max, height = 200, formatValue }: B
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', minWidth: data.length * 56, height: H }}>
         <defs>
           <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#E5C76B" />
-            <stop offset="60%" stopColor="#C9A84C" />
+            <stop offset="0%" stopColor="#E8696B" />
+            <stop offset="60%" stopColor="#C41E1E" />
             <stop offset="100%" stopColor="#8B0000" />
           </linearGradient>
           <linearGradient id="barTrack" x1="0" y1="0" x2="0" y2="1">

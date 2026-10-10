@@ -12,13 +12,13 @@ export default function ProgressBar({ value, max = 100, label, showPercent = tru
 
   const getGradient = () => {
     if (percent >= 100) return 'linear-gradient(90deg, #10B981 0%, #34D399 100%)'
-    if (percent >= 70) return 'linear-gradient(90deg, #C9A84C 0%, #E5C76B 100%)'
+    if (percent >= 70) return 'linear-gradient(90deg, #C41E1E 0%, #E8696B 100%)'
     if (percent >= 40) return 'linear-gradient(90deg, #F59E0B 0%, #FBBF24 100%)'
     return 'linear-gradient(90deg, #8B0000 0%, #E50914 100%)'
   }
   const getGlow = () => {
     if (percent >= 100) return '0 0 10px rgba(16, 185, 129, 0.5)'
-    if (percent >= 70) return '0 0 10px rgba(201, 168, 76, 0.5)'
+    if (percent >= 70) return '0 0 10px rgba(196, 30, 30, 0.55)'
     if (percent >= 40) return '0 0 10px rgba(245, 158, 11, 0.45)'
     return '0 0 10px rgba(229, 9, 20, 0.5)'
   }

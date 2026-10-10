@@ -53,7 +53,7 @@ export default function ReporteProyectoPage() {
         <PremiumCard padding="md">
           <div className="flex items-start justify-between gap-6">
             <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-phm-gold font-semibold">PHMavericks · Cierre de servicio</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-phm-red-bright font-semibold">PHMavericks · Cierre de servicio</p>
               <h2 className="text-3xl font-bold text-white mt-2">{project.nombre}</h2>
               <p className="text-phm-gray mt-1">{project.client?.name} · {project.client?.business}</p>
               <p className="text-xs text-phm-gray-soft mt-3">
@@ -76,7 +76,7 @@ export default function ReporteProyectoPage() {
           </PremiumCard>
           <PremiumCard padding="md">
             <p className="text-xs text-phm-gray-soft">Cumplimiento de entrega</p>
-            <p className="text-2xl font-bold text-phm-gold mt-1">{resumen.porcentajeEntrega}%</p>
+            <p className="text-2xl font-bold text-phm-red-bright mt-1">{resumen.porcentajeEntrega}%</p>
           </PremiumCard>
           <PremiumCard padding="md">
             <p className="text-xs text-phm-gray-soft">Estado del cierre</p>
@@ -94,7 +94,7 @@ export default function ReporteProyectoPage() {
         <PremiumCard padding="md">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-white">Cumplimiento</h3>
-            <span className="text-sm font-semibold text-phm-gold">{resumen.porcentajeEntrega}%</span>
+            <span className="text-sm font-semibold text-phm-red-bright">{resumen.porcentajeEntrega}%</span>
           </div>
           <ProgressBar value={resumen.porcentajeEntrega} size="md" />
         </PremiumCard>
@@ -115,7 +115,7 @@ export default function ReporteProyectoPage() {
                   <span className="text-xs text-phm-gray">{getStatusLabel(c.status, 'content')}</span>
                   {(c.driveLink || c.publishedLink) && (
                     <a href={c.publishedLink || c.driveLink} target="_blank" rel="noopener noreferrer"
-                      className="no-print inline-flex items-center gap-1 text-xs text-phm-gold hover:text-phm-gold-bright">
+                      className="no-print inline-flex items-center gap-1 text-xs text-phm-red-bright hover:text-red-400">
                       Abrir <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
@@ -156,7 +156,7 @@ export default function ReporteProyectoPage() {
               <div className="mb-3">
                 <p className="text-xs text-phm-gray-soft mb-1">Carpeta / enlace de entrega</p>
                 <a href={project.linkEntrega} target="_blank" rel="noopener noreferrer"
-                  className="text-sm text-phm-gold break-all hover:underline">{project.linkEntrega}</a>
+                  className="text-sm text-phm-red-bright break-all hover:underline">{project.linkEntrega}</a>
               </div>
             )}
             {project.observaciones && (

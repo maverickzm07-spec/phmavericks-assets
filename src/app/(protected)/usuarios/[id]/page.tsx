@@ -78,8 +78,8 @@ export default function EditarUsuarioPage() {
   )
 
   const roleColor = ROLE_COLORS[originalRole] || 'bg-phm-surface text-phm-gray border-phm-border-soft'
-  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   return (
@@ -119,7 +119,7 @@ export default function EditarUsuarioPage() {
             <div>
               <label className={labelCls}>Cédula</label>
               <input name="cedula" value={form.cedula} onChange={handleChange} placeholder="10 dígitos" maxLength={10}
-                className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm placeholder-phm-gray-soft focus:outline-none focus:border-phm-gold/40 transition-colors" />
+                className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm placeholder-phm-gray-soft focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
             </div>
             <div>
               <label className={labelCls}>Estado</label>
@@ -147,7 +147,7 @@ export default function EditarUsuarioPage() {
             <div className="relative">
               <input name="password" type={showPassword ? 'text' : 'password'} value={form.password}
                 onChange={handleChange} placeholder="••••••••"
-                className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm placeholder-phm-gray-soft focus:outline-none focus:border-phm-gold/40 transition-colors pr-10" />
+                className="w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm placeholder-phm-gray-soft focus:outline-none focus:border-phm-red-bright/40 transition-colors pr-10" />
               <button type="button" onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-phm-gray-soft hover:text-white transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -167,7 +167,7 @@ export default function EditarUsuarioPage() {
                 <label key={r.value} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                   form.role === r.value
                     ? 'border-phm-red/60 bg-red-950/20'
-                    : 'border-phm-border-soft bg-phm-surface hover:border-phm-gold/40'
+                    : 'border-phm-border-soft bg-phm-surface hover:border-phm-red-bright/40'
                 }`}>
                   <input type="radio" name="role" value={r.value} checked={form.role === r.value}
                     onChange={handleChange} className="mt-0.5 accent-red-700" />

@@ -114,7 +114,7 @@ export default function DocumentosAdjuntos({
         {puedeEditar && (
           <>
             <button type="button" onClick={() => inputRef.current?.click()} disabled={subiendo}
-              className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 text-phm-gold border border-phm-gold/30 hover:border-phm-gold/60 bg-phm-surface rounded-lg transition-colors disabled:opacity-50">
+              className="flex-shrink-0 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 text-phm-red-bright border border-phm-red-bright/30 hover:border-phm-red-bright/60 bg-phm-surface rounded-lg transition-colors disabled:opacity-50">
               <Upload className="w-3.5 h-3.5" /> {subiendo ? 'Subiendo...' : 'Adjuntar'}
             </button>
             <input ref={inputRef} type="file" accept={accept} className="sr-only"
@@ -135,7 +135,7 @@ export default function DocumentosAdjuntos({
         <ul className="divide-y divide-phm-border-soft">
           {documentos.map((doc) => (
             <li key={doc.id} className="flex items-center gap-3 py-2.5">
-              <FileText className="w-4 h-4 text-phm-gold flex-shrink-0" />
+              <FileText className="w-4 h-4 text-phm-red-bright flex-shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-white truncate">{doc.nombreOriginal}</p>
                 <p className="text-xs text-phm-gray-soft">
@@ -144,7 +144,7 @@ export default function DocumentosAdjuntos({
                 </p>
               </div>
               <a href={`/api/documentos/${doc.id}`} target="_blank" rel="noopener noreferrer"
-                className="flex-shrink-0 p-1.5 text-phm-gray hover:text-phm-gold transition-colors"
+                className="flex-shrink-0 p-1.5 text-phm-gray hover:text-phm-red-bright transition-colors"
                 aria-label={`Abrir ${doc.nombreOriginal}`}>
                 <Download className="w-4 h-4" />
               </a>

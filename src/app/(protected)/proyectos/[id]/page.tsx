@@ -184,7 +184,7 @@ export default function ProyectoDetailPage() {
   if (!project) return (
     <PremiumCard padding="lg" className="text-center">
       <p className="text-phm-gray mb-3">Proyecto no encontrado.</p>
-      <Link href="/proyectos" className="text-sm text-phm-gold hover:text-phm-gold-bright transition-colors">
+      <Link href="/proyectos" className="text-sm text-phm-red-bright hover:text-red-400 transition-colors">
         ← Volver a proyectos
       </Link>
     </PremiumCard>
@@ -218,7 +218,7 @@ export default function ProyectoDetailPage() {
           <p className="text-phm-gray-soft text-sm">{project.client?.name} — {project.client?.business}</p>
         </div>
         <Link href={`/reportes/proyecto/${id}`}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-phm-gray hover:text-phm-gold border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-all">
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-phm-gray hover:text-phm-red-bright border border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg transition-all">
           <FileText className="w-4 h-4" /> Cierre / PDF
         </Link>
         <button onClick={handleDelete}
@@ -261,7 +261,7 @@ export default function ProyectoDetailPage() {
               <p className="text-xs text-phm-gray-soft">
                 Carpeta de Drive:{' '}
                 <a href={(project as any).driveLink} target="_blank" rel="noopener noreferrer"
-                  className="text-phm-gold hover:text-phm-gold-bright underline underline-offset-2">Abrir en Google Drive</a>
+                  className="text-phm-red-bright hover:text-red-400 underline underline-offset-2">Abrir en Google Drive</a>
               </p>
             )}
             {project.observaciones && (
@@ -272,7 +272,7 @@ export default function ProyectoDetailPage() {
             <label className="block text-xs text-phm-gray-soft mb-1.5">Cambiar estado</label>
             <select value={editEstado} onChange={e => { setEditEstado(e.target.value); updateEstado(e.target.value) }}
               disabled={saving}
-              className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 disabled:opacity-50 transition-colors">
+              className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 disabled:opacity-50 transition-colors">
               {(ESTADOS_PROYECTO.includes(project.estado as any)
                 ? ESTADOS_PROYECTO
                 : [project.estado, ...ESTADOS_PROYECTO]
@@ -284,7 +284,7 @@ export default function ProyectoDetailPage() {
           <div className="mt-4 pt-4 border-t border-phm-border-soft">
             <div className="flex justify-between text-xs text-phm-gray-soft mb-2">
               <span>{done} de {contents.length} entregables completados</span>
-              <span className={`font-semibold ${pct === 100 ? 'text-emerald-400' : 'text-phm-gold'}`}>{pct}%</span>
+              <span className={`font-semibold ${pct === 100 ? 'text-emerald-400' : 'text-phm-red-bright'}`}>{pct}%</span>
             </div>
             <ProgressBar value={pct} size="md" />
           </div>
@@ -299,7 +299,7 @@ export default function ProyectoDetailPage() {
             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${badgeEc}`}>{labelEc}</span>
             {canAdmin && (
               <button onClick={() => setShowPagoForm(v => !v)}
-                className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 bg-phm-gold/10 hover:bg-phm-gold/20 text-phm-gold border border-phm-gold/30 rounded-lg transition-all">
+                className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 bg-phm-red-bright/10 hover:bg-phm-red-bright/20 text-phm-red-bright border border-phm-red-bright/30 rounded-lg transition-all">
                 {showPagoForm ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                 {showPagoForm ? 'Cancelar' : 'Registrar pago'}
               </button>
@@ -319,7 +319,7 @@ export default function ProyectoDetailPage() {
               <div className="flex items-center gap-1 justify-center">
                 <input type="number" min="0" value={precioFinalEdit}
                   onChange={e => setPrecioFinalEdit(e.target.value)}
-                  className="w-20 px-2 py-1 bg-phm-charcoal border border-phm-gold/40 rounded text-white text-sm text-center focus:outline-none"
+                  className="w-20 px-2 py-1 bg-phm-charcoal border border-phm-red-bright/40 rounded text-white text-sm text-center focus:outline-none"
                   autoFocus onKeyDown={e => { if (e.key === 'Enter') guardarPrecioFinal(); if (e.key === 'Escape') setEditandoPrecio(false) }}
                 />
                 <button onClick={guardarPrecioFinal} disabled={guardandoPrecio}
@@ -327,7 +327,7 @@ export default function ProyectoDetailPage() {
                 <button onClick={() => setEditandoPrecio(false)} className="text-xs text-phm-gray-soft hover:text-white">✕</button>
               </div>
             ) : (
-              <p className="text-base font-bold text-phm-gold cursor-pointer hover:text-phm-gold-bright"
+              <p className="text-base font-bold text-phm-red-bright cursor-pointer hover:text-red-400"
                 onClick={() => canAdmin && setEditandoPrecio(true)}>
                 {project.precioFinal != null ? fmt(project.precioFinal) : <span className="text-phm-gray-soft text-sm">Definir</span>}
               </p>
@@ -357,12 +357,12 @@ export default function ProyectoDetailPage() {
                 <label className="block text-xs text-phm-gray-soft mb-1">Monto *</label>
                 <input type="number" min="0" step="0.01" placeholder="0.00"
                   value={pagoForm.monto} onChange={e => setPagoForm(p => ({ ...p, monto: e.target.value }))}
-                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors" />
+                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
               </div>
               <div>
                 <label className="block text-xs text-phm-gray-soft mb-1">Método de pago</label>
                 <select value={pagoForm.metodoPago} onChange={e => setPagoForm(p => ({ ...p, metodoPago: e.target.value }))}
-                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors">
+                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors">
                   <option value="">— Sin especificar —</option>
                   {METODOS_PAGO.map(m => <option key={m} value={m}>{m.charAt(0) + m.slice(1).toLowerCase()}</option>)}
                 </select>
@@ -371,13 +371,13 @@ export default function ProyectoDetailPage() {
                 <label className="block text-xs text-phm-gray-soft mb-1">Fecha de pago</label>
                 <input type="date" value={pagoForm.fechaPago}
                   onChange={e => setPagoForm(p => ({ ...p, fechaPago: e.target.value }))}
-                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors" />
+                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
               </div>
               <div>
                 <label className="block text-xs text-phm-gray-soft mb-1">Observación</label>
                 <input type="text" placeholder="Opcional"
                   value={pagoForm.observacion} onChange={e => setPagoForm(p => ({ ...p, observacion: e.target.value }))}
-                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors" />
+                  className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors" />
               </div>
             </div>
             {pagoError && <p className="mt-2 text-xs text-red-400">{pagoError}</p>}
@@ -449,7 +449,7 @@ export default function ProyectoDetailPage() {
             <p className="text-xs text-phm-gray-soft mt-0.5">Seguimiento interno de producción</p>
           </div>
           <Link href={`/contenidos/nuevo?projectId=${project.id}&clientId=${project.clientId}`}
-            className="text-sm text-phm-gold hover:text-phm-gold-bright transition-colors">
+            className="text-sm text-phm-red-bright hover:text-red-400 transition-colors">
             + Agregar
           </Link>
         </div>
@@ -457,7 +457,7 @@ export default function ProyectoDetailPage() {
           <div className="text-center py-10">
             <p className="text-phm-gray-soft text-sm mb-3">No hay entregables todavía.</p>
             <Link href={`/contenidos/nuevo?projectId=${project.id}&clientId=${project.clientId}`}
-              className="text-sm text-phm-gold hover:text-phm-gold-bright transition-colors">
+              className="text-sm text-phm-red-bright hover:text-red-400 transition-colors">
               + Agregar uno
             </Link>
           </div>
@@ -472,7 +472,7 @@ export default function ProyectoDetailPage() {
                     {c.formato && <span className="text-xs text-phm-gray-soft">· {getFormatoLabel(c.formato)}</span>}
                     {c.driveLink && (
                       <a href={c.driveLink} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-phm-gray-soft hover:text-phm-gold transition-colors">
+                        className="text-xs text-phm-gray-soft hover:text-phm-red-bright transition-colors">
                         ↗ Drive interno
                       </a>
                     )}
@@ -484,7 +484,7 @@ export default function ProyectoDetailPage() {
                     {ESTADOS_CONTENIDO.map(s => <option key={s} value={s}>{getStatusLabel(s, 'content')}</option>)}
                   </select>
                   <Link href={`/contenidos/${c.id}`}
-                    className="text-xs text-phm-gray hover:text-phm-gold transition-colors px-2 py-1 bg-phm-surface border border-phm-border-soft rounded-lg">
+                    className="text-xs text-phm-gray hover:text-phm-red-bright transition-colors px-2 py-1 bg-phm-surface border border-phm-border-soft rounded-lg">
                     Editar
                   </Link>
                 </div>

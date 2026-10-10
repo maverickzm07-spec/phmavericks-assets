@@ -78,9 +78,9 @@ export default function UsuariosPage() {
   return (
     <div className="space-y-6">
       <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+        <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">Administración</span>
+          <span className="text-acento-premium">Administración</span>
         </div>
         <div className="flex items-start justify-between mt-1">
           <div>
@@ -156,7 +156,7 @@ export default function UsuariosPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2 justify-end">
-                        <Link href={`/usuarios/${u.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
+                        <Link href={`/usuarios/${u.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-red-bright transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-red-bright/40">
                           Editar <ArrowUpRight className="w-3 h-3" />
                         </Link>
                         {u.role !== 'SUPER_ADMIN' && (

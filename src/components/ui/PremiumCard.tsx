@@ -2,17 +2,18 @@ import { forwardRef, HTMLAttributes } from 'react'
 
 interface PremiumCardProps extends HTMLAttributes<HTMLDivElement> {
   hover?: boolean
-  glow?: 'none' | 'red' | 'gold'
+  glow?: 'none' | 'red'
   padding?: 'none' | 'sm' | 'md' | 'lg'
   as?: 'div' | 'section' | 'article'
 }
 
 /**
- * Tarjeta oscura premium PHMavericks.
- * - Fondo charcoal con borde sutil
- * - Hairline gradient brillante en top (vía ::before en globals.css .premium-card)
- * - Hover: leve elevación + borde dorado
- * - Glow opcional rojo/dorado
+ * Tarjeta base del sistema.
+ *
+ * Fondo grafito, borde semitransparente y un filo de luz de 1 px arriba
+ * (ver `.card-premium` en globals.css): ese detalle es lo que da la sensación
+ * de panel flotante en lugar de bloque plano. La sombra va en dos capas, una
+ * de contacto y otra de elevación.
  */
 const PremiumCard = forwardRef<HTMLDivElement, PremiumCardProps>(function PremiumCard(
   { className = '', hover = false, glow = 'none', padding = 'md', children, ...props },
@@ -24,19 +25,14 @@ const PremiumCard = forwardRef<HTMLDivElement, PremiumCardProps>(function Premiu
     md: 'p-5',
     lg: 'p-6 md:p-8',
   }
-  const glowMap = {
-    none: '',
-    red: 'shadow-glow-red',
-    gold: 'shadow-glow-gold',
-  }
   return (
     <div
       ref={ref}
       className={[
-        'premium-card',
-        hover ? 'premium-card-hover' : '',
+        'card-premium',
+        hover ? 'transition-shadow hover:shadow-premium-hover' : '',
+        glow === 'red' ? 'shadow-glow-red' : '',
         padMap[padding],
-        glowMap[glow],
         className,
       ]
         .filter(Boolean)

@@ -151,18 +151,18 @@ export default function GastosPage() {
     await cargar()
   }
 
-  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
-  const filtroCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const filtroCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+          <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
             <Wallet className="w-4 h-4" />
-            <span className="text-gold-premium">Finanzas</span>
+            <span className="text-acento-premium">Finanzas</span>
           </div>
           <h1 className="mt-1 text-3xl font-bold text-white tracking-tight">Gastos</h1>
           <p className="text-phm-gray-soft text-sm mt-1">Egresos por proyecto y gastos generales de la empresa</p>
@@ -220,7 +220,7 @@ export default function GastosPage() {
                   placeholder="Ej: Alquiler de equipos" className={inputCls} />
               </div>
               <button type="button" onClick={crearCategoria} disabled={creandoCategoria || !nuevaCategoria.trim()}
-                className="inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium text-phm-gold border border-phm-gold/30 hover:border-phm-gold/60 bg-phm-surface rounded-lg transition-colors disabled:opacity-40">
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium text-phm-red-bright border border-phm-red-bright/30 hover:border-phm-red-bright/60 bg-phm-surface rounded-lg transition-colors disabled:opacity-40">
                 <Tag className="w-3.5 h-3.5" /> {creandoCategoria ? 'Creando...' : 'Agregar'}
               </button>
             </div>
@@ -261,7 +261,7 @@ export default function GastosPage() {
                 {guardando ? 'Guardando...' : 'Registrar gasto'}
               </button>
               <button type="button" onClick={() => setAbierto(false)}
-                className="px-5 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-colors">
+                className="px-5 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg transition-colors">
                 Cancelar
               </button>
             </div>
@@ -277,7 +277,7 @@ export default function GastosPage() {
             { label: 'Total del período', valor: totales.total, nota: `${totales.cantidad} registros`, tono: 'text-white' },
             { label: 'Pagado', valor: totales.pagado, nota: 'Salida real de caja', tono: 'text-emerald-400' },
             { label: 'Por pagar', valor: totales.porPagar, nota: 'Cuentas por pagar', tono: 'text-amber-400' },
-            { label: 'Gastos por proyecto', valor: totales.porProyecto, nota: `Generales: ${formatCurrency(totales.generales)}`, tono: 'text-phm-gold' },
+            { label: 'Gastos por proyecto', valor: totales.porProyecto, nota: `Generales: ${formatCurrency(totales.generales)}`, tono: 'text-phm-red-bright' },
           ].map((t) => (
             <PremiumCard key={t.label} padding="md">
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-phm-gray-soft">{t.label}</p>
@@ -354,7 +354,7 @@ export default function GastosPage() {
                     <td className="px-4 py-3 text-phm-gray">{g.categoria.nombre}</td>
                     <td className="px-4 py-3 text-xs">
                       {g.project
-                        ? <span className="text-phm-gold">{g.project.nombre}</span>
+                        ? <span className="text-phm-red-bright">{g.project.nombre}</span>
                         : <span className="text-phm-gray-soft">General</span>}
                     </td>
                     <td className="px-4 py-3">

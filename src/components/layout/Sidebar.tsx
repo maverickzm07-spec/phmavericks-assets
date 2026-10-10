@@ -92,7 +92,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       <div
         aria-hidden
         className="absolute right-0 top-10 bottom-10 w-px"
-        style={{ background: 'linear-gradient(180deg, transparent, rgba(201, 168, 76, 0.4), transparent)' }}
+        style={{ background: 'linear-gradient(180deg, transparent, rgba(196, 30, 30, 0.45), transparent)' }}
       />
       <div
         aria-hidden
@@ -131,12 +131,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${isActive ? 'nav-item-active text-white' : 'text-phm-gray hover:text-white hover:bg-white/[0.03]'}`}
             >
               <Icon
-                className={`w-[18px] h-[18px] flex-shrink-0 transition-all ${isActive ? 'text-white drop-shadow-[0_0_6px_rgba(229,9,20,0.6)]' : 'text-phm-gray-soft group-hover:text-phm-gold'}`}
+                className={`w-[18px] h-[18px] flex-shrink-0 transition-all ${isActive ? 'text-white drop-shadow-[0_0_6px_rgba(229,9,20,0.6)]' : 'text-phm-gray-soft group-hover:text-phm-red-bright'}`}
                 strokeWidth={1.75}
               />
               <span className="truncate">{item.label}</span>
               {isActive && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-phm-gold shadow-[0_0_8px_#C9A84C]" />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-phm-red-bright shadow-[0_0_8px_#C41E1E]" />
               )}
             </Link>
           )
@@ -149,7 +149,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <div className="relative w-9 h-9 rounded-full flex-shrink-0">
             <div
               className="absolute inset-0 rounded-full"
-              style={{ background: 'linear-gradient(135deg, #8B0000 0%, #C9A84C 100%)', padding: '1.5px' }}
+              style={{ background: 'linear-gradient(135deg, #8B0000 0%, #C41E1E 100%)', padding: '1.5px' }}
             >
               <div className="w-full h-full rounded-full bg-phm-charcoal flex items-center justify-center">
                 <span className="text-xs font-bold text-white">{initials}</span>
@@ -160,7 +160,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             <p className="text-sm font-semibold text-white truncate leading-tight">
               {currentUser?.name || 'Cargando...'}
             </p>
-            <p className="text-[11px] truncate text-phm-gold">
+            <p className="text-[11px] truncate text-phm-red-bright">
               {currentUser ? ROLE_LABELS[currentUser.role] || currentUser.role : ''}
             </p>
           </div>

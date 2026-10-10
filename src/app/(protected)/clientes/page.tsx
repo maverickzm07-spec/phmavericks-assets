@@ -66,9 +66,9 @@ export default function ClientesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+        <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">Gestión</span>
+          <span className="text-acento-premium">Gestión</span>
         </div>
         <div className="flex items-start justify-between mt-1">
           <div>
@@ -86,7 +86,7 @@ export default function ClientesPage() {
 
       <PremiumCard padding="sm">
         <div className="flex gap-3 flex-wrap items-center">
-          <div className="flex items-center gap-2 flex-1 min-w-[200px] bg-phm-surface border border-phm-border-soft rounded-lg px-3 py-2 focus-within:border-phm-gold/40 transition-colors">
+          <div className="flex items-center gap-2 flex-1 min-w-[200px] bg-phm-surface border border-phm-border-soft rounded-lg px-3 py-2 focus-within:border-phm-red-bright/40 transition-colors">
             <Search className="w-4 h-4 text-phm-gray-soft flex-shrink-0" />
             <input
               type="text"
@@ -99,7 +99,7 @@ export default function ClientesPage() {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors"
+            className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors"
           >
             <option value="">Todos los estados</option>
             <option value="ACTIVE">Activo</option>
@@ -168,7 +168,7 @@ export default function ClientesPage() {
                     <td className="px-5 py-3.5">{clientStatusBadge(client.status)}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2 justify-end">
-                        <Link href={`/clientes/${client.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-gold/40">
+                        <Link href={`/clientes/${client.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-red-bright transition-colors px-2.5 py-1 rounded-md border border-phm-border-soft hover:border-phm-red-bright/40">
                           Ver <ArrowUpRight className="w-3 h-3" />
                         </Link>
                         <button onClick={() => { setDeleteError(''); setDeleteId(client.id) }} className="inline-flex items-center text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2.5 py-1 rounded-md border border-red-900/40 hover:border-red-700/60 bg-red-950/20 hover:bg-red-950/40">

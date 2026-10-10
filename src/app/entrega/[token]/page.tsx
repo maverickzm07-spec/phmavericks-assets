@@ -94,7 +94,7 @@ export default function EntregaTokenPage() {
   // ─ Loading
   if (loading) return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-[#C9A84C]/30 border-t-[#C9A84C] rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#C41E1E]/30 border-t-[#C41E1E] rounded-full animate-spin" />
     </div>
   )
 
@@ -230,7 +230,7 @@ export default function EntregaTokenPage() {
               {/* URL de entrega */}
               <div className="flex items-center gap-2 bg-zinc-800/70 rounded-xl px-3 py-2.5 border border-zinc-700/50">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  className="w-4 h-4 shrink-0 text-[#C9A84C]">
+                  className="w-4 h-4 shrink-0 text-[#C41E1E]">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                 </svg>
@@ -245,7 +245,7 @@ export default function EntregaTokenPage() {
                   href={deliveryLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#C9A84C]/10 border border-[#C9A84C]/25 text-[#C9A84C] hover:bg-[#C9A84C]/20 transition-colors text-sm font-semibold"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#C41E1E]/10 border border-[#C41E1E]/25 text-[#C41E1E] hover:bg-[#C41E1E]/20 transition-colors text-sm font-semibold"
                 >
                   <ExternalLink className="w-4 h-4" />
                   Abrir entrega

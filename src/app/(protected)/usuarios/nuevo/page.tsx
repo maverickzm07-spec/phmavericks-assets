@@ -81,8 +81,8 @@ export default function NuevoUsuarioPage() {
     finally { setLoading(false) }
   }
 
-  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm placeholder-phm-gray-soft focus:outline-none focus:border-phm-gold/40 transition-colors'
-  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const inputCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm placeholder-phm-gray-soft focus:outline-none focus:border-phm-red-bright/40 transition-colors'
+  const selectCls = 'w-full px-4 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
   const labelCls = 'block text-sm font-medium text-phm-gray-soft mb-1.5'
 
   return (
@@ -168,7 +168,7 @@ export default function NuevoUsuarioPage() {
               <div className="space-y-2">
                 {ROLES_OPTIONS.map((r) => (
                   <label key={r.value} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                    form.role === r.value ? 'border-phm-red/60 bg-red-950/20' : 'border-phm-border-soft bg-phm-surface hover:border-phm-gold/40'
+                    form.role === r.value ? 'border-phm-red/60 bg-red-950/20' : 'border-phm-border-soft bg-phm-surface hover:border-phm-red-bright/40'
                   }`}>
                     <input type="radio" name="role" value={r.value} checked={form.role === r.value} onChange={handleChange} className="mt-0.5 accent-red-700" />
                     <div>
@@ -190,7 +190,7 @@ export default function NuevoUsuarioPage() {
                 {loading ? 'Enviando...' : 'Enviar código de verificación'}
               </button>
               <Link href="/usuarios"
-                className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-all text-center">
+                className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg transition-all text-center">
                 Cancelar
               </Link>
             </div>
@@ -228,7 +228,7 @@ export default function NuevoUsuarioPage() {
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 required autoFocus placeholder="000000"
-                className="w-full px-4 py-3 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-2xl font-mono tracking-[0.5em] text-center placeholder-phm-gray-soft focus:outline-none focus:border-phm-gold/40 transition-colors"
+                className="w-full px-4 py-3 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-2xl font-mono tracking-[0.5em] text-center placeholder-phm-gray-soft focus:outline-none focus:border-phm-red-bright/40 transition-colors"
               />
               <div className="flex items-center justify-between mt-2">
                 <p className="text-xs text-phm-gray-soft">
@@ -251,7 +251,7 @@ export default function NuevoUsuarioPage() {
               </button>
               <button type="button"
                 onClick={() => { setStep('form'); setError(''); setVerificationCode(''); if (timerRef.current) clearInterval(timerRef.current) }}
-                className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-all">
+                className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg transition-all">
                 Volver
               </button>
             </div>

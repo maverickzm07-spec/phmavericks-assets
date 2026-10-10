@@ -104,14 +104,14 @@ export default function ReportesPage() {
     URL.revokeObjectURL(url)
   }
 
-  const selectCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const selectCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 
   return (
     <div className="space-y-6">
       <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+        <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">Análisis</span>
+          <span className="text-acento-premium">Análisis</span>
         </div>
         <div className="flex items-start justify-between mt-1 gap-4 flex-wrap">
           <div>
@@ -120,7 +120,7 @@ export default function ReportesPage() {
           </div>
           {visibles.length > 0 && (
             <button onClick={exportCSV}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-colors">
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-colors">
               <Download className="w-4 h-4" /> Exportar CSV
             </button>
           )}

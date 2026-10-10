@@ -61,14 +61,14 @@ export default function FinanzasPage() {
   useEffect(() => { cargar() }, [cargar])
 
   const r = data?.resumen
-  const filtroCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-gold/40 transition-colors'
+  const filtroCls = 'px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-phm-gray focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 
   return (
     <div className="space-y-6">
       <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+        <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">Centro de control</span>
+          <span className="text-acento-premium">Centro de control</span>
         </div>
         <h1 className="mt-1 text-3xl font-bold text-white tracking-tight">Finanzas</h1>
         <p className="text-phm-gray-soft text-sm mt-1">Resultado de la operación en el período seleccionado</p>
@@ -81,17 +81,17 @@ export default function FinanzasPage() {
           <input type="date" value={rango.hasta} onChange={(e) => setRango({ ...rango, hasta: e.target.value })}
             className={filtroCls} aria-label="Hasta" />
           <button onClick={() => setRango(mesActual())}
-            className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-colors">
+            className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-colors">
             Mes actual
           </button>
           <div className="ml-auto flex flex-wrap gap-2">
             <a href={`/api/finanzas/reporte?anio=${new Date(rango.desde).getFullYear()}&mes=${new Date(rango.desde).getMonth() + 1}`}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-phm-gold border border-phm-gold/30 hover:border-phm-gold/60 rounded-lg transition-colors">
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-phm-red-bright border border-phm-red-bright/30 hover:border-phm-red-bright/60 rounded-lg transition-colors">
               <Download className="w-3.5 h-3.5" /> Reporte contable
             </a>
-            <Link href="/ingresos" className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-colors">Ingresos</Link>
-            <Link href="/gastos" className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-colors">Gastos</Link>
-            <Link href="/reportes" className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-gold/40 hover:text-white rounded-lg transition-colors">Reportes</Link>
+            <Link href="/ingresos" className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-colors">Ingresos</Link>
+            <Link href="/gastos" className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-colors">Gastos</Link>
+            <Link href="/reportes" className="px-3 py-2 text-xs font-medium text-phm-gray border border-phm-border-soft hover:border-phm-red-bright/40 hover:text-white rounded-lg transition-colors">Reportes</Link>
           </div>
         </div>
       </PremiumCard>
@@ -132,7 +132,7 @@ export default function FinanzasPage() {
           {r.cobrosCarteraHistorica > 0 && (
             <PremiumCard padding="md">
               <div className="flex items-start gap-3">
-                <Archive className="w-4 h-4 text-phm-gold flex-shrink-0 mt-0.5" />
+                <Archive className="w-4 h-4 text-phm-red-bright flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-white">
                     {formatCurrency(r.cobrosCarteraHistorica)} provienen de cartera histórica
@@ -180,7 +180,7 @@ export default function FinanzasPage() {
                   {data.porProyecto.map((p) => (
                     <tr key={p.id} className="row-hover">
                       <td className="px-4 py-3">
-                        <Link href={`/proyectos/${p.id}`} className="text-white hover:text-phm-gold transition-colors">
+                        <Link href={`/proyectos/${p.id}`} className="text-white hover:text-phm-red-bright transition-colors">
                           {p.nombre}
                         </Link>
                         {p.cliente && <p className="text-xs text-phm-gray-soft">{p.cliente}</p>}
@@ -210,7 +210,7 @@ export default function FinanzasPage() {
         <button onClick={() => setVerHistorico((v) => !v)}
           className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-white/[0.02] transition-colors">
           <div className="flex items-center gap-2.5">
-            <Archive className="w-4 h-4 text-phm-gold" />
+            <Archive className="w-4 h-4 text-phm-red-bright" />
             <div>
               <h2 className="text-sm font-semibold text-white">Histórico financiero</h2>
               <p className="mt-0.5 text-xs text-phm-gray-soft">

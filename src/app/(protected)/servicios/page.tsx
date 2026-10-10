@@ -57,9 +57,9 @@ const EMPTY_FORM = {
   jornadasGrabacion: '', duracion: '', cantidadImagenesFlyers: '', descripcion: '', caracteristicas: '',
 }
 
-const inputCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+const inputCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 const labelCls = 'block text-xs font-medium text-phm-gray-soft mb-1.5'
-const selectCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors'
+const selectCls = 'w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors'
 
 export default function ServiciosPage() {
   const router = useRouter()
@@ -178,9 +178,9 @@ export default function ServiciosPage() {
   return (
     <div className="space-y-6">
       <header>
-        <div className="flex items-center gap-2 text-phm-gold text-sm font-medium tracking-wide">
+        <div className="flex items-center gap-2 text-phm-red-bright text-sm font-medium tracking-wide">
           <Sparkles className="w-4 h-4" />
-          <span className="text-gold-premium">Catálogo</span>
+          <span className="text-acento-premium">Catálogo</span>
         </div>
         <div className="flex items-start justify-between mt-1">
           <div>
@@ -236,7 +236,7 @@ export default function ServiciosPage() {
                   <h3 className="font-semibold text-white text-base leading-tight">{plan.nombre}</h3>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xl font-bold text-phm-gold">${plan.precio}</p>
+                  <p className="text-xl font-bold text-phm-red-bright">${plan.precio}</p>
                   <p className="text-xs text-phm-gray-soft">/ mes</p>
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function ServiciosPage() {
                 <ul className="space-y-1">
                   {plan.caracteristicas.map((c, i) => (
                     <li key={i} className="flex items-start gap-2 text-xs text-phm-gray">
-                      <span className="text-phm-gold mt-0.5">✓</span> {c}
+                      <span className="text-phm-red-bright mt-0.5">✓</span> {c}
                     </li>
                   ))}
                 </ul>
@@ -266,7 +266,7 @@ export default function ServiciosPage() {
               )}
 
               <div className="flex gap-2 flex-wrap pt-3 border-t border-phm-border-soft mt-auto">
-                <button onClick={() => openEdit(plan)} className="flex-1 py-1.5 text-xs font-medium text-phm-gray hover:text-white bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-md transition-all">Editar</button>
+                <button onClick={() => openEdit(plan)} className="flex-1 py-1.5 text-xs font-medium text-phm-gray hover:text-white bg-phm-surface border border-phm-border-soft hover:border-phm-red-bright/40 rounded-md transition-all">Editar</button>
                 <button onClick={() => setShowDeactivate(plan)} className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all border ${plan.activo ? 'text-amber-300 bg-amber-950/40 border-amber-800/50 hover:bg-amber-950/70' : 'text-emerald-300 bg-emerald-950/40 border-emerald-800/50 hover:bg-emerald-950/70'}`}>
                   {plan.activo ? 'Desactivar' : 'Activar'}
                 </button>
@@ -345,13 +345,13 @@ export default function ServiciosPage() {
                   <label className={labelCls}>Características <span className="text-phm-gray-soft">(una por línea)</span></label>
                   <textarea name="caracteristicas" value={form.caracteristicas} onChange={handleFormChange} rows={4}
                     placeholder={'Edición profesional\nSubtítulos estilizados\nGuiones personalizados'}
-                    className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
+                    className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors resize-none" />
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Observaciones</label>
                   <textarea name="descripcion" value={form.descripcion} onChange={handleFormChange} rows={2}
                     placeholder="Notas adicionales..."
-                    className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-gold/40 transition-colors resize-none" />
+                    className="w-full px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-white text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors resize-none" />
                 </div>
               </div>
               {formError && <div className="px-4 py-3 bg-red-950/60 border border-red-900/60 rounded-lg text-sm text-red-300">{formError}</div>}
@@ -379,7 +379,7 @@ export default function ServiciosPage() {
               <p className="text-xs text-amber-300 mb-2">⚠ Este servicio no tiene entregables definidos. El plan mensual se creará sin contenidos automáticos.</p>
             )}
             <div className="mb-3" />
-            <select value={assignClientId} onChange={(e) => setAssignClientId(e.target.value)} className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 transition-colors">
+            <select value={assignClientId} onChange={(e) => setAssignClientId(e.target.value)} className="w-full px-3 py-2.5 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-red-bright/40 transition-colors">
               <option value="">Selecciona un cliente...</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>

@@ -164,7 +164,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               onClick={() => handleSelect(r.href)}
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors text-left group"
             >
-              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-phm-surface border border-phm-border-soft flex-shrink-0 group-hover:border-phm-gold/30">
+              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-phm-surface border border-phm-border-soft flex-shrink-0 group-hover:border-phm-red-bright/30">
                 <Icon className="w-3.5 h-3.5 text-phm-gray-soft" />
               </div>
               <div className="min-w-0 flex-1">
@@ -224,7 +224,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       <div className="ml-auto flex items-center gap-2 md:gap-3">
         {/* Search — desktop */}
         <div ref={searchContainerRef} className="relative hidden lg:block">
-          <div className="flex items-center gap-2 px-3 h-9 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-gold/30 transition-colors w-64 focus-within:border-phm-gold/50">
+          <div className="flex items-center gap-2 px-3 h-9 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-red-bright/30 transition-colors w-64 focus-within:border-phm-red-bright/50">
             {searching ? (
               <Loader2 className="w-4 h-4 text-phm-gray-soft animate-spin flex-shrink-0" />
             ) : (
@@ -267,8 +267,8 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           <Search className="w-4 h-4" />
         </button>
 
-        <button className="hidden md:inline-flex items-center gap-2 h-9 px-3 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-gold/30 text-xs font-medium text-phm-gray hover:text-white transition-all">
-          <Calendar className="w-3.5 h-3.5 text-phm-gold" />
+        <button className="hidden md:inline-flex items-center gap-2 h-9 px-3 rounded-full bg-white/[0.035] border border-white/[0.08] hover:border-phm-red-bright/30 text-xs font-medium text-phm-gray hover:text-white transition-all">
+          <Calendar className="w-3.5 h-3.5 text-phm-red-bright" />
           <span className="tabular-nums">{now || '—'}</span>
         </button>
 
@@ -301,7 +301,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           />
           <div className="absolute top-0 left-0 right-0 bg-phm-charcoal border-b border-phm-border-soft p-4 shadow-2xl">
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 h-10 rounded-lg bg-phm-surface border border-phm-border-soft focus-within:border-phm-gold/50 flex-1 min-w-0">
+              <div className="flex items-center gap-2 px-3 h-10 rounded-lg bg-phm-surface border border-phm-border-soft focus-within:border-phm-red-bright/50 flex-1 min-w-0">
                 {searching ? (
                   <Loader2 className="w-4 h-4 text-phm-gray-soft animate-spin flex-shrink-0" />
                 ) : (
