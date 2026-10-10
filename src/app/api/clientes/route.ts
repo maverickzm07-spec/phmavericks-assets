@@ -4,12 +4,15 @@ import { getUserFromRequest } from '@/lib/auth'
 import { canWriteClients } from '@/lib/permissions'
 import { z } from 'zod'
 
+// Datos esenciales de un cliente: nombre o razón social, contacto, correo y
+// cédula o RUC. El resto es opcional para no repetir información en cada alta.
 const clientSchema = z.object({
-  name: z.string().min(1),
-  business: z.string().min(1),
+  name: z.string().min(1, 'El nombre o razón social es obligatorio'),
+  business: z.string().optional(),
   contact: z.string().optional(),
   whatsapp: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z.string().email('Correo electrónico inválido').optional().or(z.literal('')),
+  cedulaRuc: z.string().optional(),
   status: z.enum(['ACTIVE', 'PAUSED', 'FINISHED']).default('ACTIVE'),
   notes: z.string().optional(),
 })
@@ -54,10 +57,11 @@ export async function POST(request: NextRequest) {
     const client = await prisma.client.create({
       data: {
         name: data.name,
-        business: data.business,
+        business: data.business || null,
         contact: data.contact || null,
         whatsapp: data.whatsapp || null,
         email: data.email || null,
+        cedulaRuc: data.cedulaRuc || null,
         status: data.status,
         notes: data.notes || null,
       },

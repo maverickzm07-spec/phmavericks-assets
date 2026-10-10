@@ -84,7 +84,7 @@ export default function ProyectosPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Total', value: projects.length, color: 'text-phm-gold' },
           { label: 'Activos', value: pending, color: 'text-amber-400' },

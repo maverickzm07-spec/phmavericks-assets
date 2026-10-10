@@ -122,7 +122,7 @@ export default function NuevoUsuarioPage() {
       <PremiumCard padding="md">
         {step === 'form' && (
           <form onSubmit={handleSendCode} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className={labelCls}>Nombre completo *</label>
                 <input name="name" value={form.name} onChange={handleChange} required placeholder="Ej: María González" className={inputCls} />

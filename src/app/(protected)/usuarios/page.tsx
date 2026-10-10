@@ -96,7 +96,7 @@ export default function UsuariosPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
         {Object.entries(ROLE_LABELS).map(([key, label]) => (
           <PremiumCard key={key} padding="sm">
             <RoleBadge role={key} />

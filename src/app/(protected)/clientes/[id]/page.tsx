@@ -203,7 +203,7 @@ export default function ClienteDetailPage() {
       <PremiumCard padding="md">
         <h2 className="font-semibold text-white mb-5">Información del cliente</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Nombre *</label>
               <input name="name" value={form.name} onChange={handleChange} required className={inputCls} />
@@ -213,7 +213,7 @@ export default function ClienteDetailPage() {
               <input name="business" value={form.business} onChange={handleChange} required className={inputCls} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Contacto</label>
               <input name="contact" value={form.contact} onChange={handleChange} className={inputCls} />
@@ -223,7 +223,7 @@ export default function ClienteDetailPage() {
               <input name="whatsapp" value={form.whatsapp} onChange={handleChange} className={inputCls} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Email</label>
               <input name="email" type="email" value={form.email} onChange={handleChange} className={inputCls} />
@@ -354,7 +354,7 @@ export default function ClienteDetailPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-3 divide-x divide-phm-border-soft border-b border-phm-border-soft">
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-x divide-phm-border-soft border-b border-phm-border-soft">
                 <div className="p-4 text-center">
                   <p className="text-xs text-phm-gray-soft mb-1">Total contratado</p>
                   <p className="text-lg font-bold text-white">{formatCurrency(ingresos.reduce((s, i) => s + i.monto, 0))}</p>
@@ -410,34 +410,6 @@ export default function ClienteDetailPage() {
         </PremiumCard>
       )}
 
-      {/* Planes mensuales */}
-      {client.monthlyPlans?.length > 0 && (
-        <PremiumCard padding="none">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-phm-border-soft">
-            <h2 className="font-semibold text-white">Planes Mensuales</h2>
-            <Link href={`/planes/nuevo?clientId=${client.id}`}
-              className="text-sm text-phm-gold hover:text-phm-gold-bright transition-colors">+ Nuevo plan</Link>
-          </div>
-          <div className="divide-y divide-phm-border-soft">
-            {client.monthlyPlans.map((plan: any) => (
-              <div key={plan.id} className="flex items-center justify-between px-5 py-3.5 row-hover">
-                <div>
-                  <p className="text-sm font-medium text-white">{getMonthName(plan.month)} {plan.year}</p>
-                  <p className="text-xs text-phm-gray-soft">{plan._count?.contents || 0} contenidos · {formatCurrency(plan.monthlyPrice)}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {planStatusBadge(plan.planStatus)}
-                  {paymentStatusBadge(plan.paymentStatus)}
-                  <Link href={`/planes/${plan.id}`}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-phm-gray hover:text-phm-gold transition-colors ml-2">
-                    Ver <ArrowUpRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </PremiumCard>
-      )}
 
       <Modal
         isOpen={showDelete}

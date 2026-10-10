@@ -292,7 +292,7 @@ export default function ServiciosPage() {
               <button onClick={() => setShowForm(false)} className="text-phm-gray-soft hover:text-white transition-colors"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleFormSubmit} className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className={labelCls}>Nombre *</label>
                   <input name="nombre" value={form.nombre} onChange={handleFormChange} required placeholder="Ej: Plan Básico Redes" className={inputCls} />

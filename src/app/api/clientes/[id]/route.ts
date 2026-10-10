@@ -6,7 +6,8 @@ import { z } from 'zod'
 
 const clientSchema = z.object({
   name: z.string().min(1).optional(),
-  business: z.string().min(1).optional(),
+  business: z.string().optional(),
+  cedulaRuc: z.string().optional(),
   contact: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
@@ -51,7 +52,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const updateData: any = {}
     if (data.name !== undefined) updateData.name = data.name
-    if (data.business !== undefined) updateData.business = data.business
+    if (data.business !== undefined) updateData.business = data.business || null
+    if (data.cedulaRuc !== undefined) updateData.cedulaRuc = data.cedulaRuc || null
     if (data.contact !== undefined) updateData.contact = data.contact || null
     if (data.whatsapp !== undefined) updateData.whatsapp = data.whatsapp || null
     if (data.email !== undefined) updateData.email = data.email || null

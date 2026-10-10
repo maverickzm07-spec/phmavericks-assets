@@ -115,11 +115,12 @@ export const NAV_ROLES: Record<string, string[]> = {
   '/dashboard':  ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
   '/clientes':   ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
   '/servicios':  ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'SOLO_LECTURA'],
-  '/planes':     ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
   '/proyectos':  ['SUPER_ADMIN', 'ADMIN', 'PRODUCCION', 'SOLO_LECTURA'],
   '/contenidos': ['SUPER_ADMIN', 'ADMIN', 'PRODUCCION', 'SOLO_LECTURA'],
   '/reportes':   ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'SOLO_LECTURA'],
   '/ingresos':   ['SUPER_ADMIN', 'ADMIN'],
+  '/gastos':     ['SUPER_ADMIN', 'ADMIN'],
+  '/finanzas':   ['SUPER_ADMIN', 'ADMIN'],
   '/usuarios':   ['SUPER_ADMIN'],
   '/calendario': ['SUPER_ADMIN', 'ADMIN', 'VENTAS', 'PRODUCCION', 'SOLO_LECTURA'],
 }

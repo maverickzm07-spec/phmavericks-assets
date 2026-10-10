@@ -11,7 +11,7 @@ export default function NuevoClientePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    name: '', business: '', contact: '', whatsapp: '', email: '', status: 'ACTIVE', notes: '',
+    name: '', business: '', contact: '', whatsapp: '', email: '', cedulaRuc: '', status: 'ACTIVE', notes: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -46,41 +46,47 @@ export default function NuevoClientePage() {
 
       <PremiumCard padding="md">
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>Nombre del cliente *</label>
+              <label className={labelCls}>Nombre o razón social *</label>
               <input name="name" value={form.name} onChange={handleChange} required className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Marca / Negocio *</label>
-              <input name="business" value={form.business} onChange={handleChange} required className={inputCls} />
+              <label className={labelCls}>Cédula o RUC</label>
+              <input name="cedulaRuc" value={form.cedulaRuc} onChange={handleChange}
+                placeholder="Para facturación" className={inputCls} />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>Persona de contacto</label>
-              <input name="contact" value={form.contact} onChange={handleChange} className={inputCls} />
+              <label className={labelCls}>WhatsApp o teléfono</label>
+              <input name="whatsapp" value={form.whatsapp} onChange={handleChange} placeholder="+593 99 123 4567" className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>WhatsApp</label>
-              <input name="whatsapp" value={form.whatsapp} onChange={handleChange} placeholder="+521234567890" className={inputCls} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Email</label>
+              <label className={labelCls}>Correo electrónico</label>
               <input name="email" type="email" value={form.email} onChange={handleChange} className={inputCls} />
             </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className={labelCls}>Estado</label>
-              <select name="status" value={form.status} onChange={handleChange} className={selectCls}>
-                <option value="ACTIVE">Activo</option>
-                <option value="PAUSED">Pausado</option>
-                <option value="FINISHED">Finalizado</option>
-              </select>
+              <label className={labelCls}>Marca o negocio <span className="text-phm-gray-soft font-normal">(opcional)</span></label>
+              <input name="business" value={form.business} onChange={handleChange} className={inputCls} />
             </div>
+            <div>
+              <label className={labelCls}>Persona de contacto <span className="text-phm-gray-soft font-normal">(opcional)</span></label>
+              <input name="contact" value={form.contact} onChange={handleChange} className={inputCls} />
+            </div>
+          </div>
+
+          <div className="sm:max-w-[50%]">
+            <label className={labelCls}>Estado</label>
+            <select name="status" value={form.status} onChange={handleChange} className={selectCls}>
+              <option value="ACTIVE">Activo</option>
+              <option value="PAUSED">Pausado</option>
+              <option value="FINISHED">Finalizado</option>
+            </select>
           </div>
 
           <div>

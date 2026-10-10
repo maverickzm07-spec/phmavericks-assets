@@ -8,12 +8,16 @@ import { ClientProject } from '@/types'
 import PremiumCard from '@/components/ui/PremiumCard'
 import ProgressBar from '@/components/ui/ProgressBar'
 import DeliverySection from '@/components/ui/DeliverySection'
+import DocumentosAdjuntos from '@/components/ui/DocumentosAdjuntos'
+import { ESTADOS_VIGENTES, ESTADO_LABELS } from '@/lib/projectStatus'
 import {
   getStatusLabel, getProjectStatusColor, getFormatoLabel,
   getContentTypeLabel, getContentStatusColor, getModalidadLabel,
 } from '@/lib/utils'
 
-const ESTADOS_PROYECTO  = ['PENDIENTE','EN_PROCESO','EN_EDICION','APROBADO','ENTREGADO','COMPLETADO','ATRASADO']
+// Flujo vigente. Si el proyecto conserva un estado antiguo se añade a la lista
+// para no perderlo al abrir el selector.
+const ESTADOS_PROYECTO = [...ESTADOS_VIGENTES]
 const ESTADOS_CONTENIDO = ['PENDING','EDITING','EN_PROCESO','APPROVED','ENTREGADO','PUBLISHED','COMPLETED']
 const METODOS_PAGO = ['EFECTIVO','TRANSFERENCIA','DEPOSITO','TARJETA','OTRO']
 const fmt = (v: number) => `$${v.toLocaleString('es-CO', { minimumFractionDigits: 0 })}`
@@ -238,10 +242,26 @@ export default function ProyectoDetailPage() {
                 <span className="text-xs text-phm-gray-soft">{project.service.nombre}</span>
               )}
             </div>
+            {(project as any).descripcion && (
+              <p className="text-sm text-phm-gray">{(project as any).descripcion}</p>
+            )}
+            {(project as any).fechaGrabacion && (
+              <p className="text-xs text-phm-gray-soft">
+                Grabación o sesión:{' '}
+                <span className="text-phm-gray">{new Date((project as any).fechaGrabacion).toLocaleDateString('es-EC')}</span>
+              </p>
+            )}
             {project.fechaEntrega && (
               <p className="text-xs text-phm-gray-soft">
                 Fecha de entrega:{' '}
-                <span className="text-phm-gray">{new Date(project.fechaEntrega).toLocaleDateString('es-CO')}</span>
+                <span className="text-phm-gray">{new Date(project.fechaEntrega).toLocaleDateString('es-EC')}</span>
+              </p>
+            )}
+            {(project as any).driveLink && (
+              <p className="text-xs text-phm-gray-soft">
+                Carpeta de Drive:{' '}
+                <a href={(project as any).driveLink} target="_blank" rel="noopener noreferrer"
+                  className="text-phm-gold hover:text-phm-gold-bright underline underline-offset-2">Abrir en Google Drive</a>
               </p>
             )}
             {project.observaciones && (
@@ -253,7 +273,10 @@ export default function ProyectoDetailPage() {
             <select value={editEstado} onChange={e => { setEditEstado(e.target.value); updateEstado(e.target.value) }}
               disabled={saving}
               className="px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-phm-gray text-sm focus:outline-none focus:border-phm-gold/40 disabled:opacity-50 transition-colors">
-              {ESTADOS_PROYECTO.map(e => <option key={e} value={e}>{getStatusLabel(e, 'project')}</option>)}
+              {(ESTADOS_PROYECTO.includes(project.estado as any)
+                ? ESTADOS_PROYECTO
+                : [project.estado, ...ESTADOS_PROYECTO]
+              ).map(e => <option key={e} value={e}>{ESTADO_LABELS[e] ?? getStatusLabel(e, 'project')}</option>)}
             </select>
           </div>
         </div>
@@ -285,7 +308,7 @@ export default function ProyectoDetailPage() {
         </div>
 
         {/* Métricas */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-phm-surface border border-phm-border-soft rounded-lg p-3 text-center">
             <p className="text-xs text-phm-gray-soft mb-1">Precio base</p>
             <p className="text-base font-bold text-phm-gray">{project.precioBase != null ? fmt(project.precioBase) : '—'}</p>
@@ -329,7 +352,7 @@ export default function ProyectoDetailPage() {
         {showPagoForm && (
           <div className="mt-4 pt-4 border-t border-phm-border-soft">
             <p className="text-xs font-medium text-phm-gray-soft uppercase tracking-wide mb-3">Registrar pago</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-phm-gray-soft mb-1">Monto *</label>
                 <input type="number" min="0" step="0.01" placeholder="0.00"
@@ -389,6 +412,17 @@ export default function ProyectoDetailPage() {
         )}
       </PremiumCard>
 
+      {/* Documentos: cotización aprobada y comprobantes */}
+      <PremiumCard padding="md">
+        <DocumentosAdjuntos
+          projectId={project.id}
+          tipo="COTIZACION"
+          titulo="Cotización y documentos"
+          descripcion="La cotización aprobada por el cliente y cualquier comprobante del proyecto."
+          accept="application/pdf,application/xml,text/xml"
+        />
+      </PremiumCard>
+
       {/* Entrega del cliente */}
       <PremiumCard padding="md">
         <h2 className="font-semibold text-white mb-5">Entrega del cliente</h2>
@@ -400,6 +434,10 @@ export default function ProyectoDetailPage() {
           entityType="PROJECT"
           entityId={project.id}
           existingAccess={project.deliveryAccesses?.[0] ?? null}
+          clientName={project.client?.name}
+          clientWhatsapp={(project.client as any)?.whatsapp ?? null}
+          clientEmail={(project.client as any)?.email ?? null}
+          projectName={project.nombre}
         />
       </PremiumCard>
 
