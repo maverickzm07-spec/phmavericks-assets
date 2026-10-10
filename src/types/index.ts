@@ -111,9 +111,6 @@ export interface DashboardStats {
   activeClients: number
   pendingContents: number
   completedContents: number
-  completedPlans: number
-  delayedPlans: number
   avgCompliance: number
-  recentPlans: MonthlyPlan[]
   recentProjects?: ClientProject[]
 }

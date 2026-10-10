@@ -89,7 +89,7 @@ function NuevoContenidoForm() {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/contenidos" className="text-phm-gray-soft hover:text-white transition-colors p-1">
+        <Link href="/proyectos" className="text-phm-gray-soft hover:text-white transition-colors p-1">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
@@ -108,7 +108,7 @@ function NuevoContenidoForm() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Proyecto <span className="text-phm-gray-soft font-normal">(opcional)</span></label>
               <select name="projectId" value={form.projectId} onChange={handleChange} disabled={!form.clientId}
@@ -127,7 +127,7 @@ function NuevoContenidoForm() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Tipo *</label>
               <select name="type" value={form.type} onChange={handleChange} className={selectCls}>
@@ -142,7 +142,7 @@ function NuevoContenidoForm() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Título *</label>
               <input name="title" value={form.title} onChange={handleChange} required
@@ -162,7 +162,7 @@ function NuevoContenidoForm() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Link de Drive / entrega</label>
               <input name="driveLink" value={form.driveLink} onChange={handleChange} type="url"
@@ -183,7 +183,7 @@ function NuevoContenidoForm() {
 
           <div>
             <label className={labelCls}>Métricas <span className="text-phm-gray-soft font-normal">(opcional, para contenidos de redes)</span></label>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {[
                 { name: 'views', label: 'Views', color: 'text-white' },
                 { name: 'likes', label: 'Likes', color: 'text-red-400' },
@@ -213,7 +213,7 @@ function NuevoContenidoForm() {
               className="flex-1 py-2.5 text-sm font-semibold text-white bg-phm-red hover:bg-phm-red-hover rounded-lg transition-colors disabled:opacity-50">
               {loading ? 'Guardando...' : 'Guardar Contenido'}
             </button>
-            <Link href="/contenidos"
+            <Link href="/proyectos"
               className="px-6 py-2.5 text-sm font-medium text-phm-gray bg-phm-surface border border-phm-border-soft hover:border-phm-gold/40 rounded-lg transition-all text-center">
               Cancelar
             </Link>

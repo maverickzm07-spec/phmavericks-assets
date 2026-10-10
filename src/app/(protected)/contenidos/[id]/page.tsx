@@ -95,7 +95,7 @@ export default function ContenidoDetailPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/contenidos" className="text-phm-gray-soft hover:text-white transition-colors p-1">
+        <Link href="/proyectos" className="text-phm-gray-soft hover:text-white transition-colors p-1">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1 min-w-0">
@@ -115,7 +115,7 @@ export default function ContenidoDetailPage() {
       {/* Métricas actuales */}
       {(content.views > 0 || content.likes > 0) && (
         <>
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
               { label: 'Views', value: content.views, icon: '👁', color: 'text-white' },
               { label: 'Likes', value: content.likes, icon: '❤️', color: 'text-red-400' },
@@ -143,7 +143,7 @@ export default function ContenidoDetailPage() {
       <PremiumCard padding="md">
         <h2 className="font-semibold text-white mb-5">Editar contenido</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Cliente</label>
               <select name="clientId" value={form.clientId} onChange={handleChange} className={selectCls}>
@@ -158,7 +158,7 @@ export default function ContenidoDetailPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Tipo</label>
               <select name="type" value={form.type} onChange={handleChange} className={selectCls}>
@@ -184,7 +184,7 @@ export default function ContenidoDetailPage() {
             <input name="title" value={form.title} onChange={handleChange} required className={inputCls} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Link de Drive</label>
               <input name="driveLink" value={form.driveLink} onChange={handleChange} type="url"
@@ -205,7 +205,7 @@ export default function ContenidoDetailPage() {
 
           <div>
             <label className={labelCls}>Métricas</label>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {[
                 { name: 'views', label: 'Views', color: 'text-white' },
                 { name: 'likes', label: 'Likes', color: 'text-red-400' },

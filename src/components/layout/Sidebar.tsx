@@ -7,10 +7,12 @@ import {
   LayoutDashboard,
   Users,
   Package,
-  CalendarRange,
+
   FolderKanban,
   FileBarChart2,
   DollarSign,
+  PieChart,
+  Wallet,
   UsersRound,
   CalendarDays,
   X,
@@ -23,12 +25,15 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/clientes', label: 'Clientes', icon: Users },
   { href: '/servicios', label: 'Servicios', icon: Package },
-  { href: '/planes', label: 'Planes Mensuales', icon: CalendarRange },
   { href: '/proyectos', label: 'Proyectos', icon: FolderKanban },
-  // Contenidos oculto del menú a pedido (el módulo sigue funcionando por dentro: planes, reportes y proyectos lo usan)
-  // { href: '/contenidos', label: 'Contenidos', icon: Film },
+  // Planes Mensuales y Contenidos se retiraron como módulos administrativos.
+  // Sus datos se conservan: el histórico financiero y los enlaces públicos de
+  // entrega siguen dependiendo de ellos, y los entregables de un proyecto son
+  // registros de Content gestionados desde la propia ficha del proyecto.
   { href: '/reportes', label: 'Reportes', icon: FileBarChart2 },
+  { href: '/finanzas', label: 'Finanzas', icon: PieChart },
   { href: '/ingresos', label: 'Ingresos', icon: DollarSign },
+  { href: '/gastos', label: 'Gastos', icon: Wallet },
   { href: '/usuarios', label: 'Equipo', icon: UsersRound },
   { href: '/calendario', label: 'Calendario', icon: CalendarDays },
 ]

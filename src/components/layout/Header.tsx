@@ -10,8 +10,6 @@ const breadcrumbs: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/clientes': 'Clientes',
   '/clientes/nuevo': 'Nuevo Cliente',
-  '/planes': 'Planes Mensuales',
-  '/planes/nuevo': 'Nuevo Plan',
   '/reportes': 'Reportes',
   '/ingresos': 'Ingresos',
   '/proyectos': 'Proyectos',
@@ -195,7 +193,6 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const getParent = () => {
     if (pathname.includes('/clientes/') && pathname !== '/clientes/nuevo') return { href: '/clientes', label: 'Clientes' }
-    if (pathname.includes('/planes/') && pathname !== '/planes/nuevo') return { href: '/planes', label: 'Planes' }
     if (pathname.includes('/reportes/') && pathname !== '/reportes') return { href: '/reportes', label: 'Reportes' }
     return null
   }
