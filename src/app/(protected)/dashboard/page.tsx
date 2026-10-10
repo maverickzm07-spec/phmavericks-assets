@@ -18,6 +18,42 @@ import { formatCurrency } from '@/lib/utils'
 import { TYPE_LABELS_ES } from '@/lib/calendar-constants'
 import PremiumCard from '@/components/ui/PremiumCard'
 import DashboardFinancialSummary from '@/components/ui/DashboardFinancialSummary'
+import GraficoIngresosGastos, { type PuntoMes } from '@/components/ui/GraficoIngresosGastos'
+import AnilloProgreso from '@/components/ui/AnilloProgreso'
+import Donut from '@/components/ui/Donut'
+
+/** Rampa del rojo corporativo, de la categoría que más pesa a la que menos. */
+const TONOS_GASTO = ['#C41E1E', '#9E1A1A', '#7A1717', '#5C1414', '#421010', '#2E0C0C']
+
+interface Analitica {
+  serie: PuntoMes[]
+  distribucionGastos: { nombre: string; valor: number }[]
+  avance: {
+    cobradoMes: number
+    metaMensual: number | null
+    cobranza: number | null
+    enProduccion: number
+    cumplimientoEntregas: number | null
+    entregasComprometidas: number
+    entregasCumplidas: number
+  }
+  hayDatos: boolean
+}
+
+/** Un hueco sin datos se explica; no se deja en blanco ni se finge un cero. */
+function EstadoVacio({ titulo, texto, accion }: { titulo: string; texto: string; accion?: { href: string; texto: string } }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+      <p className="text-sm font-semibold text-white">{titulo}</p>
+      <p className="max-w-[34ch] text-xs leading-relaxed text-phm-gray-soft">{texto}</p>
+      {accion && (
+        <Link href={accion.href} className="mt-2 text-xs font-semibold text-phm-red-bright transition-colors hover:text-red-400">
+          {accion.texto}
+        </Link>
+      )}
+    </div>
+  )
+}
 
 interface IncomeData {
   total: number
@@ -94,6 +130,7 @@ export default function DashboardPage() {
   const [gastosMes, setGastosMes] = useState<number | null>(null)
   const [resultadoOperativo, setResultadoOperativo] = useState<number | null>(null)
   const [entregasPendientes, setEntregasPendientes] = useState(0)
+  const [analitica, setAnalitica] = useState<Analitica | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
@@ -164,6 +201,14 @@ export default function DashboardPage() {
   useEffect(() => {
     if (showFinancials) fetchIncome(incomeRange)
   }, [fetchIncome, incomeRange, showFinancials])
+
+  useEffect(() => {
+    if (!showFinancials) return
+    fetch('/api/dashboard/analitica?meses=6')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setAnalitica(d))
+      .catch(() => setAnalitica(null))
+  }, [showFinancials])
 
   useEffect(() => {
     if (!userRole) return
@@ -281,6 +326,111 @@ export default function DashboardPage() {
           </Link>
         ))}
       </section>
+
+      {/* Analítica. Solo para quien ve finanzas: el resto no debe inferir
+          importes a partir de los gráficos. */}
+      {showFinancials && (
+        <section className="grid gap-4 lg:grid-cols-[1.45fr_1fr]" aria-label="Analítica">
+          <PremiumCard padding="none">
+            <div className="flex items-start justify-between gap-3 border-b border-white/[0.07] px-5 py-4">
+              <div>
+                <h2 className="text-sm font-semibold text-white">Cobrado y pagado</h2>
+                <p className="mt-0.5 text-xs text-phm-gray-soft">Últimos 6 meses · solo dinero que se movió</p>
+              </div>
+              <Link href="/finanzas" className="flex-none text-xs font-medium text-phm-red-bright transition-colors hover:text-red-400">
+                Finanzas
+              </Link>
+            </div>
+            <div className="px-5 py-5">
+              {analitica?.hayDatos ? (
+                <GraficoIngresosGastos datos={analitica.serie} />
+              ) : (
+                <EstadoVacio
+                  titulo="Todavía no hay movimientos"
+                  texto="En cuanto registres un cobro o un gasto, aquí verás su evolución mes a mes."
+                />
+              )}
+            </div>
+          </PremiumCard>
+
+          <PremiumCard padding="none">
+            <div className="border-b border-white/[0.07] px-5 py-4">
+              <h2 className="text-sm font-semibold text-white">En qué se va el dinero</h2>
+              <p className="mt-0.5 text-xs text-phm-gray-soft">Gastos por categoría</p>
+            </div>
+            <div className="flex items-center justify-center px-5 py-5">
+              {analitica && analitica.distribucionGastos.length > 0 ? (
+                <Donut
+                  data={analitica.distribucionGastos.map((c, i) => ({
+                    label: c.nombre,
+                    value: c.valor,
+                    // Rampa del rojo corporativo por magnitud: la categoría que
+                    // más pesa va más intensa. Al ir ordenadas y etiquetadas, la
+                    // lectura no depende de distinguir matices.
+                    color: TONOS_GASTO[Math.min(i, TONOS_GASTO.length - 1)],
+                  }))}
+                  size={168}
+                  thickness={17}
+                  centerLabel="Total"
+                  centerValue={formatCurrency(
+                    analitica.distribucionGastos.reduce((s, c) => s + c.valor, 0),
+                  )}
+                />
+              ) : (
+                <EstadoVacio
+                  titulo="Sin gastos registrados"
+                  texto="Registra un gasto y verás aquí su reparto por categoría."
+                  accion={{ href: '/gastos', texto: 'Ir a Gastos' }}
+                />
+              )}
+            </div>
+          </PremiumCard>
+        </section>
+      )}
+
+      {/* Anillos de avance */}
+      {showFinancials && analitica && (
+        <PremiumCard padding="none">
+          <div className="border-b border-white/[0.07] px-5 py-4">
+            <h2 className="text-sm font-semibold text-white">Avance</h2>
+            <p className="mt-0.5 text-xs text-phm-gray-soft">
+              Dónde está la operación respecto a lo comprometido
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-5 px-5 py-6 sm:grid-cols-4">
+            <AnilloProgreso
+              valor={analitica.avance.metaMensual
+                ? Math.round((analitica.avance.cobradoMes / analitica.avance.metaMensual) * 100)
+                : null}
+              etiqueta="Cobrado este mes"
+              centro={formatCurrency(analitica.avance.cobradoMes)}
+              pie={analitica.avance.metaMensual ? `de ${formatCurrency(analitica.avance.metaMensual)}` : undefined}
+              tono="ok"
+            />
+            <AnilloProgreso
+              valor={analitica.avance.cobranza}
+              etiqueta="Cobranza de proyectos"
+              pie={analitica.avance.cobranza !== null ? 'de lo contratado' : undefined}
+              tono="rojo"
+            />
+            <AnilloProgreso
+              valor={analitica.avance.cumplimientoEntregas}
+              etiqueta="Entregas cumplidas"
+              pie={analitica.avance.entregasComprometidas > 0
+                ? `${analitica.avance.entregasCumplidas} de ${analitica.avance.entregasComprometidas}`
+                : undefined}
+              tono="aviso"
+            />
+            <AnilloProgreso
+              valor={analitica.avance.enProduccion > 0 ? 100 : null}
+              etiqueta="En producción"
+              centro={String(analitica.avance.enProduccion)}
+              pie={analitica.avance.enProduccion === 1 ? 'proyecto' : 'proyectos'}
+              tono="neutro"
+            />
+          </div>
+        </PremiumCard>
+      )}
 
       <section className="grid gap-4 lg:grid-cols-[1.65fr_1fr]">
         <PremiumCard padding="none">
