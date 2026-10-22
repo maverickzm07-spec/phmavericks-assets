@@ -417,11 +417,26 @@ export default function ProyectoDetailPage() {
         <DocumentosAdjuntos
           projectId={project.id}
           tipo="COTIZACION"
+          tipos={['COTIZACION', 'COMPROBANTE', 'OTRO']}
           titulo="Cotización y documentos"
           descripcion="La cotización aprobada por el cliente y cualquier comprobante del proyecto."
-          accept="application/pdf,application/xml,text/xml"
         />
       </PremiumCard>
+
+      {/* Factura del SRI: solo para quien ve las finanzas */}
+      {canAdmin && (
+        <PremiumCard padding="md">
+          <DocumentosAdjuntos
+            projectId={project.id}
+            tipo="FACTURA_PDF"
+            tipos={['FACTURA_PDF', 'FACTURA_XML']}
+            titulo="Factura"
+            descripcion="La factura emitida en el SRI para este proyecto, en PDF y/o XML."
+            accept=".pdf,.xml"
+            pedirNumeroFactura
+          />
+        </PremiumCard>
+      )}
 
       {/* Entrega del cliente */}
       <PremiumCard padding="md">

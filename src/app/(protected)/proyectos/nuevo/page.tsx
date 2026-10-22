@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, FileText, Plus, X } from 'lucide-react'
 import PremiumCard from '@/components/ui/PremiumCard'
 import { ESTADOS_VIGENTES, ESTADO_LABELS } from '@/lib/projectStatus'
+import { ACCEPT_DOCUMENTOS, mensajeErrorSubida } from '@/components/ui/DocumentosAdjuntos'
 
 const CONTENT_TYPES = [
   { value: 'VIDEO', label: 'Video' },
@@ -169,8 +170,7 @@ function NuevoProyectoForm() {
         fd.append('projectId', creado.id)
         const up = await fetch('/api/documentos', { method: 'POST', body: fd })
         if (!up.ok) {
-          const data = await up.json().catch(() => ({}))
-          setAviso(`El proyecto se guardó, pero la cotización no se pudo adjuntar: ${data.error || 'error al subir'}. Puedes adjuntarla desde la ficha del proyecto.`)
+          setAviso(`El proyecto se guardó, pero la cotización no se pudo adjuntar: ${await mensajeErrorSubida(up)} Puedes adjuntarla desde la ficha del proyecto.`)
           setLoading(false)
           return
         }
@@ -257,16 +257,16 @@ function NuevoProyectoForm() {
 
         <PremiumCard padding="md">
           <h2 className="text-sm font-semibold text-phm-gray mb-1">Cotización aprobada</h2>
-          <p className="text-xs text-phm-gray-soft mb-4">Adjunta el PDF que el cliente aprobó. Queda guardado en la ficha del proyecto.</p>
+          <p className="text-xs text-phm-gray-soft mb-4">Adjunta la cotización que el cliente aprobó (PDF, Word, Excel o imagen). Queda guardado en la ficha del proyecto.</p>
 
           <label htmlFor="cotizacion"
             className="flex items-center gap-3 px-4 py-3 bg-phm-surface border border-dashed border-phm-border-soft hover:border-phm-red-bright/40 rounded-lg cursor-pointer transition-colors">
             <FileText className="w-4 h-4 text-phm-red-bright flex-shrink-0" />
             <span className="text-sm text-phm-gray truncate">
-              {cotizacion ? cotizacion.name : 'Seleccionar archivo PDF (máximo 10 MB)'}
+              {cotizacion ? cotizacion.name : 'Seleccionar archivo (máximo 25 MB)'}
             </span>
           </label>
-          <input id="cotizacion" type="file" accept="application/pdf" className="sr-only"
+          <input id="cotizacion" type="file" accept={ACCEPT_DOCUMENTOS} className="sr-only"
             onChange={(e) => setCotizacion(e.target.files?.[0] ?? null)} />
           {cotizacion && (
             <button type="button" onClick={() => setCotizacion(null)}

@@ -535,7 +535,8 @@ function IngresosPageInner() {
                   tipo="FACTURA_PDF"
                   titulo="Factura y comprobantes"
                   descripcion="Adjunta la factura emitida en el SRI, en PDF o XML."
-                  accept="application/pdf,application/xml,text/xml"
+                  accept=".pdf,.xml"
+                  pedirNumeroFactura
                 />
               </div>
               {showDetalle.observaciones && <div><p className="text-xs text-phm-gray-soft mb-1">Observaciones</p><p className="text-sm text-phm-gray">{showDetalle.observaciones}</p></div>}

@@ -187,6 +187,9 @@ server {
     listen 80;
     server_name tu-dominio.com;
 
+    # Adjuntos de hasta 25 MB (la app valida el límite exacto).
+    client_max_body_size 30M;
+
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;

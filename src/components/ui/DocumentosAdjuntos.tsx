@@ -21,6 +21,20 @@ const TIPO_LABELS: Record<string, string> = {
   OTRO: 'Documento',
 }
 
+/**
+ * Formatos que acepta el servidor (ver src/lib/storage.ts). Se listan por
+ * extensión porque Windows a veces no reporta el tipo de XML, Word o Excel.
+ */
+export const ACCEPT_DOCUMENTOS = '.pdf,.xml,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx'
+
+/** Traduce una respuesta fallida de la subida a un mensaje entendible. */
+export async function mensajeErrorSubida(res: Response): Promise<string> {
+  // 413 lo devuelve Nginx (HTML, no JSON) cuando el archivo excede su límite.
+  if (res.status === 413) return 'El archivo es demasiado grande. El máximo es 25 MB.'
+  const data = await res.json().catch(() => ({}))
+  return data.error || `No se pudo subir el documento (error ${res.status}).`
+}
+
 function formatoTamano(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
@@ -32,6 +46,10 @@ interface Props {
   ingresoId?: string
   /** Tipo que se asigna al subir desde este panel. */
   tipo?: string
+  /** Si se indica, el panel solo lista documentos de estos tipos. */
+  tipos?: string[]
+  /** Muestra un campo para el número de factura antes de adjuntar. */
+  pedirNumeroFactura?: boolean
   titulo?: string
   descripcion?: string
   /** Formatos aceptados por el selector de archivos. */
@@ -43,18 +61,22 @@ export default function DocumentosAdjuntos({
   projectId,
   ingresoId,
   tipo = 'OTRO',
+  tipos,
+  pedirNumeroFactura = false,
   titulo = 'Documentos',
   descripcion,
-  accept = 'application/pdf',
+  accept = ACCEPT_DOCUMENTOS,
   puedeEditar = true,
 }: Props) {
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [cargando, setCargando] = useState(true)
   const [subiendo, setSubiendo] = useState(false)
   const [error, setError] = useState('')
+  const [numeroFactura, setNumeroFactura] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const query = projectId ? `projectId=${projectId}` : `ingresoId=${ingresoId}`
+  const filtroTipos = tipos?.length ? `&tipos=${tipos.join(',')}` : ''
+  const query = (projectId ? `projectId=${projectId}` : `ingresoId=${ingresoId}`) + filtroTipos
 
   const cargar = useCallback(async () => {
     try {
@@ -76,13 +98,14 @@ export default function DocumentosAdjuntos({
     fd.append('tipo', tipo)
     if (projectId) fd.append('projectId', projectId)
     if (ingresoId) fd.append('ingresoId', ingresoId)
+    if (pedirNumeroFactura && numeroFactura.trim()) fd.append('numeroFactura', numeroFactura.trim())
 
     try {
       const res = await fetch('/api/documentos', { method: 'POST', body: fd })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.error || 'No se pudo subir el documento')
+        setError(await mensajeErrorSubida(res))
       } else {
+        setNumeroFactura('')
         await cargar()
       }
     } catch {
@@ -122,6 +145,12 @@ export default function DocumentosAdjuntos({
           </>
         )}
       </div>
+
+      {puedeEditar && pedirNumeroFactura && (
+        <input type="text" value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)}
+          placeholder="N.º de factura (opcional), ej. 001-001-000000123" maxLength={40}
+          className="w-full mb-3 px-3 py-2 bg-phm-surface border border-phm-border-soft rounded-lg text-sm text-white placeholder:text-phm-gray-soft focus:outline-none focus:border-phm-red-bright/50" />
+      )}
 
       {error && (
         <p className="mb-3 px-3 py-2 bg-red-950/60 border border-red-900/60 rounded-lg text-xs text-red-300">{error}</p>

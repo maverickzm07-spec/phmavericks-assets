@@ -7,6 +7,9 @@ import { ErrorArchivo, guardarArchivo } from '@/lib/storage'
 const TIPOS = ['COTIZACION', 'FACTURA_PDF', 'FACTURA_XML', 'COMPROBANTE', 'OTRO'] as const
 type Tipo = (typeof TIPOS)[number]
 
+/** Tipos que contienen montos facturados: solo los ve quien tiene acceso financiero. */
+const TIPOS_FACTURA: Tipo[] = ['FACTURA_PDF', 'FACTURA_XML']
+
 /** Lista los documentos de un proyecto o de un ingreso. */
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request)
@@ -16,6 +19,10 @@ export async function GET(request: NextRequest) {
   const projectId = searchParams.get('projectId')
   const ingresoId = searchParams.get('ingresoId')
   const gastoId = searchParams.get('gastoId')
+  // Filtro opcional: ?tipos=COTIZACION,OTRO
+  const tiposFiltro = (searchParams.get('tipos') || '')
+    .split(',')
+    .filter((t): t is Tipo => (TIPOS as readonly string[]).includes(t))
 
   if (!projectId && !ingresoId && !gastoId) {
     return NextResponse.json({ error: 'Indica projectId, ingresoId o gastoId' }, { status: 400 })
@@ -28,11 +35,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
   }
 
+  const financiero = canViewFinancials(user.role)
+  const tiposVisibles = (tiposFiltro.length ? tiposFiltro : [...TIPOS])
+    .filter((t) => financiero || !TIPOS_FACTURA.includes(t))
+
   const documentos = await prisma.documento.findMany({
     where: {
       ...(projectId ? { projectId } : {}),
       ...(ingresoId ? { ingresoId } : {}),
       ...(gastoId ? { gastoId } : {}),
+      tipo: { in: tiposVisibles },
     },
     select: {
       id: true,
@@ -69,15 +81,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Adjunta un archivo en el campo "archivo".' }, { status: 400 })
   }
 
-  const tipo = String(form.get('tipo') || 'OTRO') as Tipo
+  let tipo = String(form.get('tipo') || 'OTRO') as Tipo
   if (!TIPOS.includes(tipo)) {
     return NextResponse.json({ error: 'Tipo de documento no reconocido.' }, { status: 400 })
+  }
+  if (TIPOS_FACTURA.includes(tipo) && !canViewFinancials(user.role)) {
+    return NextResponse.json({ error: 'Sin permisos para adjuntar facturas' }, { status: 403 })
   }
 
   const projectId = (form.get('projectId') as string) || null
   const ingresoId = (form.get('ingresoId') as string) || null
   const gastoId = (form.get('gastoId') as string) || null
-  const numeroFactura = (form.get('numeroFactura') as string) || null
+  const numeroFactura = ((form.get('numeroFactura') as string) || '').trim().slice(0, 40) || null
 
   if (!projectId && !ingresoId && !gastoId) {
     return NextResponse.json({ error: 'El documento debe pertenecer a un proyecto, un ingreso o un gasto.' }, { status: 400 })
@@ -99,6 +114,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const guardado = await guardarArchivo(file)
+    // Una factura se sube como PDF o XML desde el mismo panel: el tipo exacto
+    // lo decide el formato real del archivo.
+    if (TIPOS_FACTURA.includes(tipo)) {
+      tipo = guardado.mimeType.includes('xml') ? 'FACTURA_XML' : 'FACTURA_PDF'
+    }
 
     const documento = await prisma.documento.create({
       data: {

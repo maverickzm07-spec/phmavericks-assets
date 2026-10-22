@@ -13,7 +13,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   if (!documento) return NextResponse.json({ error: 'Documento no encontrado' }, { status: 404 })
 
   // Facturas y comprobantes de dinero: solo con acceso financiero.
-  if ((documento.ingresoId || documento.gastoId) && !canViewFinancials(user.role)) {
+  const esFactura = documento.tipo === 'FACTURA_PDF' || documento.tipo === 'FACTURA_XML'
+  if ((documento.ingresoId || documento.gastoId || esFactura) && !canViewFinancials(user.role)) {
     return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
   }
 
