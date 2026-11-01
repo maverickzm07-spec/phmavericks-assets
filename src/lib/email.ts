@@ -129,9 +129,15 @@ export async function enviarEntregaPorCorreo(datos: {
   nombreCliente: string
   nombreTrabajo: string
   url: string
-}): Promise<{ enviado: boolean }> {
+}): Promise<{ enviado: boolean; motivo?: 'sin-smtp' | 'cuenta-no-corporativa' }> {
   const transporter = createTransporter()
-  if (!transporter) return { enviado: false }
+  if (!transporter) return { enviado: false, motivo: 'sin-smtp' }
+
+  // Si SMTP autentica con otra cuenta (p. ej. Gmail), el proveedor reescribe
+  // el remitente: el cliente no lo recibiría desde el buzón corporativo.
+  if (process.env.SMTP_USER?.trim().toLowerCase() !== DELIVERY_REPLY_TO) {
+    return { enviado: false, motivo: 'cuenta-no-corporativa' }
+  }
 
   const destinatario = datos.destinatario.trim()
   const correo = renderDeliveryEmail(datos)

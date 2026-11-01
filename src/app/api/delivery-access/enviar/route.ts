@@ -65,7 +65,12 @@ export async function POST(request: NextRequest) {
 
     if (!resultado.enviado) {
       return NextResponse.json(
-        { success: false, error: 'El servicio de correo no está configurado. La entrega no se ha enviado.' },
+        {
+          success: false,
+          error: resultado.motivo === 'cuenta-no-corporativa'
+            ? 'El correo del sistema no está configurado con contacto@phmavericks.com. La entrega no se ha enviado.'
+            : 'El servicio de correo no está configurado. La entrega no se ha enviado.',
+        },
         { status: 503 },
       )
     }

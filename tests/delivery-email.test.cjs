@@ -79,11 +79,16 @@ test('no confirma envío si faltan credenciales o SMTP rechaza al destinatario',
   const missing = emailService(async () => { calls++; return {} }, { SMTP_PASS: '' })
   assert.equal((await missing.enviarEntregaPorCorreo({ ...delivery, destinatario: 'cliente@example.test' })).enviado, false)
   assert.equal(calls, 0)
+  const personal = emailService(async () => { calls++; return {} }, { SMTP_USER: 'cuenta@gmail.com' })
+  const resultadoPersonal = await personal.enviarEntregaPorCorreo({ ...delivery, destinatario: 'cliente@example.test' })
+  assert.equal(resultadoPersonal.enviado, false)
+  assert.equal(resultadoPersonal.motivo, 'cuenta-no-corporativa')
+  assert.equal(calls, 0)
   const rejected = emailService(async () => ({ accepted: [], rejected: ['cliente@example.test'] }))
   await assert.rejects(() => rejected.enviarEntregaPorCorreo({ ...delivery, destinatario: 'cliente@example.test' }))
 })
 
-function routeFixture({ email = ' cliente@example.test ', active = true, user = { role: 'ADMIN', email: 'propietario@example.test' }, permitted = true, sent = true, slug = 'cliente-sesion-123' } = {}) {
+function routeFixture({ email = ' cliente@example.test ', active = true, user = { role: 'ADMIN', email: 'propietario@example.test' }, permitted = true, sent = true, motivo, slug = 'cliente-sesion-123' } = {}) {
   const calls = []
   const route = loadTs('src/app/api/delivery-access/enviar/route.ts', {
     'next/server': { NextResponse: { json: (data, init = {}) => ({ status: init.status || 200, data }) } },
@@ -93,7 +98,7 @@ function routeFixture({ email = ' cliente@example.test ', active = true, user = 
     }) } } },
     '@/lib/auth': { getUserFromRequest: async () => user },
     '@/lib/permissions': { canWriteContents: () => permitted },
-    '@/lib/email': { enviarEntregaPorCorreo: async data => { calls.push(data); return { enviado: sent } } },
+    '@/lib/email': { enviarEntregaPorCorreo: async data => { calls.push(data); return { enviado: sent, motivo } } },
   }, { NEXTAUTH_URL: 'https://app.phmavericks.com/' })
   return { calls, post: (body = { accessId: 'access-1' }) => route.POST({ json: async () => body }) }
 }
@@ -131,4 +136,10 @@ test('la API no devuelve éxito si SMTP no está configurado', async () => {
   assert.equal(result.status, 503)
   assert.equal(result.data.success, false)
   assert.ok(result.data.error.includes('no se ha enviado'))
+})
+
+test('la API explica cuando SMTP no usa el buzón corporativo', async () => {
+  const result = await routeFixture({ sent: false, motivo: 'cuenta-no-corporativa' }).post()
+  assert.equal(result.status, 503)
+  assert.ok(result.data.error.includes('contacto@phmavericks.com'))
 })

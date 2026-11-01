@@ -20,4 +20,4 @@ Ejecutar `node --test tests/delivery-email.test.cjs` y `npx tsc --noEmit`. Las p
 
 Tras desplegar, comprobar con una entrega de prueba y un buzón controlado que el remitente sea el corporativo, que el destinatario coincida con la ficha y que el banner y ambos enlaces abran esa entrega. Un resultado SMTP aceptado permite mostrar “Enviado”; no garantiza que el proveedor destinatario lo ubique en la bandeja de entrada.
 
-Si faltan credenciales SMTP, la API devuelve error 503 y la interfaz no muestra “Enviado”. Si el correo del cliente es inválido o el acceso está desactivado, se solicita corregirlo antes de enviar.
+Si faltan credenciales SMTP, o si `SMTP_USER` no es `contacto@phmavericks.com` (por ejemplo, una cuenta de Gmail, que reescribiría el remitente), la API devuelve error 503 y la interfaz no muestra “Enviado”. Si el correo del cliente es inválido o el acceso está desactivado, se solicita corregirlo antes de enviar.
