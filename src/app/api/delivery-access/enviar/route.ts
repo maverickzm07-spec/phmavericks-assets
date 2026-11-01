@@ -7,8 +7,6 @@ import { z } from 'zod'
 
 const schema = z.object({
   accessId: z.string().min(1),
-  /** Permite enviar a otra dirección distinta de la del cliente. */
-  destinatario: z.string().email('Correo electrónico inválido').optional(),
 })
 
 /**
@@ -40,16 +38,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'El enlace está desactivado. Actívalo antes de enviarlo.' }, { status: 400 })
     }
 
-    const destinatario = data.destinatario || access.client?.email
-    if (!destinatario) {
+    // La ficha del cliente es la única fuente del destinatario. Nunca usar
+    // el correo del usuario autenticado, SMTP_USER o un destino del navegador.
+    const correoCliente = z.string().trim().email().safeParse(access.client?.email)
+    if (!correoCliente.success) {
       return NextResponse.json(
-        { error: 'El cliente no tiene correo registrado. Agrégalo en su ficha o indica una dirección.' },
+        { error: 'El cliente no tiene un correo válido registrado. Corrígelo en su ficha antes de enviar.' },
         { status: 400 },
       )
     }
+    const destinatario = correoCliente.data
 
     const base = process.env.NEXTAUTH_URL?.replace(/\/$/, '') || 'https://app.phmavericks.com'
-    const url = access.publicSlug ? `${base}/e/${access.publicSlug}` : `${base}/entrega/${access.token}`
+    const ruta = access.publicSlug ? `/e/${encodeURIComponent(access.publicSlug)}` : `/entrega/${encodeURIComponent(access.token)}`
+    const url = new URL(ruta, base).toString()
 
     const nombreTrabajo = access.project?.nombre
       ?? (access.monthlyPlan ? `Plan ${access.monthlyPlan.month}/${access.monthlyPlan.year}` : 'tu entrega')
@@ -61,12 +63,17 @@ export async function POST(request: NextRequest) {
       url,
     })
 
+    if (!resultado.enviado) {
+      return NextResponse.json(
+        { success: false, error: 'El servicio de correo no está configurado. La entrega no se ha enviado.' },
+        { status: 503 },
+      )
+    }
+
     return NextResponse.json({
       success: true,
       destinatario,
-      mensaje: resultado.enviado
-        ? `Entrega enviada a ${destinatario}`
-        : 'SMTP no configurado: el correo se registró en la consola del servidor, no se envió.',
+      mensaje: `Entrega enviada a ${destinatario}`,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

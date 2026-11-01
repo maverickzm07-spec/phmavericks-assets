@@ -97,8 +97,9 @@ export default function DeliveryAccessCard({
   const mensajeCompartir = `Hola${clientName ? ` ${clientName}` : ''}, tu entrega${projectName ? ` de "${projectName}"` : ''} de PHMavericks ya está lista. Puedes verla aquí: ${deliveryUrl}`
 
   async function enviarCorreo() {
-    if (!access) return
+    if (!access || !access.isActive || enviando || loading) return
     setEnviando(true)
+    setEnviado(false)
     setMensajeEnvio(null)
     try {
       const r = await fetch('/api/delivery-access/enviar', {
@@ -107,7 +108,7 @@ export default function DeliveryAccessCard({
         body: JSON.stringify({ accessId: access.id }),
       })
       const data = await r.json()
-      if (!r.ok) {
+      if (!r.ok || data.success !== true) {
         setMensajeEnvio({ ok: false, texto: data.error || 'No se pudo enviar el correo' })
         return
       }
@@ -179,7 +180,7 @@ export default function DeliveryAccessCard({
             </a>
             <button
               onClick={enviarCorreo}
-              disabled={!access.isActive || enviando || !clientEmail}
+              disabled={!access.isActive || loading || enviando || !clientEmail?.trim()}
               title={clientEmail ? `Enviar a ${clientEmail}` : 'El cliente no tiene correo registrado'}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-yellow-500/40 hover:text-white transition-colors disabled:opacity-40"
             >
@@ -187,6 +188,12 @@ export default function DeliveryAccessCard({
               {enviado ? 'Enviado' : 'Enviar por correo'}
             </button>
           </div>
+
+          <p className="text-xs text-zinc-400 break-all">
+            {clientEmail?.trim()
+              ? `Se enviará a ${clientEmail.trim()} desde contacto@phmavericks.com`
+              : 'Agrega un correo en la ficha del cliente para enviar su entrega.'}
+          </p>
 
           {mensajeEnvio && (
             <p className={`text-xs ${mensajeEnvio.ok ? 'text-emerald-400' : 'text-red-400'}`}>{mensajeEnvio.texto}</p>
@@ -198,12 +205,12 @@ export default function DeliveryAccessCard({
               {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? 'Copiado' : 'Copiar'}
             </button>
-            <button onClick={regenerate} disabled={loading}
+            <button onClick={regenerate} disabled={loading || enviando}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white transition-colors disabled:opacity-40">
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
               Regenerar
             </button>
-            <button onClick={toggleActive} disabled={loading}
+            <button onClick={toggleActive} disabled={loading || enviando}
               className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-40 ${
                 access.isActive
                   ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
