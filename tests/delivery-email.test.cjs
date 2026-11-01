@@ -51,7 +51,7 @@ function emailService(sendMail, env = {}) {
   }, { SMTP_HOST: 'smtp.example.test', SMTP_USER: 'contacto@phmavericks.com', SMTP_PASS: 'test-only', ...env })
 }
 
-test('SMTP lleva el remitente corporativo, el correo del cliente y el banner inline original', async () => {
+test('SMTP lleva el remitente corporativo, el correo del cliente y el banner inline genérico', async () => {
   let options
   let mime
   const service = emailService(async mail => {
@@ -71,7 +71,7 @@ test('SMTP lleva el remitente corporativo, el correo del cliente y el banner inl
   assert.ok(mime.includes(`Content-ID: <${renderer.DELIVERY_BANNER_CID}>`))
   assert.ok(mime.includes('Content-Type: image/jpeg'))
   const banner = fs.readFileSync(options.attachments[0].path)
-  assert.equal(createHash('sha256').update(banner).digest('hex'), '7220b7584592c11e45b8151225d03888f26249b1c0e339b65574e151a1441945')
+  assert.equal(createHash('sha256').update(banner).digest('hex'), '237535ff7d4f38b7764114a926a618d36780a36389bf777fee8510041b3db7ba')
 })
 
 test('no confirma envío si faltan credenciales o SMTP rechaza al destinatario', async () => {
